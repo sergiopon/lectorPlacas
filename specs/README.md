@@ -43,3 +43,9 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
 Pendiente de decisión del usuario: exportar recortes propios (descifrados) para entrenar — choca con SEG-07 y SEG-03 (ver docs/04-evaluacion.md §5.2).
+
+## Correcciones de specs (hechas por el orquestador)
+
+| Fecha | Spec | Cambio | Motivo |
+|---|---|---|---|
+| 2026-09-26 | 000 | `extend-exclude` añade `"*.md"`; `per-file-ignores` de tests añade `"S603"` | ruff formateaba bloques de código de specs/docs (solo lectura); el test de GPU usa `subprocess` |

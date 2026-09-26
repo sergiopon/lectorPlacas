@@ -86,7 +86,7 @@ override-dependencies = ["opencv-python-headless; sys_platform == 'never'"]
 line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
-extend-exclude = ["training"]
+extend-exclude = ["training", "*.md"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "C90", "S", "ANN", "D", "RUF", "SIM", "PTH", "BLE", "PL"]
@@ -104,7 +104,7 @@ max-branches = 8
 max-returns = 4
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "ANN", "D", "PLR2004", "PLR0913", "PLC0415", "S311", "N817", "E501"]
+"tests/**" = ["S101", "ANN", "D", "PLR2004", "PLR0913", "PLC0415", "S311", "N817", "E501", "S603"]
 "scripts/**" = ["T201", "S603", "S607"]
 
 [tool.mypy]
