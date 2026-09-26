@@ -20,7 +20,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 012 | [YOLO end2end ONNX](012-yolo-end2end-onnx.md) | 011 | Implementada |
 | 013 | [Detector de vehículos](013-detector-vehiculos.md) | 012 | Implementada |
 | 014 | [Detector de placas open-image-models](014-detector-placas-oim.md) | 011 | Implementada |
-| 015 | [Detector de placas YOLO propio](015-detector-placas-yolo.md) | 012 | Lista |
+| 015 | [Detector de placas YOLO propio](015-detector-placas-yolo.md) | 012, 013 | Lista |
 | 016 | [Tracker BoT-SORT](016-tracker-botsort.md) | 001, 005 | Implementada |
 | 017 | [OCR fast-plate-ocr](017-ocr-fast-plate-ocr.md) | 011 | Implementada |
 | 018 | [Nitidez de recortes](018-calidad-imagen.md) | 005 | Implementada |
@@ -53,3 +53,4 @@ Pendiente de decisión del usuario: exportar recortes propios (descifrados) para
 | 2026-09-26 | docs/03 §5 y 019 | Hash real de `yolo26n-coco.onnx` (exportado en la spec 030) en el manifiesto; el test de 019 comprueba `yolo26n-plates` como pendiente | Registro del modelo exportado (paso del operador) |
 | 2026-09-26 | 000 (pyproject) | `per-file-ignores` de tests añade `"S108"` | Los tests literales de 006 y 022 usan rutas `/tmp` como valores de prueba |
 | 2026-09-26 | ARQUITECTURA §6 | La excepción de tamaño incluye `infrastructure/config.py` | La spec 006 fija todos los modelos de configuración en ese módulo |
+| 2026-09-26 | README (índice) | 015 depende también de 013 | Importa `YoloPredictor` definido en la 013 |
