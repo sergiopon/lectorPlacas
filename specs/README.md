@@ -49,3 +49,4 @@ Pendiente de decisión del usuario: exportar recortes propios (descifrados) para
 | Fecha | Spec | Cambio | Motivo |
 |---|---|---|---|
 | 2026-09-26 | 000 | `extend-exclude` añade `"*.md"`; `per-file-ignores` de tests añade `"S603"` | ruff formateaba bloques de código de specs/docs (solo lectura); el test de GPU usa `subprocess` |
+| 2026-09-26 | ARQUITECTURA §6 | Excepción al límite de 300 líneas para `entities.py` y `ports.py` | Su contenido lo fija el contrato; partirlos cambiaría imports de todas las specs |
