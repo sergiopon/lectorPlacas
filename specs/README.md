@@ -54,3 +54,4 @@ Pendiente de decisión del usuario: exportar recortes propios (descifrados) para
 | 2026-09-26 | 000 (pyproject) | `per-file-ignores` de tests añade `"S108"` | Los tests literales de 006 y 022 usan rutas `/tmp` como valores de prueba |
 | 2026-09-26 | ARQUITECTURA §6 | La excepción de tamaño incluye `infrastructure/config.py` | La spec 006 fija todos los modelos de configuración en ese módulo |
 | 2026-09-26 | README (índice) | 015 depende también de 013 | Importa `YoloPredictor` definido en la 013 |
+| 2026-09-26 | 029 | El test literal `test_missing_nvidia_smi` combina los `with` en una sola sentencia | El anidado de `with` del literal dispara SIM117 de ruff, que está activo en el proyecto |

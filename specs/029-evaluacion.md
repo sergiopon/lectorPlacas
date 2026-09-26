@@ -365,9 +365,8 @@ def test_peak_above_baseline() -> None:
 def test_missing_nvidia_smi() -> None:
     def missing(args, **kwargs):  # type: ignore[no-untyped-def]
         raise FileNotFoundError("nvidia-smi")
-    with pytest.raises(EvaluationError):
-        with VramMonitor(run=missing):
-            pass
+    with pytest.raises(EvaluationError), VramMonitor(run=missing):
+        pass
 ```
 ```python
 # tests/unit/evaluation/test_report.py
