@@ -5,7 +5,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 
 | # | Spec | Depende de | Estado |
 |---|---|---|---|
-| 000 | [Setup](000-setup.md) | — | Lista |
+| 000 | [Setup](000-setup.md) | — | Implementada |
 | 001 | [Dominio: entidades y errores](001-dominio-entidades-errores.md) | 000 | Lista |
 | 002 | [Dominio: catálogo de formatos](002-dominio-catalogo-formatos.md) | 001 | Lista |
 | 003 | [Dominio: corrección posicional](003-dominio-correccion-posicional.md) | 001 | Lista |
