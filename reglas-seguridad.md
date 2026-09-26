@@ -52,7 +52,7 @@
 
 | ID | Regla |
 |---|---|
-| SEG-20 | En runtime NO DEBE haber llamadas de red. Todo comando excepto `lector models fetch` DEBE llamar `block_network()` antes de cargar modelos o abrir la BD. |
+| SEG-20 | En runtime NO DEBE haber llamadas de red. Todo comando excepto `lector models fetch` DEBE llamar `block_network()` antes de cargar modelos o abrir la BD. La clave maestra se lee del keyring antes de `block_network()`: el keyring usa D-Bus sobre un socket Unix local, que la guardia también bloquea. |
 | SEG-21 | `lector models fetch` DEBE aceptar solo URLs `https://github.com/` del manifiesto y verificar tamaño y SHA-256 antes de mover el archivo a `models/`. |
 | SEG-22 | En `training/`, los scripts DEBEN exportar `YOLO_OFFLINE=True` y `YOLO_AUTOINSTALL=False`, salvo el paso explícito de descarga de pesos base. |
 

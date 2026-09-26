@@ -56,7 +56,7 @@ def register_evaluation_commands(
     evaluate_parser.add_argument("--ground-truth", type=Path, required=True)
     evaluate_parser.add_argument("--profile", default=None)
     evaluate_parser.add_argument("--skip-vram", action="store_true")
-    evaluate_parser.set_defaults(handler=cmd_evaluate, network=False)
+    evaluate_parser.set_defaults(handler=cmd_evaluate, network=False, key="load")
 
     ocr_parser = subparsers.add_parser("evaluate-ocr")
     ocr_parser.add_argument("--crops", type=Path, required=True)
@@ -89,7 +89,7 @@ def cmd_evaluate(args: argparse.Namespace, config: AppConfig) -> int:
         _write_video_summary(metrics, result.stats.speed_factor, peak, report.name)
         return 0
 
-    return _run_with_repository(config, action)
+    return _run_with_repository(config, commands.require_keys(args), action)
 
 
 def cmd_evaluate_ocr(args: argparse.Namespace, config: AppConfig) -> int:

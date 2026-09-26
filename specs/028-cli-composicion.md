@@ -109,13 +109,19 @@ def build_process_video(config: AppConfig, profile_name: str, repository: PlateR
    `LectorPlacasError` → `logger.error("comando fallido error=%s", type(e).__name__)`, `sys.stderr.write(f"error: {e}\n")`, `return exit_code_for(e)`.
    `Exception` → `logger.exception("error inesperado")`, `sys.stderr.write("error inesperado; revise logs/lector.log\n")`, `return 1`
    (con `# noqa: BLE001` y comentario "último nivel, ARQUITECTURA §6").
+   **Clave antes de la guardia (corrección 2026-09-26):** si el subcomando declara `key` (`"create"` para `key init`;
+   `"load"` para `process`, `review`, `export`, `purge` y `evaluate`), `main` construye
+   `keys = composition.build_key_provider(key == "create")`, llama `keys.master_key()` **antes** de
+   `network_guard.block_network()` y guarda `args.keys = keys`. Los comandos usan `require_keys(args)` y
+   `_run_with_repository(config, keys, action)`. Motivo: el keyring (SecretService) se alcanza por D-Bus sobre un socket
+   Unix, que la guardia también bloquea; `KeyringKeyProvider` cachea la clave en memoria.
 4. **Comandos** (`commands.py` llama a la composición siempre como `composition.<función>(...)`, importando el módulo
    `from lector_placas.cli import composition`, para que los tests puedan sustituir funciones):
-   - `cmd_key_init`: `composition.build_key_provider(True).master_key()`; escribe `"clave maestra disponible en el keyring\n"` en `sys.stdout`.
+   - `cmd_key_init`: `require_keys(args).master_key()`; escribe `"clave maestra disponible en el keyring\n"` en `sys.stdout`.
    - `cmd_models_fetch`: `fetch_models(manifest, models_dir, default_opener)`; escribe `f"descargados: {', '.join(ids) or 'ninguno'}\n"`.
    - `cmd_models_verify`: carga el manifiesto; para cada entrada: si `sha256 == PENDING_EXPORT` escribe `f"{id}: pendiente de exportar\n"`;
      si no `registry.verified_path(id)` (propaga `ModelIntegrityError`) y escribe `f"{id}: ok\n"`.
-   - Comandos con BD (`process`, `review`, `export`, `purge`): `keys = composition.build_key_provider(False)`, `clock = SystemClock()`,
+   - Comandos con BD (`process`, `review`, `export`, `purge`): `keys = require_keys(args)`, `clock = SystemClock()`,
      `repository = composition.build_repository(config, keys)`; en `try/finally` con `repository.close()`:
      `crops = composition.build_crop_store(config, keys)`, `exports = composition.build_export_store(config)`,
      **purga primero** `composition.build_purge(config, repository, crops, exports, clock).execute()`, luego la acción.
