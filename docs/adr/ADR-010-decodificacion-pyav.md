@@ -20,5 +20,5 @@ Frames sin `pts` se descartan con log `WARNING`. OpenCV solo para procesamiento 
 
 ## Consecuencias
 - (+) Timestamps correctos con VFR; videos verticales se procesan derechos.
-- (−) El test de aceptación con video sintético rotado (spec 010) es la verificación de que FFmpeg
-  propaga la display matrix al frame; si falla, se detiene la implementación y se revisa este ADR.
+- (+) Verificado el 2026-09-26: el test de aceptación con video sintético rotado (spec 010) pasa; FFmpeg
+  propaga la display matrix al frame y `np.rot90(k)` produce la orientación correcta.
