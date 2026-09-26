@@ -37,7 +37,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 029 | [Evaluación](029-evaluacion.md) | 028 | Implementada |
 | 030 | [Entrenamiento del detector y export ONNX](030-entrenamiento-detector.md) | 000 (031 para entrenar placas) | Implementada |
 | 031 | [Herramientas de dataset](031-herramientas-dataset.md) | 002, 007, 023, 028 | Implementada |
-| 032 | [Entrenamiento del OCR (fine-tuning)](032-entrenamiento-ocr.md) | 000 (031 para entrenar con datos reales) | Lista |
+| 032 | [Entrenamiento del OCR (fine-tuning)](032-entrenamiento-ocr.md) | 000 (031 para entrenar con datos reales) | Implementada |
 | 033 | [Generador de placas sintéticas](033-generador-sintetico.md) | 032 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
