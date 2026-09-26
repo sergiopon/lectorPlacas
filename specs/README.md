@@ -50,3 +50,4 @@ Pendiente de decisión del usuario: exportar recortes propios (descifrados) para
 |---|---|---|---|
 | 2026-09-26 | 000 | `extend-exclude` añade `"*.md"`; `per-file-ignores` de tests añade `"S603"` | ruff formateaba bloques de código de specs/docs (solo lectura); el test de GPU usa `subprocess` |
 | 2026-09-26 | ARQUITECTURA §6 | Excepción al límite de 300 líneas para `entities.py` y `ports.py` | Su contenido lo fija el contrato; partirlos cambiaría imports de todas las specs |
+| 2026-09-26 | docs/03 §5 y 019 | Hash real de `yolo26n-coco.onnx` (exportado en la spec 030) en el manifiesto; el test de 019 comprueba `yolo26n-plates` como pendiente | Registro del modelo exportado (paso del operador) |

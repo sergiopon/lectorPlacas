@@ -288,7 +288,7 @@ models:
      sha256: 0335c74a305173bb6f393efed0fde03cadeaa0b649ed8e19f431016d8232d0a6, size_bytes: 1725,
      license: MIT, source: fast-plate-ocr 1.1.0}
   - {model_id: yolo26n-coco, filename: yolo26n-coco.onnx, url: null,
-     sha256: PENDIENTE_EXPORT, size_bytes: 0,
+     sha256: 28d570970b867a53a4c5c7787db0c22372882bbbcc1d68d3c0a657ea97cf7b64, size_bytes: 9942097,
      license: AGPL-3.0, source: "exportado localmente desde yolo26n.pt (spec 030)"}
   - {model_id: yolo26n-plates, filename: yolo26n-plates.onnx, url: null,
      sha256: PENDIENTE_EXPORT, size_bytes: 0,
