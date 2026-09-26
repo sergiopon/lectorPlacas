@@ -37,4 +37,9 @@ Hallazgos verificados:
 - (+) Un solo runtime (ONNX Runtime), VRAM mínima, 1× alcanzable.
 - (−) El baseline leerá peor las placas colombianas hasta el fine-tuning; la votación, la
   corrección posicional y los umbrales mitigan confirmaciones erróneas.
-- El entorno de entrenamiento OCR (TensorFlow/Keras) se aísla en `training/ocr` (ADR-011).
+- El entorno de entrenamiento OCR (TensorFlow/Keras) se aísla en `training/ocr` (ADR-011). El fine-tuning
+  usa el backend torch de Keras; la **exportación a ONNX del modelo ajustado** se hace en un subproceso con
+  `KERAS_BACKEND=tensorflow` (tf2onnx) sobre una copia del `.keras` sin configuración de compilación, porque
+  `torch.onnx` no soporta el kernel de `PatchExtractor` con lote dinámico (detalle en spec 032, paso 5.6).
+  El modelo exportado conserva el contrato del adaptador de la spec 017: entrada `input` uint8
+  `[batch, 64, 128, 3]` y salida `plate` `[batch, 10, 37]`.

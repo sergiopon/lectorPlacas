@@ -22,11 +22,18 @@ Hechos verificados (2026-09-24):
    - `training/detector`: `torch==2.14.0`, `torchvision==0.29.0` desde el índice explícito
      `https://download.pytorch.org/whl/cu130`, `ultralytics==8.4.162`.
    - `training/ocr`: `fast-plate-ocr[train]==1.1.0` con `KERAS_BACKEND=torch` y torch cu130.
+     El fine-tuning corre con `KERAS_BACKEND=torch`, pero la **exportación a ONNX** se hace en un
+     subproceso con `KERAS_BACKEND=tensorflow` (tf2onnx) y `CUDA_VISIBLE_DEVICES=""`, por dos hechos
+     medidos en la spec 032: `torch.onnx` no soporta el kernel de `PatchExtractor` con lote dinámico,
+     y el `compile_config` del `.keras` entrenado con torch referencia
+     `keras.src.backend.torch.optimizers.torch_adamw`, que aborta el proceso al convivir con
+     TensorFlow. El subproceso oculta la GPU porque TensorFlow 2.21 no encuentra sus librerías CUDA
+     y grappler falla al intentar usarla. Detalle en spec 032, paso 5.6.
 3. OpenCV único: `opencv-python==4.14.0.94` y en `[tool.uv] override-dependencies` la entrada
    `"opencv-python-headless; sys_platform == 'never'"` para que nunca se instale el paquete headless.
    (La versión 5.0.0.93 se evita hasta verificar compatibilidad de las librerías.)
-4. En `training/ocr`, override `"protobuf>=6.31.1,<8"` para `tf2onnx` (resolución a verificar con
-   `uv lock` en spec 032; si no resuelve o falla el smoke test, se detiene y se revisa este ADR).
+4. En `training/ocr`, override `"protobuf>=6.31.1,<8"` para `tf2onnx` (verificado en la spec 032:
+   `uv lock` resuelve y el smoke test de exportación a ONNX termina en 0).
 
 ## Consecuencias
 - (+) Runtime pequeño y reproducible; entrenamiento aislado con sus conflictos.

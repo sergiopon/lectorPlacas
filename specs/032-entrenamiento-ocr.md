@@ -40,6 +40,9 @@ API verificada de fast-plate-ocr 1.1.0:
 # export: --model <best.keras> --format onnx --plate-config-file <yaml> --save-dir <dir existente>
 #        salida <save-dir>/best.onnx; por defecto --simplify, --dynamic-batch, --onnx-input-dtype uint8,
 #        --onnx-data-format channels_last  => entrada "input" uint8 [batch, 64, 128, 3], salida "plate"
+#        `export` es un comando click suelto, no un grupo: se invoca `export.main(args=[...])` sin el nombre
+#        del subcomando. Se ejecuta en un subproceso con KERAS_BACKEND=tensorflow (tf2onnx) y CUDA_VISIBLE_DEVICES=""
+#        (ver comportamiento esperado, paso 5.6): torch.onnx no soporta el kernel de PatchExtractor con lote dinámico.
 # CSV: columnas image_path (relativa al CSV), plate_text; formato de cct_xs_v2_global_plate_config.yaml:
 #        max_plate_slots 10, alfabeto 0-9A-Z + "_", 64x128, rgb
 # Backend: variable KERAS_BACKEND=torch antes de importar keras
@@ -158,8 +161,22 @@ testpaths = ["tests"]
    3. `run_root = RUNS_DIR / args.name`; si existe → `TrainingError("la corrida ya existe")`.
    4. `os.environ["KERAS_BACKEND"] = "torch"` **antes** de importar `fast_plate_ocr.cli.cli` (import dentro de la función).
    5. `main_cli.main(args=train_arguments(...), standalone_mode=False)`.
-   6. `best = find_best_model(run_root)`; `main_cli.main(args=["export", "--model", str(best), "--format", "onnx",
-      "--plate-config-file", str(WEIGHTS_DIR / "cct_xs_v2_global_plate_config.yaml"), "--save-dir", str(best.parent)], standalone_mode=False)`.
+   6. `best = find_best_model(run_root)`. La exportación se hace **en un subproceso**, por dos hechos verificados en la
+      práctica: el export ONNX nativo de torch falla con `SymbolicValueError` en el kernel de `PatchExtractor` con
+      `--dynamic-batch`, y el `config.json` del `.keras` entrenado con el backend torch referencia
+      `keras.src.backend.torch.optimizers.torch_adamw`, que al cargarse con `KERAS_BACKEND=tensorflow` en el mismo
+      proceso aborta el intérprete. Pasos:
+      1. `_write_exportable_copy(best, staging / "best.keras")`: carga `best` con `load_keras_model` (el backend torch
+         ya está activo), pone `model.compiled = False` y guarda la copia; así el `config.json` no lleva
+         `compile_config`.
+      2. `subprocess.run([sys.executable, "-c", _EXPORT_SNIPPET, *_export_onnx_arguments(exportable, best.parent)],
+         env={**os.environ, "KERAS_BACKEND": "tensorflow", "CUDA_VISIBLE_DEVICES": ""}, check=True)`, con
+         `staging` = `TemporaryDirectory()`. La copia se llama `best.keras` y `--save-dir` es `best.parent`, así que
+         la CLI deriva el nombre de salida `best.onnx` en el directorio de la corrida.
+         `CUDA_VISIBLE_DEVICES=""` es necesario porque TensorFlow 2.21 no encuentra sus librerías CUDA y grappler
+         falla con `RuntimeError: Bad StatusOr access: INTERNAL: CUDA Runtime error` si intenta usar la GPU; el
+         export corre en CPU. `_EXPORT_SNIPPET` invoca `fast_plate_ocr.cli.export.export.main` (comando click suelto)
+         con `sys.argv[2:]`, porque `python -c` deja la palabra `export` en `sys.argv[1]`.
    7. `onnx_path = best.parent / "best.onnx"`; `check_ocr_onnx(onnx_path)`; `publish_model(onnx_path)`. Devuelve 0.
 6. Todos los módulos con `if __name__ == "__main__": raise SystemExit(main())`; se ejecutan desde `training/ocr` con
    `uv run python -m ocr_training.<modulo>`.
