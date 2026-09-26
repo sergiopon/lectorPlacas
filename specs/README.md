@@ -24,7 +24,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 016 | [Tracker BoT-SORT](016-tracker-botsort.md) | 001, 005 | Implementada |
 | 017 | [OCR fast-plate-ocr](017-ocr-fast-plate-ocr.md) | 011 | Implementada |
 | 018 | [Nitidez de recortes](018-calidad-imagen.md) | 005 | Implementada |
-| 019 | [Registro de modelos y guardia de red](019-registro-modelos-red.md) | 001, 005, 007 | Lista |
+| 019 | [Registro de modelos y guardia de red](019-registro-modelos-red.md) | 001, 005, 007 | Implementada |
 | 020 | [Repositorio SQLCipher](020-repositorio-sqlcipher.md) | 001, 005, 008 | Lista |
 | 021 | [Almacén de recortes cifrado](021-almacen-recortes-cifrado.md) | 005, 007, 008 | Lista |
 | 022 | [Logging enmascarado](022-logging-enmascarado.md) | 004, 007 | Lista |
