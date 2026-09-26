@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
 
-from lector_placas.cli import commands
+from lector_placas.cli import commands, dataset_commands
 from lector_placas.cli.evaluation_commands import register_evaluation_commands
 from lector_placas.domain.errors import (
     ConfigurationError,
@@ -74,6 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_export_parser(subparsers)
     _add_purge_parser(subparsers)
     register_evaluation_commands(subparsers)
+    dataset_commands.register_dataset_commands(subparsers)
     return parser
 
 
