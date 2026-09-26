@@ -16,7 +16,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 008 | [Cifrado y clave maestra](008-cifrado-y-claves.md) | 001, 005 | Implementada |
 | 009 | [Muestreo de frames](009-muestreo-frames.md) | 001, 005 | Lista |
 | 010 | [Fuente de video PyAV](010-fuente-video-pyav.md) | 001, 005 | Implementada |
-| 011 | [Sesión ONNX y letterbox](011-onnx-sesion-letterbox.md) | 001, 005 | Lista |
+| 011 | [Sesión ONNX y letterbox](011-onnx-sesion-letterbox.md) | 001, 005 | Implementada |
 | 012 | [YOLO end2end ONNX](012-yolo-end2end-onnx.md) | 011 | Lista |
 | 013 | [Detector de vehículos](013-detector-vehiculos.md) | 012 | Lista |
 | 014 | [Detector de placas open-image-models](014-detector-placas-oim.md) | 011 | Lista |
