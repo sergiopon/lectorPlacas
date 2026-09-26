@@ -9,7 +9,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 001 | [Dominio: entidades y errores](001-dominio-entidades-errores.md) | 000 | Implementada |
 | 002 | [Dominio: catálogo de formatos](002-dominio-catalogo-formatos.md) | 001 | Implementada |
 | 003 | [Dominio: corrección posicional](003-dominio-correccion-posicional.md) | 001 | Implementada |
-| 004 | [Dominio: consolidación y mask_plate](004-dominio-consolidacion.md) | 001, 002, 003 | Lista |
+| 004 | [Dominio: consolidación y mask_plate](004-dominio-consolidacion.md) | 001, 002, 003 | Implementada |
 | 005 | [Aplicación: puertos, reloj, fakes](005-aplicacion-puertos.md) | 001 | Implementada |
 | 006 | [Configuración](006-configuracion.md) | 001–004 | Lista |
 | 007 | [Rutas seguras y validación de entrada](007-validacion-entradas-rutas.md) | 001 | Implementada |
