@@ -31,7 +31,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 023 | [Registro de tracks e image_ops](023-registro-tracks.md) | 001, 005 | Implementada |
 | 024 | [Orquestador ProcessVideo](024-orquestador-procesar-video.md) | 004, 005, 009, 023 | Lista |
 | 025 | [Purga por retención](025-retencion-purga.md) | 005 | Implementada |
-| 026 | [Exportación CSV](026-exportacion-csv.md) | 005, 007 | Lista |
+| 026 | [Exportación CSV](026-exportacion-csv.md) | 005, 007 | Implementada |
 | 027 | [Revisión humana](027-revision-humana.md) | 005 | Lista |
 | 028 | [CLI y composición](028-cli-composicion.md) | 006–027 | Lista |
 | 029 | [Evaluación](029-evaluacion.md) | 028 | Lista |
