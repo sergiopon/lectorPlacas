@@ -1,0 +1,38 @@
+[project]
+name = "lector-placas-training-ocr"
+version = "0.1.0"
+requires-python = "==3.13.*"
+dependencies = [
+    "fast-plate-ocr[train]==1.1.0",
+    "torch==2.14.0",
+    "keras==3.15.1",
+    "tensorflow==2.21.0",
+    "opencv-python==4.14.0.94",
+    "onnx==1.23.0",
+    "onnxslim==0.1.96",
+    "onnxruntime-gpu==1.30.0",
+    "PyYAML==6.0.3",
+    "pillow==12.3.0",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[tool.uv]
+package = false
+override-dependencies = [
+    "opencv-python-headless; sys_platform == 'never'",
+    "protobuf>=6.31.1,<8",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu130" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
