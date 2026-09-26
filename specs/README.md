@@ -11,7 +11,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 003 | [Dominio: corrección posicional](003-dominio-correccion-posicional.md) | 001 | Implementada |
 | 004 | [Dominio: consolidación y mask_plate](004-dominio-consolidacion.md) | 001, 002, 003 | Implementada |
 | 005 | [Aplicación: puertos, reloj, fakes](005-aplicacion-puertos.md) | 001 | Implementada |
-| 006 | [Configuración](006-configuracion.md) | 001–004 | Lista |
+| 006 | [Configuración](006-configuracion.md) | 001–004 | Implementada |
 | 007 | [Rutas seguras y validación de entrada](007-validacion-entradas-rutas.md) | 001 | Implementada |
 | 008 | [Cifrado y clave maestra](008-cifrado-y-claves.md) | 001, 005 | Implementada |
 | 009 | [Muestreo de frames](009-muestreo-frames.md) | 001, 005 | Implementada |
