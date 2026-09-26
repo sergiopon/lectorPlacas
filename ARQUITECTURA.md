@@ -162,7 +162,8 @@ lectorPlacas/
 - Funciones y métodos: **≤ 20 sentencias** (ruff `PLR0915` max-statements = 20), ≤ 6 argumentos
   (`PLR0913`), complejidad ciclomática ≤ 8 (`C901`), ≤ 8 ramas (`PLR0912`).
 - Clases: ≤ 150 líneas y una sola responsabilidad. Módulos: ≤ 300 líneas, excepto los módulos de definición de
-  contratos cuyo contenido fija `docs/02-contratos.md` (`domain/entities.py`, `application/ports.py`).
+  contratos o configuración cuyo contenido fija una spec (`domain/entities.py`, `application/ports.py`,
+  `infrastructure/config.py`).
 
 **Tipos**
 - Type hints obligatorios en toda firma y atributo; `mypy --strict` sin errores.
