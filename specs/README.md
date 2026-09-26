@@ -28,7 +28,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 020 | [Repositorio SQLCipher](020-repositorio-sqlcipher.md) | 001, 005, 008 | Lista |
 | 021 | [Almacén de recortes cifrado](021-almacen-recortes-cifrado.md) | 005, 007, 008 | Lista |
 | 022 | [Logging enmascarado](022-logging-enmascarado.md) | 004, 007 | Lista |
-| 023 | [Registro de tracks e image_ops](023-registro-tracks.md) | 001, 005 | Lista |
+| 023 | [Registro de tracks e image_ops](023-registro-tracks.md) | 001, 005 | Implementada |
 | 024 | [Orquestador ProcessVideo](024-orquestador-procesar-video.md) | 004, 005, 009, 023 | Lista |
 | 025 | [Purga por retención](025-retencion-purga.md) | 005 | Lista |
 | 026 | [Exportación CSV](026-exportacion-csv.md) | 005, 007 | Lista |
