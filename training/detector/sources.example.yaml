@@ -1,0 +1,22 @@
+version: 1
+sources:
+  - name: placas_colombianas
+    path: placas_colombianas
+    url: https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas
+    license: CC BY 4.0
+    plate_classes: [COMPLETAR]   # NO VERIFICADO: leer names en data.yaml tras descargar
+  - name: usco
+    path: usco
+    url: https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr
+    license: MIT (declarada por quien subió el dataset)
+    plate_classes: [placa]
+  - name: placas_motos_carros
+    path: placas_motos_carros
+    url: https://universe.roboflow.com/reimerjsuarez/placas_motos_carros
+    license: CC BY 4.0
+    plate_classes: [Placas]
+  - name: motos_placas
+    path: motos_placas
+    url: https://universe.roboflow.com/placas-sn7fb/motos-placas
+    license: CC BY 4.0
+    plate_classes: [COMPLETAR]   # clases H, I, Q, motos-placas: NO VERIFICADO cuál es la placa
