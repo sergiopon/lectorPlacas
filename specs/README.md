@@ -34,7 +34,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 026 | [Exportación CSV](026-exportacion-csv.md) | 005, 007 | Implementada |
 | 027 | [Revisión humana](027-revision-humana.md) | 005 | Implementada |
 | 028 | [CLI y composición](028-cli-composicion.md) | 006–027 | Implementada |
-| 029 | [Evaluación](029-evaluacion.md) | 028 | Lista |
+| 029 | [Evaluación](029-evaluacion.md) | 028 | Implementada |
 | 030 | [Entrenamiento del detector y export ONNX](030-entrenamiento-detector.md) | 000 (031 para entrenar placas) | Implementada |
 | 031 | [Herramientas de dataset](031-herramientas-dataset.md) | 002, 007, 023, 028 | Lista |
 | 032 | [Entrenamiento del OCR (fine-tuning)](032-entrenamiento-ocr.md) | 000 (031 para entrenar con datos reales) | Lista |
