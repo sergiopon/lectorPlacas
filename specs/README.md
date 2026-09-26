@@ -21,7 +21,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 013 | [Detector de vehículos](013-detector-vehiculos.md) | 012 | Lista |
 | 014 | [Detector de placas open-image-models](014-detector-placas-oim.md) | 011 | Lista |
 | 015 | [Detector de placas YOLO propio](015-detector-placas-yolo.md) | 012 | Lista |
-| 016 | [Tracker BoT-SORT](016-tracker-botsort.md) | 001, 005 | Lista |
+| 016 | [Tracker BoT-SORT](016-tracker-botsort.md) | 001, 005 | Implementada |
 | 017 | [OCR fast-plate-ocr](017-ocr-fast-plate-ocr.md) | 011 | Lista |
 | 018 | [Nitidez de recortes](018-calidad-imagen.md) | 005 | Lista |
 | 019 | [Registro de modelos y guardia de red](019-registro-modelos-red.md) | 001, 005, 007 | Lista |
