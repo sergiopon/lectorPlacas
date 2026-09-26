@@ -36,3 +36,5 @@ Hashes fijados (calculados el 2026-09-24 sobre las URLs oficiales):
 - (+) Integridad y aislamiento de red verificables por tests.
 - (−) El modelo exportado localmente (`yolo26n-coco`) obtiene su hash al exportarse (spec 030) y debe
   registrarse en `config/models.yaml` antes de usarse (trust-on-first-export, documentado).
+- (−) La guardia bloquea también los sockets Unix, incluido D-Bus: la clave maestra se lee del keyring antes de
+  `block_network()` y queda en memoria (corrección 2026-09-26, spec 028).

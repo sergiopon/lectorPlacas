@@ -15,11 +15,18 @@ from typing import TYPE_CHECKING
 
 from lector_placas.adapters.review.opencv_review_ui import OpenCvReviewUI
 from lector_placas.application.export_sightings import ExportSightings
-from lector_placas.application.ports import Clock, CropStore, ExportStore, PlateRepository
+from lector_placas.application.ports import (
+    Clock,
+    CropStore,
+    ExportStore,
+    KeyProvider,
+    PlateRepository,
+)
 from lector_placas.application.purge_expired import PurgeResult
 from lector_placas.application.review_sightings import ReviewSightings
 from lector_placas.cli import composition
 from lector_placas.domain.entities import ReviewStatus
+from lector_placas.domain.errors import KeyUnavailableError
 from lector_placas.infrastructure.clock import SystemClock
 from lector_placas.infrastructure.input_validation import sha256_file, validate_video_path
 from lector_placas.infrastructure.model_fetcher import default_opener, fetch_models
@@ -31,9 +38,21 @@ if TYPE_CHECKING:
 _DbAction = Callable[[PlateRepository, CropStore, ExportStore, Clock, PurgeResult], int]
 
 
+def require_keys(args: argparse.Namespace) -> KeyProvider:
+    """Devuelve el proveedor de clave cargado por `main` antes de bloquear la red.
+
+    Raises:
+        KeyUnavailableError: si el subcomando no cargó la clave.
+    """
+    keys: KeyProvider | None = getattr(args, "keys", None)
+    if keys is None:
+        raise KeyUnavailableError("clave maestra no cargada antes de bloquear la red")
+    return keys
+
+
 def cmd_key_init(args: argparse.Namespace, config: AppConfig) -> int:
     """Asegura la clave maestra en el llavero del sistema, creándola si no existe."""
-    composition.build_key_provider(True).master_key()
+    require_keys(args).master_key()
     sys.stdout.write("clave maestra disponible en el keyring\n")
     return 0
 
@@ -108,7 +127,7 @@ def cmd_process(args: argparse.Namespace, config: AppConfig) -> int:
         )
         return 0
 
-    return _run_with_repository(config, action)
+    return _run_with_repository(config, require_keys(args), action)
 
 
 def cmd_review(args: argparse.Namespace, config: AppConfig) -> int:
@@ -130,7 +149,7 @@ def cmd_review(args: argparse.Namespace, config: AppConfig) -> int:
         )
         return 0
 
-    return _run_with_repository(config, action)
+    return _run_with_repository(config, require_keys(args), action)
 
 
 def cmd_export(args: argparse.Namespace, config: AppConfig) -> int:
@@ -149,7 +168,7 @@ def cmd_export(args: argparse.Namespace, config: AppConfig) -> int:
         sys.stdout.write(f"exportado: {path.name}\n")
         return 0
 
-    return _run_with_repository(config, action)
+    return _run_with_repository(config, require_keys(args), action)
 
 
 def cmd_purge(args: argparse.Namespace, config: AppConfig) -> int:
@@ -170,20 +189,20 @@ def cmd_purge(args: argparse.Namespace, config: AppConfig) -> int:
         )
         return 0
 
-    return _run_with_repository(config, action)
+    return _run_with_repository(config, require_keys(args), action)
 
 
-def _run_with_repository(config: AppConfig, action: _DbAction) -> int:
+def _run_with_repository(config: AppConfig, keys: KeyProvider, action: _DbAction) -> int:
     """Abre el repositorio, purga los datos vencidos y ejecuta `action` (SEG-03).
 
     Args:
         config: configuración de la aplicación.
+        keys: proveedor de la clave maestra, ya cargado antes de bloquear la red.
         action: función que recibe los puertos abiertos y el resultado de la purga.
 
     Returns:
         El código de salida devuelto por `action`.
     """
-    keys = composition.build_key_provider(False)
     clock = SystemClock()
     repository = composition.build_repository(config, keys)
     try:

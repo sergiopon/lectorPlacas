@@ -10,7 +10,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
 
-from lector_placas.cli import commands, dataset_commands
+from lector_placas.application.ports import KeyProvider
+from lector_placas.cli import commands, composition, dataset_commands
 from lector_placas.cli.evaluation_commands import register_evaluation_commands
 from lector_placas.domain.errors import (
     ConfigurationError,
@@ -83,7 +84,7 @@ def _add_key_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ig
     key_parser = subparsers.add_parser("key")
     key_sub = key_parser.add_subparsers(dest="key_command", required=True)
     init_parser = key_sub.add_parser("init")
-    init_parser.set_defaults(handler=commands.cmd_key_init, network=False)
+    init_parser.set_defaults(handler=commands.cmd_key_init, network=False, key="create")
 
 
 def _add_models_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
@@ -101,27 +102,27 @@ def _add_process_parser(subparsers: argparse._SubParsersAction) -> None:  # type
     process_parser = subparsers.add_parser("process")
     process_parser.add_argument("video", type=Path)
     process_parser.add_argument("--profile", default=None)
-    process_parser.set_defaults(handler=commands.cmd_process, network=False)
+    process_parser.set_defaults(handler=commands.cmd_process, network=False, key="load")
 
 
 def _add_review_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
     """Agrega `review [--limit N]`."""
     review_parser = subparsers.add_parser("review")
     review_parser.add_argument("--limit", type=int, default=DEFAULT_REVIEW_LIMIT)
-    review_parser.set_defaults(handler=commands.cmd_review, network=False)
+    review_parser.set_defaults(handler=commands.cmd_review, network=False, key="load")
 
 
 def _add_export_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
     """Agrega `export [--status {...}]`."""
     export_parser = subparsers.add_parser("export")
     export_parser.add_argument("--status", choices=EXPORT_STATUS_CHOICES, default=None)
-    export_parser.set_defaults(handler=commands.cmd_export, network=False)
+    export_parser.set_defaults(handler=commands.cmd_export, network=False, key="load")
 
 
 def _add_purge_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
     """Agrega `purge`."""
     purge_parser = subparsers.add_parser("purge")
-    purge_parser.set_defaults(handler=commands.cmd_purge, network=False)
+    purge_parser.set_defaults(handler=commands.cmd_purge, network=False, key="load")
 
 
 def exit_code_for(error: BaseException) -> int:
@@ -138,6 +139,26 @@ def exit_code_for(error: BaseException) -> int:
         if isinstance(error, error_types):
             return code
     return 1
+
+
+def _prefetch_keys(args: argparse.Namespace) -> KeyProvider | None:
+    """Lee (o crea) la clave maestra antes de bloquear la red (SEG-20).
+
+    El keyring del sistema (SecretService) se alcanza por D-Bus sobre un socket Unix, que
+    `block_network()` también bloquea; el proveedor cachea la clave y los comandos lo reutilizan.
+
+    Args:
+        args: argumentos del subcomando; `args.key` es `"create"`, `"load"` o no existe.
+
+    Returns:
+        El proveedor con la clave ya cargada, o `None` si el subcomando no usa la clave.
+    """
+    mode = getattr(args, "key", None)
+    if mode is None:
+        return None
+    keys = composition.build_key_provider(mode == "create")
+    keys.master_key()
+    return keys
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -160,6 +181,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         configure_logging(
             config.logging.level, config.under_root(config.paths.log_dir) / LOG_FILENAME
         )
+        args.keys = _prefetch_keys(args)
         if not args.network:
             network_guard.block_network()
         return args.handler(args, config)  # type: ignore[no-any-return]
