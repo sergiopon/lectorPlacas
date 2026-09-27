@@ -33,7 +33,7 @@ def write_manifest(tmp_path: Path, **overrides: object) -> Path:
 def test_real_manifest_is_valid() -> None:
     manifest = load_manifest(ROOT / "config" / "models.yaml")
     assert manifest.entry("fpo-cct-xs-v2-global").sha256.startswith("8031afb5")
-    assert manifest.entry("fpo-cct-xs-v2-colombia").sha256 == "PENDIENTE_EXPORT"
+    assert manifest.entry("fpo-cct-xs-v2-colombia").sha256.startswith("2a057dd8")
 
 
 def test_verified_path_ok_and_tampered(tmp_path: Path) -> None:
