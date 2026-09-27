@@ -115,3 +115,7 @@ class EvaluationError(LectorPlacasError):
 
 class DatasetError(LectorPlacasError):
     """Error al preparar conjuntos de datos."""
+
+
+class ProcessingCancelledError(LectorPlacasError):
+    """El operador canceló el procesamiento de un video."""

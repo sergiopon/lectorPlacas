@@ -19,6 +19,8 @@ from lector_placas.application.ports import (
     PlateDetector,
     PlateReader,
     PlateRepository,
+    ProgressReporter,
+    ProgressUpdate,
     RunStart,
     RunStats,
     Tracker,
@@ -35,7 +37,11 @@ from lector_placas.domain.entities import (
     Sighting,
     TrackedVehicle,
 )
-from lector_placas.domain.errors import InvalidEntityError, LectorPlacasError
+from lector_placas.domain.errors import (
+    InvalidEntityError,
+    LectorPlacasError,
+    ProcessingCancelledError,
+)
 from lector_placas.domain.privacy import mask_plate
 
 if TYPE_CHECKING:
@@ -145,27 +151,33 @@ class ProcessVideo:
         self._deps = deps
         self._settings = settings
 
-    def execute(self, video_path: Path, video_sha256: str) -> RunResult:
+    def execute(
+        self, video_path: Path, video_sha256: str, progress: ProgressReporter | None = None
+    ) -> RunResult:
         """Procesa el video indicado de principio a fin.
 
         Args:
             video_path: ruta del video a procesar.
             video_sha256: hash SHA-256 del video, en hexadecimal minúscula.
+            progress: reporter opcional del avance; si es `None` no se informa ni se cancela.
 
         Returns:
             Identificador de la corrida y sus estadísticas finales.
 
         Raises:
+            ProcessingCancelledError: si el reporter pidió cancelar el procesamiento.
             LectorPlacasError: si falla algún paso del pipeline; la corrida queda marcada
                 como fallida antes de relanzar el error.
         """
         source = self._deps.source_factory.open(video_path)
         try:
-            return self._run(source, video_sha256)
+            return self._run(source, video_sha256, progress)
         finally:
             source.close()
 
-    def _run(self, source: VideoSource, video_sha256: str) -> RunResult:
+    def _run(
+        self, source: VideoSource, video_sha256: str, progress: ProgressReporter | None
+    ) -> RunResult:
         """Ejecuta la corrida completa sobre una fuente ya abierta."""
         deps = self._deps
         started = deps.clock.now()
@@ -178,7 +190,7 @@ class ProcessVideo:
         registry = TrackRegistry(self._settings.max_readings_per_track)
         counters = _Counters()
         try:
-            self._process_all_frames(source, registry, counters, run_id)
+            self._process_all_frames(source, registry, counters, run_id, progress, info.duration_ms)
             self._finalize(registry.pop_all(), run_id, counters)
         except LectorPlacasError as error:
             self._fail_run(run_id, counters, started, info.duration_ms, error)
@@ -186,11 +198,19 @@ class ProcessVideo:
         return self._finish_run(run_id, counters, started, info.duration_ms)
 
     def _process_all_frames(
-        self, source: VideoSource, registry: TrackRegistry, counters: _Counters, run_id: int
+        self,
+        source: VideoSource,
+        registry: TrackRegistry,
+        counters: _Counters,
+        run_id: int,
+        progress: ProgressReporter | None,
+        duration_ms: int | None,
     ) -> None:
         """Recorre los frames del video, procesando y finalizando tracks inactivos."""
         for frame in source.frames():
             counters.frames_decoded += 1
+            if progress is not None and progress.cancel_requested():
+                raise ProcessingCancelledError("procesamiento cancelado por el operador")
             if not self._deps.sampler.should_process(frame.timestamp_ms):
                 continue
             counters.frames_processed += 1
@@ -199,6 +219,26 @@ class ProcessVideo:
                 frame.timestamp_ms, self._settings.track_finalize_after_ms
             )
             self._finalize(inactive, run_id, counters)
+            if progress is not None:
+                self._report_progress(progress, counters, frame, duration_ms)
+
+    def _report_progress(
+        self,
+        progress: ProgressReporter,
+        counters: _Counters,
+        frame: Frame,
+        duration_ms: int | None,
+    ) -> None:
+        """Comunica el avance acumulado tras procesar un frame muestreado."""
+        progress.report(
+            ProgressUpdate(
+                counters.frames_decoded,
+                counters.frames_processed,
+                frame.timestamp_ms,
+                duration_ms,
+                counters.sightings_confirmed + counters.sightings_unverified,
+            )
+        )
 
     def _process_frame(self, frame: Frame, registry: TrackRegistry, counters: _Counters) -> None:
         """Detecta, sigue y busca placas de los vehículos de un único frame."""
