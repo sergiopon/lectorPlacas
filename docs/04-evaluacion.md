@@ -102,9 +102,9 @@ versión y licencia en `docs/datasets/ATRIBUCIONES.md` (obligatorio por CC BY 4.
   vehículos, anotados con cajas de placa en Label Studio 1.23.0 (Apache-2.0) ejecutado localmente
   (`uvx --python 3.13 label-studio==1.23.0`, en `localhost`). Telemetría de Label Studio: NO VERIFICADO
   cómo desactivarla; revisar su documentación antes de usarlo.
-- Recortes de avistamientos `confirmed`/`corrected` revisados en la CLI: **DECISIÓN PENDIENTE DEL USUARIO**.
-  Exportarlos para entrenar exige escribir recortes descifrados en disco (contradice SEG-07) y conservarlos
-  más allá de la retención de 30/90 días (SEG-03). No se especifica hasta que el usuario decida la política.
+- Recortes de avistamientos `confirmed`/`corrected` revisados en la CLI: `lector dataset export-reviewed` (spec 035)
+  los escribe en `training/ocr/datasets/own/reviewed-<fecha>/` (formato fast-plate-ocr, 0600, gitignored, auditado) y
+  se borran a los `retention.training_days` días (180 por defecto). Decisión del usuario 2026-09-26.
 
 ### 5.3 Metas de cantidad (objetivos de trabajo, no hechos)
 | Modelo | Train | Val | Composición |

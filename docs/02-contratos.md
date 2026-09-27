@@ -361,6 +361,10 @@ class ExportStore(Protocol):
     def write_sightings(self, records: Sequence[SightingRecord], created_at: datetime) -> Path: ...
     def delete_older_than(self, cutoff: datetime) -> int: ...
 
+class TrainingExportStore(Protocol):
+    def write_samples(self, samples: Sequence[tuple[str, ImageBGR]], created_at: datetime) -> Path: ...
+    def delete_older_than(self, cutoff: datetime) -> int: ...
+
 class KeyProvider(Protocol):
     def master_key(self) -> bytes: ...
 
@@ -519,6 +523,22 @@ class ReviewSightings:
                  clock: Clock) -> None: ...
     def execute(self, limit: int) -> ReviewSummary: ...
 ```
+
+`application/export_reviewed.py` (spec 035)
+```python
+@dataclass(frozen=True, slots=True)
+class ExportReviewedResult:
+    path: Path
+    exported: int
+    skipped: int
+
+class ExportReviewedCrops:
+    def __init__(self, repository: PlateRepository, crop_store: CropStore,
+                 training_store: TrainingExportStore, clock: Clock) -> None: ...
+    def execute(self) -> ExportReviewedResult: ...
+```
+Cambios de la spec 035 en `application/purge_expired.py`: `RetentionPolicy.training_days: int = 180`,
+`PurgeResult.training_deleted: int = 0` y `PurgeExpiredData(..., policy, training_store: TrainingExportStore | None = None)`.
 
 ## 6. Infraestructura (firmas públicas)
 

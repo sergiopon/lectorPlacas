@@ -10,11 +10,11 @@
 |---|---|
 | SEG-01 | La BD DEBE estar cifrada con SQLCipher; los recortes DEBEN estar cifrados con AES-256-GCM (ADR-005). NO DEBE existir ningún archivo con texto de placa o imagen de placa en claro en disco. |
 | SEG-02 | La clave maestra DEBE vivir solo en el keyring del SO (servicio `lector-placas`, usuario `master-key`). NO DEBE escribirse en disco, logs, variables de entorno, config ni repo. |
-| SEG-03 | Retención: recortes DEBEN borrarse a los 30 días y registros (avistamientos, corridas, placas huérfanas, exportaciones) a los 90 días (`retention` en config). La purga DEBE ejecutarse al inicio de todo comando que abra la BD y con `lector purge`. |
+| SEG-03 | Retención: recortes DEBEN borrarse a los 30 días y registros (avistamientos, corridas, placas huérfanas, exportaciones) a los 90 días (`retention` en config). La purga DEBE ejecutarse al inicio de todo comando que abra la BD y con `lector purge`. Las exportaciones de entrenamiento (`training/ocr/datasets/own/`) se borran a los `retention.training_days` días (180 por defecto) con la misma purga. |
 | SEG-04 | Todo el proceso DEBE ejecutarse con `os.umask(0o077)` (primera instrucción de `cli/main.py`). Directorios de datos, logs y exportaciones DEBEN ser 0700; archivos 0600. |
 | SEG-05 | Los logs NO DEBEN contener texto de placa en claro: el código DEBE usar `mask_plate()` y los handlers DEBEN tener `PlateRedactionFilter`. `audit_log.detail` NO DEBE contener texto de placa. |
 | SEG-06 | NO DEBE guardarse la ruta ni el nombre del video en BD; solo su SHA-256 y metadatos técnicos. |
-| SEG-07 | Los recortes descifrados NO DEBEN escribirse a disco; solo existen en memoria durante la revisión. |
+| SEG-07 | Los recortes descifrados NO DEBEN escribirse a disco; solo existen en memoria durante la revisión. Excepción controlada (decisión del usuario 2026-09-26): `lector dataset export-reviewed` escribe los recortes de avistamientos `confirmed`/`corrected` en `training/ocr/datasets/own/` (directorios 0700, archivos 0600, gitignored), registra `audit_log` y solo sirve para reentrenar el OCR localmente; nunca salen de la máquina ni van a la API externa. |
 | SEG-08 | La exportación CSV DEBE escribirse solo en `data/exports/` (0600), registrarse en `audit_log` y protegerse contra inyección CSV (prefijo `'`). |
 
 ## 2. API externa (DeepSeek) y datos de prueba

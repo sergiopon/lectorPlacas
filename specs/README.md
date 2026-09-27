@@ -40,10 +40,11 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 032 | [Entrenamiento del OCR (fine-tuning)](032-entrenamiento-ocr.md) | 000 (031 para entrenar con datos reales) | Implementada |
 | 033 | [Generador de placas sintéticas](033-generador-sintetico.md) | 032 | Implementada |
 | 034 | [Revisión: interfaz en la ventana](034-revision-ui-ventana.md) | 027 | Implementada |
+| 035 | [Exportar lecturas revisadas para reentrenar el OCR](035-exportar-revisados.md) | 006, 021, 025, 026, 028, 031 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
-Pendiente de decisión del usuario: exportar recortes propios (descifrados) para entrenar — choca con SEG-07 y SEG-03 (ver docs/04-evaluacion.md §5.2).
+Decisión del usuario (2026-09-26): exportar lecturas revisadas con retención propia (180 días) → spec 035; excepción documentada en SEG-07/SEG-03 y ADR-005.
 
 ## Correcciones de specs (hechas por el orquestador)
 
@@ -59,3 +60,4 @@ Pendiente de decisión del usuario: exportar recortes propios (descifrados) para
 | 2026-09-26 | 032 | Paso 5.6: la exportación ONNX se hace en un subproceso con `KERAS_BACKEND=tensorflow` y `CUDA_VISIBLE_DEVICES=""` sobre una copia del `.keras` sin `compile_config`; nota en ADR-011 y ADR-003 | `torch.onnx` falla con `SymbolicValueError` en el kernel de `PatchExtractor` con `--dynamic-batch`; el `compile_config` del modelo torch referencia `keras.src.backend.torch.optimizers.torch_adamw` y aborta el proceso al cargarse con TensorFlow; con la GPU visible, grappler de TF falla |
 | 2026-09-26 | 028, 029, SEG-20, ADR-012 | `main` lee la clave maestra (`args.keys`) antes de `block_network()`; los comandos reutilizan el proveedor | La guardia bloquea el socket Unix de D-Bus y el keyring fallaba (`KeyUnavailableError`) en todo comando con BD |
 | 2026-09-26 | 027 → 034 | La UI de revisión pasa a interactuar solo dentro de la ventana (bucle de `waitKey`, campo de edición, diseño nuevo); spec 034 reemplaza el adaptador de 027 | Con Qt5/XWayland la ventana no se dibujaba o quedaba "no responde" mientras `input()` bloqueaba la terminal |
+| 2026-09-26 | SEG-03, SEG-07, ADR-005, docs/02-04, CONTEXT | Excepción controlada para exportar lecturas revisadas y `retention.training_days` | Decisión del usuario: reentrenar el OCR con sus lecturas confirmadas/corregidas |

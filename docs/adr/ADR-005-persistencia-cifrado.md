@@ -33,3 +33,8 @@ SO, un solo operador local y retención 30 días (recortes) / 90 días (registro
 - (−) Sin sesión gráfica/SecretService desbloqueado el sistema no arranca (`KeyUnavailableError`).
 - (−) Perder el keyring = perder los datos (aceptado: son datos de retención corta).
 - Los tests usan un `KeyProvider` falso con clave sintética.
+
+## Actualización 2026-09-26
+Por decisión del usuario, las lecturas revisadas (`confirmed`/`corrected`) pueden exportarse descifradas para reentrenar
+el OCR (`lector dataset export-reviewed`, spec 035): excepción controlada a SEG-07, con retención propia
+`retention.training_days` (180 días) aplicada por la purga, permisos 0600/0700 y registro en `audit_log`.
