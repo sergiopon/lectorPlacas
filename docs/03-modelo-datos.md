@@ -295,8 +295,8 @@ models:
      sha256: 8676a19b5388ce852b0a71fcb6ced841efce33bbc2fa638fbf2a76484f4ea770, size_bytes: 9804866,
      license: AGPL-3.0, source: "YOLO26n fine-tuneado con placas colombianas (spec 030)"}
   - {model_id: fpo-cct-xs-v2-colombia, filename: fpo-cct-xs-v2-colombia.onnx, url: null,
-     sha256: PENDIENTE_EXPORT, size_bytes: 0,
-     license: MIT, source: "cct-xs-v2-global fine-tuneado con placas colombianas (spec 032)"}
+     sha256: 2a057dd8922cd5267fe6fe66c3d09dee6119bacc8929b36a26c06c70f2a327e8, size_bytes: 3080105,
+     license: MIT, source: "cct-xs-v2-global fine-tuneado con placas colombianas (spec 032; ADR-014 v1, PROVISIONAL: no cumple M-04: CER 0,0373 > 0,03 y cota IC 95 % 0,0667 > 0,05 sobre mix_v1/test, n=215)"}
 ```
 
 - `sha256: PENDIENTE_EXPORT` es el único valor no hexadecimal admitido y significa "aún no exportado":
