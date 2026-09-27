@@ -157,7 +157,10 @@ datasets:
    - `cmd_prepare`: ejecuta `cmd_download` (con `args.only = None`) y luego, si no existen: `merge_detection(sources, raw_detector,
      resolve_within(config.root_dir, DETECTOR_ROOT / "datasets" / MERGED_OUTPUT))` y
      `chars_to_ocr(raw_ocr / "ocr_placas_colombia", resolve_within(config.root_dir, OCR_DATASETS_ROOT / OCR_OUTPUT), config.plate_catalog())`;
-     si la salida ya existe escribe `"<salida>: ya preparado"`. Escribe los conteos de cada resumen. Devuelve 0.
+     si la salida ya existe **y no está vacía** escribe `"<salida>: ya preparado"`. Si `merge_detection` o `chars_to_ocr` lanzan
+     `DatasetError`, se borra con `shutil.rmtree(salida, ignore_errors=True)` la carpeta de salida (solo pudo existir vacía o
+     haberla creado esa llamada) y se relanza la excepción: una preparación fallida nunca deja una salida parcial que la siguiente
+     ejecución tome por lista (corrección 2026-09-26). Escribe los conteos de cada resumen. Devuelve 0.
    - Toda salida de consola: nombres de datasets y conteos; nunca la clave ni URLs.
 
 ## Casos borde y manejo de errores
@@ -354,6 +357,30 @@ def test_missing_api_key_exits_2_without_network(tmp_path: Path, monkeypatch: py
     code = cli_main.main(["--config", str(tmp_path / "config" / "lector.yaml"), "dataset", "download"])
     assert code == 2
     assert not (tmp_path / "training").exists()
+
+
+def test_prepare_merged_removes_partial_output_when_merge_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from types import SimpleNamespace
+
+    from lector_placas.cli import dataset_download_commands as commands
+    from lector_placas.domain.errors import DatasetError
+
+    def broken(sources: Path, raw_root: Path, output: Path) -> None:
+        output.mkdir(parents=True)
+        (output / "data.yaml").write_text("parcial", encoding="utf-8")
+        raise DatasetError("etiqueta inválida: a.txt:1")
+
+    monkeypatch.setattr(commands, "merge_detection", broken)
+    output = tmp_path / "training" / "detector" / "datasets" / "merged"
+    with pytest.raises(DatasetError):
+        commands._prepare_merged(SimpleNamespace(root_dir=tmp_path))
+    assert not output.exists()
+    output.mkdir(parents=True)  # una carpeta vacía tampoco cuenta como "ya preparado"
+    with pytest.raises(DatasetError):
+        commands._prepare_merged(SimpleNamespace(root_dir=tmp_path))
+    assert not output.exists()
 ```
 
 ## Fuera de alcance

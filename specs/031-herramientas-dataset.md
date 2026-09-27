@@ -108,8 +108,11 @@ def cmd_chars_to_ocr(args: argparse.Namespace, config: AppConfig) -> int: ...
 ## Comportamiento esperado
 1. `dhash(image)`: gris (`cv2.COLOR_BGR2GRAY`), `cv2.resize(gray, (9, 8), interpolation=cv2.INTER_AREA)`, `bits = resized[:, 1:] > resized[:, :-1]`
    (8×8); entero de 64 bits recorriendo `bits.flatten()` de izquierda a derecha como bits de mayor a menor peso. `hamming(a, b) = (a ^ b).bit_count()`.
-2. `parse_label_file(path)`: archivo inexistente o vacío → `[]`; cada línea no vacía debe tener 5 campos (`int float float float float`)
-   dentro de los rangos de `YoloBox`; si no → `DatasetError(f"etiqueta inválida: {path.name}:{n}")`.
+2. `parse_label_file(path)`: archivo inexistente o vacío → `[]`; cada línea no vacía es una caja de 5 campos (`int float float float float`)
+   o un **polígono** (corrección 2026-09-26: Roboflow exporta `yolov8` con polígonos en proyectos con anotación de segmentación):
+   `clase x1 y1 x2 y2 ... xn yn` con `n >= 3` (número **impar** de campos, mínimo 7), que se convierte en su caja envolvente:
+   `cx = (min(x) + max(x)) / 2`, `w = max(x) - min(x)` (ídem y). El resultado debe cumplir los rangos de `YoloBox`; cualquier otra
+   forma (p. ej. 4, 6 u 8 campos, valores no numéricos, o polígono de ancho o alto 0) → `DatasetError(f"etiqueta inválida: {path.name}:{n}")`.
    `format_labels(boxes)`: una línea por caja `f"{c} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"`, terminada en `"\n"` si hay cajas; `""` si no.
    `yolo_to_pixels`: `x1 = (cx - w/2) * width`, `x2 = (cx + w/2) * width` (ídem y), limitado a la imagen; vacío → `None`.
    `read_class_names(data_yaml)`: `yaml.safe_load`; `names` lista → `dict(enumerate(...))`; dict → claves `int`; otro → `DatasetError`.
@@ -248,12 +251,31 @@ def test_parse_and_format(tmp_path: Path) -> None:
     assert parse_label_file(tmp_path / "missing.txt") == []
 
 
-@pytest.mark.parametrize("line", ["1 0.5 0.5 0.2", "x 0.5 0.5 0.2 0.1", "1 1.5 0.5 0.2 0.1", "1 0.5 0.5 0 0.1"])
+@pytest.mark.parametrize(
+    "line",
+    [
+        "1 0.5 0.5 0.2",
+        "x 0.5 0.5 0.2 0.1",
+        "1 1.5 0.5 0.2 0.1",
+        "1 0.5 0.5 0 0.1",
+        "1 0.5 0.5 0.2 0.1 0.3",
+        "1 0.2 0.2 0.6 0.2 0.2 0.2",
+    ],
+)
 def test_invalid_lines(tmp_path: Path, line: str) -> None:
     label = tmp_path / "b.txt"
     label.write_text(line, encoding="utf-8")
     with pytest.raises(DatasetError):
         parse_label_file(label)
+
+
+def test_polygon_becomes_bounding_box(tmp_path: Path) -> None:
+    label = tmp_path / "p.txt"
+    label.write_text("3 0.2 0.2 0.6 0.2 0.6 0.4 0.2 0.4\n1 0.5 0.5 0.2 0.1", encoding="utf-8")
+    polygon, box = parse_label_file(label)
+    assert polygon.class_id == 3
+    assert (polygon.cx, polygon.cy, polygon.w, polygon.h) == pytest.approx((0.4, 0.3, 0.4, 0.2))
+    assert box == YoloBox(1, 0.5, 0.5, 0.2, 0.1)
 
 
 def test_pixels_and_names(tmp_path: Path) -> None:
