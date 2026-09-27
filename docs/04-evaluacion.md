@@ -66,6 +66,12 @@ cuentan con su texto corregido pero se reportan aparte (no deben existir en una 
 
 Reporte por subconjunto y global, más desglose `car` vs `motorcycle` y `fixed` vs `handheld`.
 
+**Métricas sin ground truth manual (decisión del usuario 2026-09-26):**
+- Detector de placas sobre dataset (spec 037): precisión, recall y F1 a IoU ≥ 0,5 en el split `val` del dataset unificado.
+- Desde la revisión (spec 038): aproximación de M-01 = confirmadas auditadas que siguen `confirmed` / confirmadas
+  auditadas (`lector review --status confirmed`), y CER sobre datos reales = Levenshtein(`ocr_text`, `plate_text`)
+  en avistamientos revisados no rechazados. Son estimaciones por muestreo; no sustituyen M-02/M-03 (requieren GT).
+
 ## 4. Spec del script de evaluación
 Se implementa en `specs/029-evaluacion.md` (módulo `lector_placas.evaluation`):
 - `lector evaluate --video <archivo> --ground-truth <json> [--profile <p>]`: procesa el video con el
