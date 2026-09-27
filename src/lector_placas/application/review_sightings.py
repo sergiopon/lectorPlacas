@@ -24,6 +24,11 @@ AUDIT_PAGE_SIZE: Final[int] = 500
 REVIEWABLE_STATUSES: Final[frozenset[ReviewStatus]] = frozenset(
     {ReviewStatus.UNVERIFIED, ReviewStatus.CONFIRMED}
 )
+APPLICABLE_ACTIONS: Final[dict[ReviewAction, ReviewStatus]] = {
+    ReviewAction.CONFIRM: ReviewStatus.CONFIRMED,
+    ReviewAction.CORRECT: ReviewStatus.CORRECTED,
+    ReviewAction.REJECT: ReviewStatus.REJECTED,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,10 +56,7 @@ class _Counters:
 
     def detail(self) -> str:
         """Compone el detalle de auditoría, sin texto de placa."""
-        return (
-            f"confirmados={self.confirmed} corregidos={self.corrected} "
-            f"rechazados={self.rejected} omitidos={self.skipped}"
-        )
+        return _detail(self.confirmed, self.corrected, self.rejected, self.skipped)
 
 
 class ReviewSightings:
@@ -159,6 +161,66 @@ class ReviewSightings:
             counters.rejected += 1
         elif action is ReviewAction.SKIP:
             counters.skipped += 1
+
+
+class DecideSighting:
+    """Aplica una sola decisión del operador a un avistamiento concreto."""
+
+    def __init__(self, repository: PlateRepository, clock: Clock) -> None:
+        """Crea el caso de uso con sus dependencias.
+
+        Args:
+            repository: repositorio de avistamientos y auditoría.
+            clock: fuente de la hora actual en UTC.
+        """
+        self._repository = repository
+        self._clock = clock
+
+    def execute(self, sighting_id: int, decision: ReviewDecision) -> SightingRecord:
+        """Registra una decisión sobre un solo avistamiento.
+
+        Vale cualquier acción aplicable (`CONFIRM`, `CORRECT`, `REJECT`) sobre un avistamiento
+        en cualquier estado; el operador puede cambiar de opinión. `ocr_text` nunca cambia.
+
+        Args:
+            sighting_id: identificador del avistamiento a decidir.
+            decision: acción del operador y, si procede, el texto corregido.
+
+        Returns:
+            El registro del avistamiento ya actualizado.
+
+        Raises:
+            ReviewError: si la acción no es aplicable a un avistamiento (`SKIP` o `QUIT`).
+            SightingNotFoundError: si no existe el avistamiento indicado.
+            RepositoryError: si el repositorio rechaza la operación.
+        """
+        status = APPLICABLE_ACTIONS.get(decision.action)
+        if status is None:
+            raise ReviewError(f"acción no aplicable a un avistamiento: {decision.action.value}")
+        reviewed_at = self._clock.now()
+        corrected_text = decision.corrected_text if status is ReviewStatus.CORRECTED else None
+        self._repository.record_review(sighting_id, status, corrected_text, reviewed_at)
+        self._repository.log_event(
+            AuditEvent.REVIEW, self._clock.now(), _action_detail(decision.action)
+        )
+        return self._repository.get_sighting(sighting_id)
+
+
+def _detail(confirmed: int, corrected: int, rejected: int, skipped: int) -> str:
+    """Compone el detalle de auditoría de una revisión, sin texto de placa."""
+    return (
+        f"confirmados={confirmed} corregidos={corrected} rechazados={rejected} omitidos={skipped}"
+    )
+
+
+def _action_detail(action: ReviewAction) -> str:
+    """Compone el detalle de auditoría de una única decisión aplicada."""
+    return _detail(
+        int(action is ReviewAction.CONFIRM),
+        int(action is ReviewAction.CORRECT),
+        int(action is ReviewAction.REJECT),
+        0,
+    )
 
 
 def _require_limit(limit: int) -> None:
