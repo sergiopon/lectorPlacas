@@ -6,23 +6,16 @@ from typing import Final
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import (
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QTabWidget
 
 from lector_placas.application.purge_expired import PurgeResult
+from lector_placas.gui.maintenance_tab import MaintenanceTab
 from lector_placas.gui.process_tab import ProcessTab
 from lector_placas.gui.session import GuiSession
 from lector_placas.gui.sightings_tab import SightingsTab
 
 WINDOW_TITLE: Final[str] = "lectorPlacas"
 TAB_TITLES: Final[tuple[str, str, str]] = ("Procesar", "Avistamientos", "Exportar y retención")
-PLACEHOLDER_TEXT: Final[str] = "Disponible en una versión posterior"
 CLOSE_BUSY_MESSAGE: Final[str] = "Hay un procesamiento en curso. ¿Cancelarlo y salir?"
 WINDOW_WIDTH: Final[int] = 1200
 WINDOW_HEIGHT: Final[int] = 800
@@ -46,13 +39,16 @@ class MainWindow(QMainWindow):
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         self._process_tab = ProcessTab(session)
         self._sightings_tab = SightingsTab(session)
+        self._maintenance_tab = MaintenanceTab(session)
         self._tabs = QTabWidget(self)
         self._tabs.addTab(self._process_tab, TAB_TITLES[0])
         self._tabs.addTab(self._sightings_tab, TAB_TITLES[1])
-        self._tabs.addTab(_placeholder_page(self._tabs), TAB_TITLES[2])
+        self._tabs.addTab(self._maintenance_tab, TAB_TITLES[2])
         self._process_tab.busy_changed.connect(self.set_busy)
         self.busy_changed.connect(self._sightings_tab.set_busy)
+        self.busy_changed.connect(self._maintenance_tab.set_busy)
         self._process_tab.run_finished.connect(self._sightings_tab.search)
+        self._maintenance_tab.data_changed.connect(self._sightings_tab.search)
         self.setCentralWidget(self._tabs)
         self.statusBar().showMessage(
             f"Purga al abrir: recortes={purge.crops_deleted} "
@@ -99,11 +95,3 @@ class MainWindow(QMainWindow):
         self._process_tab.wait_for_worker()
         self._session.close()
         event.accept()
-
-
-def _placeholder_page(parent: QWidget) -> QWidget:
-    """Crea una pestaña vacía con el aviso de que su contenido llega en otra versión."""
-    page = QWidget(parent)
-    layout = QVBoxLayout(page)
-    layout.addWidget(QLabel(PLACEHOLDER_TEXT, page))
-    return page
