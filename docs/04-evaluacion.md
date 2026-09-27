@@ -127,6 +127,9 @@ versión y licencia en `docs/datasets/ATRIBUCIONES.md` (obligatorio por CC BY 4.
 Primera iteración del OCR (ADR-014, 2026-09-27): con los datos disponibles se entrena con 1 106 recortes (553 reales +
 553 sintéticos, 20,1 % motos) y se evalúa con 88 reales en val (elección de checkpoint) y 215 reales en un `test`
 apartado (aceptación). Las metas de esta tabla no se cumplen todavía y se mantienen para las iteraciones siguientes.
+El `test` de `mix_v1` (seed 0) queda congelado como referencia de todas las versiones futuras. Un modelo que cumple M-04 y el
+resto del criterio se acepta; uno que mejora al base pero no cumple M-04 (CER > 3 % o IC 95 % > 5 %) se registra como
+provisional, marcado como que no cumple M-04 (ADR-014).
 
 ### 5.4 Etiquetado y consistencia
 - Detector: una caja ajustada al borde exterior de la placa (incluye el texto de municipio/"COLOMBIA").

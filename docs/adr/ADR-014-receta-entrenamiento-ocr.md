@@ -1,6 +1,7 @@
 # ADR-014 — Receta del primer fine-tuning real del OCR
 
-- Estado: Propuesto (2026-09-27). Pendiente de confirmación del usuario (ver "Decisiones que requieren confirmación").
+- Estado: Aprobado (2026-09-27). Las tres decisiones de "Decisiones confirmadas" se aprobaron con un ajuste: la aceptación
+  en dos niveles (aceptado / provisional / rechazado) y el test congelado.
 - Requisitos: M-04 (CER ≤ 3 %), docs/04-evaluacion.md §5.3–5.4; ADR-003 (fine-tuning obligatorio).
 
 ## Contexto
@@ -97,25 +98,51 @@ cumplen todas las condiciones:
 Si el CER de motos empeora respecto al modelo base, se emite un aviso pero no se rechaza el modelo: con ≈ 24 recortes
 de 5 componentes la muestra no basta para decidir.
 
-**Registro.** Solo con `decision=ACEPTAR`, el operador:
+**Aceptación en dos niveles (ajuste aprobado el 2026-09-27).** `evaluate_ocr` no cambia: el operador toma el veredicto
+leyendo las cinco condiciones de su reporte. Negarse a sustituir un modelo peor por otro claramente mejor no protege
+nada: la protección contra falsos positivos la da el consolidador (M-01), no el OCR.
+
+| Resultado | Condiciones | Qué pasa |
+|---|---|---|
+| **Aceptado** | Cumple 1 a 5 | Se registra; cumple M-04. |
+| **Provisional** | Cumple 1, 4 y 5, pero falla la 2 o la 3 | Se registra y sustituye al modelo base, marcado como **que no cumple M-04**. |
+| **Rechazado** | Falla la 1, la 4 o la 5 | No se registra. |
+
+- Un modelo **provisional** cuyo CER de motos empeora respecto al modelo base **no** sustituye al base (queda sin
+  registrar, como un rechazado). En un modelo aceptado esa regresión solo emite el aviso descrito arriba.
+- Para un provisional, el reporte JSON y el campo `source` de la entrada del manifiesto dicen explícitamente
+  "provisional: no cumple M-04" y citan qué condición falló (2 o 3) con sus cifras.
+- Con `decision=RECHAZAR` en el reporte de `evaluate_ocr`, el operador **no** borra ni descarta el modelo antes de
+  aplicar esta tabla: el reporte no distingue entre provisional y rechazado.
+
+**Registro.** Con un modelo aceptado o provisional, el operador:
 1. Copia el `sha256` y el `size_bytes` que imprime `train.py` en la entrada `fpo-cct-xs-v2-colombia` de
-   `config/models.yaml`.
+   `config/models.yaml` (con el `source` que corresponda al nivel).
 2. Cambia `models.ocr.model_id` en `config/lector.yaml`.
 3. Ejecuta `lector models verify` y `lector evaluate-ocr --crops training/ocr/datasets/mix_v1/test/annotations.csv`,
    que debe dar el mismo CER que `evaluate_ocr` con una diferencia de 0,005 como máximo. Si no, hay un desajuste de
    preprocesado y se investiga antes de usar el modelo.
 
-**No se registra** si falla cualquier condición. Tampoco si el modelo se eligió mirando el test: cambiar la receta
-después de ver el test obliga a crear otra mezcla con otra `seed` y a declararlo. Con `RECHAZAR`, `models.ocr.model_id`
-sigue en `fpo-cct-xs-v2-global` y el `.onnx` copiado a `models/fpo-cct-xs-v2-colombia/` queda sin registrar. El runtime
-no lo carga porque su SHA-256 no coincide con el manifiesto (ADR-012).
+**No se registra** un modelo rechazado, ni un provisional con regresión en motos. Tampoco si el modelo se eligió
+mirando el test: cambiar la receta después de ver el test obliga a crear otra mezcla con otra `seed` y a declararlo.
+Sin registro, `models.ocr.model_id` sigue en `fpo-cct-xs-v2-global` y el `.onnx` copiado a
+`models/fpo-cct-xs-v2-colombia/` queda sin registrar. El runtime no lo carga porque su SHA-256 no coincide con el
+manifiesto (ADR-012).
+
+**Test congelado.** El `test` de `mix_v1` (`--seed 0`) es la referencia fija de todas las versiones futuras del OCR:
+no se vuelve a repartir y nunca se usa para entrenar ni para elegir checkpoint. Los datos nuevos (p. ej. lecturas
+revisadas de la spec 035) entran solo a `train` o `val` y no mueven los vehículos ya asignados a `test`; la spec de la
+versión 2 debe exigirlo.
+
+**Esta es la versión 1.** Se registra con su tamaño real (1 106 de train, 215 de test); no se presenta como
+cumplimiento de las cantidades de §5.3, que siguen siendo el objetivo de la versión 2.
 
 ## Consecuencias
 - (+) Ningún vehículo aparece a la vez en train y en val/test. La aceptación se mide con datos reales no vistos, con
   intervalo y contra el modelo base.
 - (+) La cuota de motos se cumple en train sin superar el 50 % de sintéticos.
 - (−) El test de ≈ 215 recortes (≈ 98 vehículos) sigue siendo pequeño: el IC 95 % puede superar el 5 % aunque el CER
-  puntual sea bueno, y en ese caso se rechaza. Es el comportamiento buscado: primero la precisión.
+  puntual sea bueno; en ese caso el modelo queda como provisional (no cumple M-04) si mejora al base, no se rechaza.
 - (−) Se entrena con 303 recortes reales menos que con `ocr_colombia` completo (553 frente a 856), que se reservan para val y test.
 - (−) Las motos de train son en su mayoría sintéticas (186 de 222); si su render no se parece a las reales, el aviso
   de regresión en motos lo mostrará.
@@ -132,10 +159,13 @@ no lo carga porque su SHA-256 no coincide con el manifiesto (ADR-012).
   `val_acc`. Requiere una spec que modifique `train.py` y su test de lista exacta. El valor adecuado para fine-tuning
   está NO VERIFICADO.
 
-## Decisiones que requieren confirmación del usuario
-1. Aceptar que la primera iteración no cumple las cantidades de §5.3 (1 106 de train y 303 reales de evaluación) y que
-   se registre igualmente si pasa el criterio de aceptación.
-2. Sacar el 30 % de los componentes reales del entrenamiento para val y test, en lugar de entrenar con más datos
-   reales y medir con menos.
-3. Los umbrales nuevos que no estaban en docs/04: IC 95 % ≤ 5 %, mínimo de 100 recortes de test y mejora estricta
-   sobre el modelo base.
+## Decisiones confirmadas (2026-09-27)
+1. **Cantidades de §5.3.** La primera iteración no las cumple (1 106 de train y 303 reales de evaluación) y se registra
+   igualmente si pasa el criterio. Las metas de §5.3 no se rebajan: son el objetivo de la versión 2, cuya fuente
+   verificable son las lecturas revisadas (spec 035). Un tope de sintéticos ≤ 50 % hace inalcanzable 5 000 con los
+   datos actuales sin que el modelo aprenda el render.
+2. **30 % de los componentes reales para val y test.** Con menos, el test bajaría de 100 vehículos y el IC dejaría de
+   medir; la validación cruzada multiplica el costo por 5 y no deja un test fijo comparable entre versiones. Se añade
+   la condición del test congelado.
+3. **Umbrales nuevos:** IC 95 % ≤ 5 %, mínimo de 100 recortes de test y mejora estricta sobre el modelo base, con el
+   nivel provisional descrito arriba.
