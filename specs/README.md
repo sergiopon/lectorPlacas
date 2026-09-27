@@ -50,7 +50,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 042 | [GUI: dependencia, arranque, sesión y ventana](042-gui-base.md) | 028, 041 | Implementada |
 | 043 | [GUI: pestaña Procesar](043-gui-procesar.md) | 040, 041, 042 | Implementada |
 | 044 | [GUI: avistamientos y revisión en diálogo Qt](044-gui-avistamientos-revision.md) | 038, 041, 042, 043 | Implementada |
-| 045 | [GUI: exportar, retención y métricas](045-gui-exportar-retencion-metricas.md) | 025, 026, 038, 042–044 | Lista |
+| 045 | [GUI: exportar, retención y métricas](045-gui-exportar-retencion-metricas.md) | 025, 026, 038, 042–044 | Implementada |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
