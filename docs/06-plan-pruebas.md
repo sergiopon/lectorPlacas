@@ -47,7 +47,7 @@ implementador con la descripción del caso, sin el código del test.
 
 | Prueba | Método | Criterio |
 |---|---|---|
-| Red bloqueada | `pytest` de extremo a extremo con `block_network()` real y un modelo sintético; más `strace -f -e trace=connect` durante `lector process` en la RTX 5050 | 0 llamadas `connect` a la red |
+| Red bloqueada | `pytest` de extremo a extremo con `block_network()` real y un modelo sintético; más `strace -f -e trace=connect` durante `lector process` en la RTX 5050 | 0 llamadas `connect` a la red (incluye las de código nativo, p. ej. la telemetría de ONNX Runtime; SEG-20) |
 | Permisos | Script que recorre `data/` y `logs/` tras una corrida | Directorios 0700, archivos 0600 |
 | Placas en claro | Buscar el patrón de `PLATE_PATTERN` en `logs/`, exportaciones del `audit_log` y reportes tras una corrida con placas sintéticas renderizadas | 0 coincidencias sin enmascarar |
 | Cifrado en reposo | Buscar `SQLite format 3`, `\x89PNG` y los textos sintéticos en `data/` | 0 coincidencias |

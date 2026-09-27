@@ -16,6 +16,7 @@ cero llamadas de red durante el procesamiento y modelos verificados por SHA-256.
 3. Runtime: `ManifestModelRegistry.verified_path(model_id)` recalcula el SHA-256 en cada carga; si no
    coincide → `ModelIntegrityError` y el proceso termina (código 4). Los adaptadores reciben rutas
    locales (`onnx_model_path`, `plate_config_path`, `model_path`), nunca nombres de hub.
+4-bis. (Corrección 2026-09-27) La guardia de Python no cubre código nativo: ONNX Runtime 1.30 sube telemetría por HTTPS desde un hilo C++; se desactiva con `ORT_DISABLE_TELEMETRY=1` fijada en `lector_placas/__init__.py` antes de importar `onnxruntime` (SEG-20).
 4. Guardia de red: todos los comandos salvo `models fetch` llaman a `block_network()` al inicio, que
    reemplaza `socket.socket.connect`/`connect_ex` y `socket.create_connection` por funciones que
    lanzan `NetworkAccessError`.
