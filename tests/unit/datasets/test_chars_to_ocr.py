@@ -62,3 +62,61 @@ def test_unknown_class(tmp_path: Path) -> None:
     source = make_source(tmp_path / "raw", "fuente", ["placa", "persona"], [])
     with pytest.raises(DatasetError):
         chars_to_ocr(source, tmp_path / "ocr", build_test_catalog())
+
+
+ALT_CHARS = [
+    "5 0.55 0.45 0.08 0.3",
+    "0 0.20 0.45 0.08 0.3",
+    "3 0.75 0.45 0.08 0.3",
+    "2 0.40 0.45 0.08 0.3",
+    "1 0.30 0.45 0.08 0.3",
+    "4 0.65 0.45 0.08 0.3",
+]
+
+
+def test_train_only_source_is_split_by_group(tmp_path: Path) -> None:
+    # sha256(grupo) % 10: gA -> 0 (val); gB -> 3 y gD -> 5 (train)
+    source = make_source(
+        tmp_path / "raw",
+        "fuente",
+        NAMES,
+        [
+            ("train", "gA.rf.a1", noise(1, 100, 200), [PLATE, *ALT_CHARS]),
+            ("train", "gA.rf.b2", noise(2, 100, 200), [PLATE, *ALT_CHARS]),
+            ("train", "gB.rf.c3", noise(3, 100, 200), [PLATE, *CHARS]),
+            ("train", "gD.rf.d4", noise(4, 100, 200), [PLATE, *CHARS]),
+        ],
+    )
+    out = tmp_path / "ocr"
+    summary = chars_to_ocr(source, out, build_test_catalog())
+    assert (
+        summary.train_crops,
+        summary.val_crops,
+        summary.skipped,
+        summary.dropped_duplicates,
+    ) == (2, 2, 0, 0)
+    val_rows = list(csv.DictReader((out / "val" / "annotations.csv").open(encoding="utf-8")))
+    assert sorted(row["image_path"] for row in val_rows) == [
+        "images/fuente__gA.rf.a1_0.png",
+        "images/fuente__gA.rf.b2_0.png",
+    ]
+    assert {row["plate_text"] for row in val_rows} == {"ABC321"}
+
+
+def test_group_split_drops_val_text_already_in_train(tmp_path: Path) -> None:
+    source = make_source(
+        tmp_path / "raw",
+        "fuente",
+        NAMES,
+        [
+            ("train", "gA.rf.a1", noise(1, 100, 200), [PLATE, *CHARS]),
+            ("train", "gB.rf.c3", noise(3, 100, 200), [PLATE, *CHARS]),
+        ],
+    )
+    summary = chars_to_ocr(source, tmp_path / "ocr", build_test_catalog())
+    assert (
+        summary.train_crops,
+        summary.val_crops,
+        summary.skipped,
+        summary.dropped_duplicates,
+    ) == (1, 0, 0, 1)

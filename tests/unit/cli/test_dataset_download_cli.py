@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_parser_download_and_prepare_use_network() -> None:
     parser = build_parser()
-    download = parser.parse_args(["dataset", "download", "--only", "usco"])
-    assert (download.network, download.only) == (True, ["usco"])
+    download = parser.parse_args(["dataset", "download", "--only", "motos_placas"])
+    assert (download.network, download.only) == (True, ["motos_placas"])
     assert parser.parse_args(["dataset", "prepare"]).network is True
     assert getattr(download, "key", None) is None
 

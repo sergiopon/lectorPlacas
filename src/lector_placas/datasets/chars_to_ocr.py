@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Final, cast
 
@@ -30,6 +31,8 @@ IGNORED_CLASSES: Final[frozenset[str]] = frozenset({"ciudad"})
 ANNOTATIONS_HEADER: Final[tuple[str, ...]] = ("image_path", "plate_text")
 _OUTPUT_SPLITS: Final[tuple[str, ...]] = ("train", "val")
 _CHAR_CLASS_REGEX: Final[re.Pattern[str]] = re.compile(r"^[0-9A-Za-z]$")
+_GROUP_SUFFIX_REGEX: Final[re.Pattern[str]] = re.compile(r"\.rf\.[0-9a-fA-F]+$")
+_GROUP_VAL_DIVISOR: Final[int] = 10
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +85,9 @@ def plate_text_from_boxes(plate: BoundingBox, chars: Sequence[tuple[BoundingBox,
 def chars_to_ocr(source_dir: Path, output_dir: Path, catalog: PlateFormatCatalog) -> OcrSummary:
     """Convierte un dataset anotado por carácter en recortes de placa con su texto.
 
+    Si la fuente solo trae el split `train`, sus recortes se reparten por grupo de
+    imagen de origen para no partir el mismo vehículo entre train y val.
+
     Args:
         source_dir: directorio del dataset de origen, con su `data.yaml`.
         output_dir: directorio de salida; debe estar vacío o no existir.
@@ -100,8 +106,19 @@ def chars_to_ocr(source_dir: Path, output_dir: Path, catalog: PlateFormatCatalog
     _validate_classes(names)
     train, val, skipped = _collect(source_dir, names, catalog)
     kept_val, dropped = _deduplicate(train, val)
+    if not _has_val_split(source_dir):
+        kept_val, dropped = _drop_text_in_train(train, kept_val, dropped)
     _write_crops((*train, *kept_val), output_dir)
     return OcrSummary(len(train), len(kept_val), skipped, dropped)
+
+
+def _has_val_split(source_dir: Path) -> bool:
+    """Indica si la fuente trae algún split de origen que mapea a `val`."""
+    return any(
+        (source_dir / split / "images").is_dir()
+        for split, output_split in SPLIT_MAP.items()
+        if output_split == "val"
+    )
 
 
 def _validate_classes(names: Mapping[int, str]) -> None:
@@ -120,11 +137,16 @@ def _validate_classes(names: Mapping[int, str]) -> None:
 def _collect(
     source_dir: Path, names: Mapping[int, str], catalog: PlateFormatCatalog
 ) -> tuple[list[_Crop], list[_Crop], int]:
-    """Recolecta los recortes de train y val, y cuántos textos se descartaron."""
+    """Recolecta los recortes de train y val, y cuántos textos se descartaron.
+
+    Si la fuente no trae ningún split de val, los recortes de `train` se
+    reparten por grupo de imagen de origen (`_split_by_group`).
+    """
     plate_ids = frozenset(index for index, name in names.items() if name == PLATE_CLASS)
     char_classes = {
         index: name for index, name in names.items() if _CHAR_CLASS_REGEX.fullmatch(name)
     }
+    split_by_group = not _has_val_split(source_dir)
     train: list[_Crop] = []
     val: list[_Crop] = []
     skipped = 0
@@ -139,11 +161,23 @@ def _collect(
             label_path = source_dir / input_split / "labels" / f"{image_path.stem}.txt"
             crops, image_skipped = _image_crops(image_path, label_path, context)
             skipped += image_skipped
-            if output_split == "train":
-                train.extend(crops)
-            else:
-                val.extend(crops)
+            if split_by_group and output_split == "train":
+                crops = _split_by_group(crops, image_path.stem)
+            train.extend(crop for crop in crops if crop.split == "train")
+            val.extend(crop for crop in crops if crop.split == "val")
     return train, val, skipped
+
+
+def _split_by_group(crops: Sequence[_Crop], stem: str) -> list[_Crop]:
+    """Reparte por grupo de imagen de origen los recortes de una fuente solo `train`."""
+    target = _group_split(_GROUP_SUFFIX_REGEX.sub("", stem))
+    return [replace(crop, split=target) for crop in crops]
+
+
+def _group_split(group: str) -> str:
+    """Reserva a `val` la décima parte de los grupos, según el SHA-256 de su nombre."""
+    digest = int(hashlib.sha256(group.encode("utf-8")).hexdigest(), 16)
+    return "val" if digest % _GROUP_VAL_DIVISOR == 0 else "train"
 
 
 def _image_crops(
@@ -204,6 +238,24 @@ def _deduplicate(train: list[_Crop], val: list[_Crop]) -> tuple[list[_Crop], int
         kept.append(entry)
         accepted.append(entry.image_hash)
     return kept, dropped
+
+
+def _drop_text_in_train(
+    train: Sequence[_Crop], val: Sequence[_Crop], dropped: int
+) -> tuple[list[_Crop], int]:
+    """Descarta de val los recortes cuyo texto ya está en train (el mismo vehículo renombrado).
+
+    Args:
+        train: recortes de train aceptados.
+        val: recortes de val conservados tras la deduplicación dHash.
+        dropped: descartes acumulados hasta ahora.
+
+    Returns:
+        Los recortes de val conservados y el total de descartes.
+    """
+    train_texts = {entry.text for entry in train}
+    kept = [entry for entry in val if entry.text not in train_texts]
+    return kept, dropped + len(val) - len(kept)
 
 
 def _write_crops(entries: Sequence[_Crop], output_dir: Path) -> None:
