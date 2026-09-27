@@ -19,10 +19,12 @@ dependencies = [
     "keyring==25.7.0",
     "pydantic==2.13.5",
     "PyYAML==6.0.3",
+    "PySide6-Essentials==6.11.2",
 ]
 
 [project.scripts]
 lector = "lector_placas.cli.main:main"
+lector-gui = "lector_placas.gui.app:main"
 
 [dependency-groups]
 dev = [

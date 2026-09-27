@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Callable
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from lector_placas.adapters.review.opencv_review_ui import OpenCvReviewUI
@@ -25,10 +24,13 @@ from lector_placas.application.ports import (
 from lector_placas.application.purge_expired import PurgeResult
 from lector_placas.application.review_sightings import ReviewSightings
 from lector_placas.cli import composition
+from lector_placas.cli.composition import (
+    validated_video as validated_video,  # noqa: PLC0414  (reexportado para evaluation_commands)
+)
 from lector_placas.domain.entities import ReviewStatus
 from lector_placas.domain.errors import KeyUnavailableError
 from lector_placas.infrastructure.clock import SystemClock
-from lector_placas.infrastructure.input_validation import sha256_file, validate_video_path
+from lector_placas.infrastructure.input_validation import sha256_file
 from lector_placas.infrastructure.model_fetcher import default_opener, fetch_models
 from lector_placas.infrastructure.model_registry import PENDING_EXPORT, load_manifest
 
@@ -77,29 +79,6 @@ def cmd_models_verify(args: argparse.Namespace, config: AppConfig) -> int:
         registry.verified_path(entry.model_id)
         sys.stdout.write(f"{entry.model_id}: ok\n")
     return 0
-
-
-def validated_video(config: AppConfig, path: Path) -> Path:
-    """Valida y resuelve la ruta de un video de entrada (SEG-12).
-
-    Args:
-        config: configuración de la aplicación.
-        path: ruta del video indicada por el usuario.
-
-    Returns:
-        La ruta resuelta del video.
-
-    Raises:
-        InputValidationError: si el video no supera la validación de entrada.
-        UnsafePathError: si el video está fuera de los directorios permitidos.
-    """
-    allowed_dirs = [config.under_root(directory) for directory in config.input.allowed_dirs]
-    return validate_video_path(
-        path,
-        allowed_dirs,
-        frozenset(config.input.allowed_extensions),
-        config.input.max_file_size_mb * 1024 * 1024,
-    )
 
 
 def cmd_process(args: argparse.Namespace, config: AppConfig) -> int:

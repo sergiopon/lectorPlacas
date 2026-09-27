@@ -49,6 +49,7 @@ from lector_placas.application.process_video import (
 from lector_placas.application.purge_expired import PurgeExpiredData, RetentionPolicy
 from lector_placas.domain.consolidation import VotingPlateConsolidator
 from lector_placas.infrastructure.config import AppConfig, ProfileConfig
+from lector_placas.infrastructure.input_validation import validate_video_path
 from lector_placas.infrastructure.model_registry import ManifestModelRegistry
 from lector_placas.infrastructure.paths import ensure_private_dir, resolve_within
 
@@ -66,6 +67,29 @@ def data_dir(config: AppConfig) -> Path:
 def build_key_provider(create_if_missing: bool) -> KeyProvider:
     """Construye el proveedor de la clave maestra respaldado por el llavero del sistema."""
     return KeyringKeyProvider(create_if_missing)
+
+
+def validated_video(config: AppConfig, path: Path) -> Path:
+    """Valida y resuelve la ruta de un video de entrada (SEG-12).
+
+    Args:
+        config: configuración de la aplicación.
+        path: ruta del video indicada por el usuario.
+
+    Returns:
+        La ruta resuelta del video.
+
+    Raises:
+        InputValidationError: si el video no supera la validación de entrada.
+        UnsafePathError: si el video está fuera de los directorios permitidos.
+    """
+    allowed_dirs = [config.under_root(directory) for directory in config.input.allowed_dirs]
+    return validate_video_path(
+        path,
+        allowed_dirs,
+        frozenset(config.input.allowed_extensions),
+        config.input.max_file_size_mb * 1024 * 1024,
+    )
 
 
 def build_repository(config: AppConfig, keys: KeyProvider) -> SqlCipherPlateRepository:
