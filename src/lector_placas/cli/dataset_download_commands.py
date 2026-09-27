@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -145,14 +146,27 @@ def _download_entry(entry: DatasetEntry, fmt: str, api_key: str, config: AppConf
 
 
 def _prepare_merged(config: AppConfig) -> None:
-    """Une los datasets de detección descargados si la salida no existe."""
+    """Une los datasets de detección descargados si la salida no está preparada.
+
+    Args:
+        config: configuración de la aplicación, usada como raíz de las rutas.
+
+    Raises:
+        DatasetError: si la unión falla; antes de relanzar se borra la salida parcial
+            para que la siguiente ejecución no la tome por preparada.
+    """
     output = resolve_within(
         config.root_dir, dataset_commands.DETECTOR_ROOT / "datasets" / MERGED_OUTPUT
     )
-    if output.exists():
+    if output.exists() and any(output.iterdir()):
         sys.stdout.write(f"{MERGED_OUTPUT}: ya preparado\n")
         return
-    summary = merge_detection(_sources_path(config), _raw_root(config, "detector"), output)
+    shutil.rmtree(output, ignore_errors=True)
+    try:
+        summary = merge_detection(_sources_path(config), _raw_root(config, "detector"), output)
+    except DatasetError:
+        shutil.rmtree(output, ignore_errors=True)
+        raise
     sys.stdout.write(
         f"train={summary.train_images} val={summary.val_images} "
         f"duplicados={summary.dropped_duplicates} cajas={summary.boxes}\n"
@@ -160,13 +174,26 @@ def _prepare_merged(config: AppConfig) -> None:
 
 
 def _prepare_ocr(config: AppConfig) -> None:
-    """Convierte el dataset de OCR descargado si la salida no existe."""
+    """Convierte el dataset de OCR descargado si la salida no está preparada.
+
+    Args:
+        config: configuración de la aplicación, usada como raíz de las rutas.
+
+    Raises:
+        DatasetError: si la conversión falla; antes de relanzar se borra la salida
+            parcial para que la siguiente ejecución no la tome por preparada.
+    """
     output = resolve_within(config.root_dir, dataset_commands.OCR_DATASETS_ROOT / OCR_OUTPUT)
-    if output.exists():
+    if output.exists() and any(output.iterdir()):
         sys.stdout.write(f"{OCR_OUTPUT}: ya preparado\n")
         return
+    shutil.rmtree(output, ignore_errors=True)
     source = resolve_within(_raw_root(config, "ocr"), Path("ocr_placas_colombia"))
-    summary = chars_to_ocr(source, output, config.plate_catalog())
+    try:
+        summary = chars_to_ocr(source, output, config.plate_catalog())
+    except DatasetError:
+        shutil.rmtree(output, ignore_errors=True)
+        raise
     sys.stdout.write(
         f"train={summary.train_crops} val={summary.val_crops} "
         f"omitidos={summary.skipped} duplicados={summary.dropped_duplicates}\n"

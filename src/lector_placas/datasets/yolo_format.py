@@ -13,6 +13,8 @@ from lector_placas.domain.entities import BoundingBox
 from lector_placas.domain.errors import DatasetError
 
 FIELD_COUNT: Final[int] = 5
+POLYGON_MIN_POINTS: Final[int] = 3
+POLYGON_MIN_FIELDS: Final[int] = 1 + 2 * POLYGON_MIN_POINTS
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,7 +51,8 @@ def parse_label_file(path: Path) -> list[YoloBox]:
         no tiene líneas no vacías.
 
     Raises:
-        DatasetError: si una línea no tiene 5 campos válidos.
+        DatasetError: si una línea no es una caja de 5 campos válida ni un polígono
+            válido de al menos 3 puntos.
     """
     if not path.exists():
         return []
@@ -127,18 +130,47 @@ def read_class_names(data_yaml: Path) -> dict[int, str]:
 def _parse_line(fields: list[str], name: str, number: int) -> YoloBox:
     """Convierte los campos de una línea de etiqueta en una caja YOLO.
 
+    Una línea de 5 campos es una caja; una con un número impar de campos y al menos
+    `POLYGON_MIN_FIELDS` es un polígono, que se reduce a su caja envolvente.
+
     Raises:
-        DatasetError: si los campos no son numéricos o no están en rango.
+        DatasetError: si la forma no es una caja ni un polígono, los campos no son
+            numéricos o el resultado sale de los rangos de `YoloBox`.
     """
-    if len(fields) != FIELD_COUNT:
+    if len(fields) != FIELD_COUNT and not _is_polygon(fields):
         raise DatasetError(f"etiqueta inválida: {name}:{number}")
     try:
-        return YoloBox(
-            int(fields[0]),
-            float(fields[1]),
-            float(fields[2]),
-            float(fields[3]),
-            float(fields[4]),
-        )
+        if len(fields) == FIELD_COUNT:
+            return _parse_box(fields)
+        return _parse_polygon(fields)
     except (ValueError, DatasetError) as error:
         raise DatasetError(f"etiqueta inválida: {name}:{number}") from error
+
+
+def _is_polygon(fields: list[str]) -> bool:
+    """Indica si los campos tienen la forma `clase x1 y1 ... xn yn` con n >= 3."""
+    return len(fields) >= POLYGON_MIN_FIELDS and len(fields) % 2 == 1
+
+
+def _parse_box(fields: list[str]) -> YoloBox:
+    """Convierte los 5 campos `clase cx cy w h` de una caja."""
+    return YoloBox(
+        int(fields[0]),
+        float(fields[1]),
+        float(fields[2]),
+        float(fields[3]),
+        float(fields[4]),
+    )
+
+
+def _parse_polygon(fields: list[str]) -> YoloBox:
+    """Convierte el polígono `clase x1 y1 ... xn yn` en su caja envolvente."""
+    coords = [float(field) for field in fields[1:]]
+    xs, ys = coords[0::2], coords[1::2]
+    return YoloBox(
+        int(fields[0]),
+        (min(xs) + max(xs)) / 2,
+        (min(ys) + max(ys)) / 2,
+        max(xs) - min(xs),
+        max(ys) - min(ys),
+    )

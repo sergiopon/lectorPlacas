@@ -32,3 +32,27 @@ def test_missing_api_key_exits_2_without_network(
     )
     assert code == 2
     assert not (tmp_path / "training").exists()
+
+
+def test_prepare_merged_removes_partial_output_when_merge_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from types import SimpleNamespace
+
+    from lector_placas.cli import dataset_download_commands as commands
+    from lector_placas.domain.errors import DatasetError
+
+    def broken(sources: Path, raw_root: Path, output: Path) -> None:
+        output.mkdir(parents=True)
+        (output / "data.yaml").write_text("parcial", encoding="utf-8")
+        raise DatasetError("etiqueta inválida: a.txt:1")
+
+    monkeypatch.setattr(commands, "merge_detection", broken)
+    output = tmp_path / "training" / "detector" / "datasets" / "merged"
+    with pytest.raises(DatasetError):
+        commands._prepare_merged(SimpleNamespace(root_dir=tmp_path))
+    assert not output.exists()
+    output.mkdir(parents=True)  # una carpeta vacía tampoco cuenta como "ya preparado"
+    with pytest.raises(DatasetError):
+        commands._prepare_merged(SimpleNamespace(root_dir=tmp_path))
+    assert not output.exists()

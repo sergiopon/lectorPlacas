@@ -27,13 +27,30 @@ def test_parse_and_format(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "line", ["1 0.5 0.5 0.2", "x 0.5 0.5 0.2 0.1", "1 1.5 0.5 0.2 0.1", "1 0.5 0.5 0 0.1"]
+    "line",
+    [
+        "1 0.5 0.5 0.2",
+        "x 0.5 0.5 0.2 0.1",
+        "1 1.5 0.5 0.2 0.1",
+        "1 0.5 0.5 0 0.1",
+        "1 0.5 0.5 0.2 0.1 0.3",
+        "1 0.2 0.2 0.6 0.2 0.2 0.2",
+    ],
 )
 def test_invalid_lines(tmp_path: Path, line: str) -> None:
     label = tmp_path / "b.txt"
     label.write_text(line, encoding="utf-8")
     with pytest.raises(DatasetError):
         parse_label_file(label)
+
+
+def test_polygon_becomes_bounding_box(tmp_path: Path) -> None:
+    label = tmp_path / "p.txt"
+    label.write_text("3 0.2 0.2 0.6 0.2 0.6 0.4 0.2 0.4\n1 0.5 0.5 0.2 0.1", encoding="utf-8")
+    polygon, box = parse_label_file(label)
+    assert polygon.class_id == 3
+    assert (polygon.cx, polygon.cy, polygon.w, polygon.h) == pytest.approx((0.4, 0.3, 0.4, 0.2))
+    assert box == YoloBox(1, 0.5, 0.5, 0.2, 0.1)
 
 
 def test_pixels_and_names(tmp_path: Path) -> None:
