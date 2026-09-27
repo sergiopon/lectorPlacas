@@ -60,6 +60,12 @@ def _preload_cuda_libraries() -> None:
     onnxruntime.preload_dlls(directory="")
 
 
+def ensure_cuda_libraries(execution_provider: ExecutionProvider) -> None:
+    """Precarga las bibliotecas CUDA/cuDNN si se pide CUDA; no hace nada con CPU."""
+    if execution_provider == "cuda":
+        _preload_cuda_libraries()
+
+
 def providers_for(execution_provider: ExecutionProvider) -> list[str]:
     """Devuelve la lista de proveedores de ejecución de ONNX Runtime."""
     if execution_provider == "cuda":
@@ -80,10 +86,12 @@ def create_session(model_path: Path, execution_provider: ExecutionProvider) -> I
     Raises:
         ModelLoadError: si CUDA no está disponible (cuando se pide `"cuda"`) o si la carga falla.
     """
-    if execution_provider == "cuda":
-        _preload_cuda_libraries()
-        if "CUDAExecutionProvider" not in onnxruntime.get_available_providers():
-            raise ModelLoadError("CUDA no disponible en ONNX Runtime")
+    ensure_cuda_libraries(execution_provider)
+    if (
+        execution_provider == "cuda"
+        and "CUDAExecutionProvider" not in onnxruntime.get_available_providers()
+    ):
+        raise ModelLoadError("CUDA no disponible en ONNX Runtime")
     try:
         session = onnxruntime.InferenceSession(
             str(model_path), providers=providers_for(execution_provider)
