@@ -39,6 +39,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 031 | [Herramientas de dataset](031-herramientas-dataset.md) | 002, 007, 023, 028 | Implementada |
 | 032 | [Entrenamiento del OCR (fine-tuning)](032-entrenamiento-ocr.md) | 000 (031 para entrenar con datos reales) | Implementada |
 | 033 | [Generador de placas sintéticas](033-generador-sintetico.md) | 032 | Implementada |
+| 034 | [Revisión: interfaz en la ventana](034-revision-ui-ventana.md) | 027 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
@@ -57,3 +58,4 @@ Pendiente de decisión del usuario: exportar recortes propios (descifrados) para
 | 2026-09-26 | 029 | El test literal `test_missing_nvidia_smi` combina los `with` en una sola sentencia | El anidado de `with` del literal dispara SIM117 de ruff, que está activo en el proyecto |
 | 2026-09-26 | 032 | Paso 5.6: la exportación ONNX se hace en un subproceso con `KERAS_BACKEND=tensorflow` y `CUDA_VISIBLE_DEVICES=""` sobre una copia del `.keras` sin `compile_config`; nota en ADR-011 y ADR-003 | `torch.onnx` falla con `SymbolicValueError` en el kernel de `PatchExtractor` con `--dynamic-batch`; el `compile_config` del modelo torch referencia `keras.src.backend.torch.optimizers.torch_adamw` y aborta el proceso al cargarse con TensorFlow; con la GPU visible, grappler de TF falla |
 | 2026-09-26 | 028, 029, SEG-20, ADR-012 | `main` lee la clave maestra (`args.keys`) antes de `block_network()`; los comandos reutilizan el proveedor | La guardia bloquea el socket Unix de D-Bus y el keyring fallaba (`KeyUnavailableError`) en todo comando con BD |
+| 2026-09-26 | 027 → 034 | La UI de revisión pasa a interactuar solo dentro de la ventana (bucle de `waitKey`, campo de edición, diseño nuevo); spec 034 reemplaza el adaptador de 027 | Con Qt5/XWayland la ventana no se dibujaba o quedaba "no responde" mientras `input()` bloqueaba la terminal |
