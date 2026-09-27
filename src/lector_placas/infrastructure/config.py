@@ -318,10 +318,11 @@ class ConsolidationConfig(StrictModel):
 
 
 class RetentionConfig(StrictModel):
-    """Días de retención de recortes y registros."""
+    """Días de retención de recortes, registros y exportaciones de entrenamiento."""
 
     crops_days: int
     records_days: int
+    training_days: int
 
 
 class LoggingConfig(StrictModel):
@@ -378,6 +379,10 @@ class AppConfig(StrictModel):
         if not 1 <= self.retention.crops_days <= self.retention.records_days <= RETENTION_MAX_DAYS:
             raise ValueError(
                 "retención inválida: se espera 1 <= crops_days <= records_days <= 3650"
+            )
+        if not 1 <= self.retention.training_days <= RETENTION_MAX_DAYS:
+            raise ValueError(
+                "retención de entrenamiento inválida: se espera 1 <= training_days <= 3650"
             )
         try:
             self.plate_catalog()

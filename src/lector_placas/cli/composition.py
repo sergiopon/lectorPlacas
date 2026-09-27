@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Final
 
 from lector_placas.adapters.export.csv_export_store import CsvExportStore
+from lector_placas.adapters.export.training_export_store import FilesystemTrainingExportStore
 from lector_placas.adapters.imaging.quality import LaplacianQualityScorer
 from lector_placas.adapters.inference.onnx_session import create_session, providers_for
 from lector_placas.adapters.inference.plate_detector_oim import create_oim_plate_detector
@@ -50,6 +51,7 @@ from lector_placas.infrastructure.paths import ensure_private_dir, resolve_withi
 DB_FILENAME: Final[Path] = Path("lector.db")
 CROPS_DIRNAME: Final[Path] = Path("crops")
 EXPORTS_DIRNAME: Final[Path] = Path("exports")
+TRAINING_EXPORT_DIR: Final[Path] = Path("training/ocr/datasets/own")
 
 
 def data_dir(config: AppConfig) -> Path:
@@ -77,6 +79,11 @@ def build_export_store(config: AppConfig) -> CsvExportStore:
     return CsvExportStore(resolve_within(data_dir(config), EXPORTS_DIRNAME))
 
 
+def build_training_store(config: AppConfig) -> FilesystemTrainingExportStore:
+    """Construye el almacén de recortes revisados para reentrenar el OCR (SEG-07)."""
+    return FilesystemTrainingExportStore(resolve_within(config.root_dir, TRAINING_EXPORT_DIR))
+
+
 def build_registry(config: AppConfig) -> ManifestModelRegistry:
     """Construye el registro de modelos a partir del manifiesto configurado."""
     return ManifestModelRegistry(
@@ -93,8 +100,16 @@ def build_purge(
     clock: Clock,
 ) -> PurgeExpiredData:
     """Construye el caso de uso de purga con la política de retención configurada."""
-    policy = RetentionPolicy(config.retention.crops_days, config.retention.records_days)
-    return PurgeExpiredData(repository, crop_store, export_store, clock, policy)
+    retention = config.retention
+    policy = RetentionPolicy(retention.crops_days, retention.records_days, retention.training_days)
+    return PurgeExpiredData(
+        repository,
+        crop_store,
+        export_store,
+        clock,
+        policy,
+        training_store=build_training_store(config),
+    )
 
 
 def build_vehicle_detector(config: AppConfig, registry: ModelRegistry) -> VehicleDetector:
