@@ -61,6 +61,8 @@ def test_latest_version_picks_max_and_hides_key() -> None:
         latest_version(
             FakeHttp({PROJECT: [(200, b'{"versions": [{"id": "x/y/z"}]}')]}), KEY, "ws", "proj"
         )
+    with pytest.raises(DatasetError, match="sin versiones generadas: ws/proj"):
+        latest_version(FakeHttp({PROJECT: [(200, b'{"versions": []}')]}), KEY, "ws", "proj")
 
 
 def test_export_link_polls_until_ready() -> None:
