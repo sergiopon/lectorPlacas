@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from lector_placas.application.purge_expired import PurgeResult
 from lector_placas.gui.process_tab import ProcessTab
 from lector_placas.gui.session import GuiSession
+from lector_placas.gui.sightings_tab import SightingsTab
 
 WINDOW_TITLE: Final[str] = "lectorPlacas"
 TAB_TITLES: Final[tuple[str, str, str]] = ("Procesar", "Avistamientos", "Exportar y retención")
@@ -44,11 +45,14 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(WINDOW_TITLE)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         self._process_tab = ProcessTab(session)
+        self._sightings_tab = SightingsTab(session)
         self._tabs = QTabWidget(self)
         self._tabs.addTab(self._process_tab, TAB_TITLES[0])
-        self._tabs.addTab(_placeholder_page(self._tabs), TAB_TITLES[1])
+        self._tabs.addTab(self._sightings_tab, TAB_TITLES[1])
         self._tabs.addTab(_placeholder_page(self._tabs), TAB_TITLES[2])
         self._process_tab.busy_changed.connect(self.set_busy)
+        self.busy_changed.connect(self._sightings_tab.set_busy)
+        self._process_tab.run_finished.connect(self._sightings_tab.search)
         self.setCentralWidget(self._tabs)
         self.statusBar().showMessage(
             f"Purga al abrir: recortes={purge.crops_deleted} "
