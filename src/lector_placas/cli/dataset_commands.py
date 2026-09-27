@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 from lector_placas.application.export_reviewed import ExportReviewedCrops
-from lector_placas.cli import commands, composition
+from lector_placas.cli import commands, composition, dataset_download_commands
 from lector_placas.datasets.chars_to_ocr import chars_to_ocr
 from lector_placas.datasets.merge_detection import merge_detection
 from lector_placas.infrastructure.paths import resolve_within
@@ -43,6 +43,7 @@ def register_dataset_commands(
     chars_parser.set_defaults(handler=cmd_chars_to_ocr, network=False)
     reviewed_parser = dataset_sub.add_parser("export-reviewed")
     reviewed_parser.set_defaults(handler=cmd_export_reviewed, network=False, key="load")
+    dataset_download_commands.register_download_commands(dataset_sub)
 
 
 def cmd_merge_detection(args: argparse.Namespace, config: AppConfig) -> int:
