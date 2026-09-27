@@ -87,6 +87,10 @@ def check_network_blocked(video: Path) -> tuple[bool, str]:
         return False, "strace no disponible (sudo apt install strace); omitido"
     log = ROOT / "logs" / "strace_connect.log"
     log.parent.mkdir(exist_ok=True)
+    # strace crea su log con 0644; se pre-crea en 0600 (strace conserva el modo del
+    # archivo existente).
+    log.unlink(missing_ok=True)
+    log.touch(mode=0o600)
     cmd = [
         "strace",
         "-f",
@@ -99,6 +103,7 @@ def check_network_blocked(video: Path) -> tuple[bool, str]:
     subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, check=False)
     if not log.exists():
         return False, "no se generó el log de strace"
+    log.chmod(0o600)
     connects = sum(
         1
         for line in log.read_text(encoding="utf-8").splitlines()
