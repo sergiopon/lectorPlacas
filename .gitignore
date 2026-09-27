@@ -19,3 +19,4 @@ training/**/datasets/
 training/**/runs/
 training/**/weights/
 training/**/.venv/
+training/detector/sources.yaml
