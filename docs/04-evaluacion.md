@@ -92,7 +92,7 @@ Se implementa en `specs/029-evaluacion.md` (módulo `lector_placas.evaluation`):
 | Dataset | URL | Imágenes | Anotación | Licencia | Uso |
 |---|---|---|---|---|---|
 | placas colombianas | https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas | 1 770 | NO USABLE: sin versiones y con clases corruptas (verificado 2026-09-26) | CC BY 4.0 | Excluido |
-| Placas Colombia (usco) | https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr | 1 106 | Caja `placa` | MIT (declarada) | Detector |
+| Placas Colombia (usco) | https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr | 1 106 | Recortes de placa: una caja cubre >80 % de todas sus imágenes (verificado 2026-09-27) | MIT (declarada) | Excluido del detector |
 | OCR Placas Colombia | https://universe.roboflow.com/ia-xgdnt/ocr-placas-colombia-etll5 | 926 | Caja por carácter (0-9, A-Z, `ciudad`, `placa`) | CC BY 4.0 | OCR (texto derivado) |
 | Placas_Motos_Carros | https://universe.roboflow.com/reimerjsuarez/placas_motos_carros | 469 | Caja de placa (carros y motos); clase 1, llamada `Proyecto_Placas - vdataset reimerjsuarezs-workspace` (verificado 2026-09-27) | CC BY 4.0 | Detector (motos) |
 | motos-placas | https://universe.roboflow.com/placas-sn7fb/motos-placas | 264 | Caja; clases H, I, Q, `motos-placas` | CC BY 4.0 | Detector (motos; origen colombiano NO VERIFICADO) |
@@ -130,5 +130,8 @@ versión y licencia en `docs/datasets/ATRIBUCIONES.md` (obligatorio por CC BY 4.
   sin espacios ni guiones. Recortes ilegibles se descartan (no se etiquetan con texto parcial).
 - Deduplicación por hash perceptual antes de dividir en train/val (spec 031).
 - Partición: en datasets públicos se respeta su partición (train → train; valid/test → val) y se eliminan de
-  val las imágenes casi duplicadas de alguna de train (dHash con distancia de Hamming ≤ 4). En datos propios,
+  val las imágenes casi duplicadas de alguna de train (dHash con distancia de Hamming ≤ 4). Si el dataset OCR público no trae
+  `valid`/`test`, `chars-to-ocr` divide `train` por grupo de imagen de origen (nombre sin el sufijo `.rf.<hash>`;
+  un ~10 % de los grupos va a val por hash SHA-256) para no repartir copias del mismo vehículo entre train y val, y
+  descarta de val los textos que ya están en train. En datos propios,
   partición por video (nunca por frame).

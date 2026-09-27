@@ -1,14 +1,14 @@
 version: 1
 format: yolov8
 datasets:
+# usco (usco-thj9e/placas-colombia-ixdpr) excluido: son recortes de placa (una caja cubre >80 % de todas sus imágenes), no escenas;
+# sesgaría el detector (aprende "toda la imagen = placa") e inflaría las métricas de validación.
 # placas_colombianas (licenseplates-gk27i/placas-colombianas) excluido: sin versiones y sus clases están corruptas
 # (texto del README de Roboflow como nombres de clase, 50 clases); no sirve como detector de placas.
-  - {name: usco, workspace: usco-thj9e, project: placas-colombia-ixdpr, target: detector,
-     plate_classes: [placa], license: "MIT (declarada por quien lo subió)"}
   - {name: placas_motos_carros, workspace: reimerjsuarez, project: placas_motos_carros, target: detector,
      plate_classes: ["Proyecto_Placas - vdataset reimerjsuarezs-workspace"], license: "CC BY 4.0"}
      # la placa es la clase 1 (1239 cajas); 'Placas' (clase 0) solo tiene 2 y dejaba ~1000 imágenes sin etiqueta
   - {name: motos_placas, workspace: placas-sn7fb, project: motos-placas, target: detector,
-     plate_classes: [motos-placas], license: "CC BY 4.0"}   # NO VERIFICADO que motos-placas sea la clase de placa
+     plate_classes: [motos-placas], license: "CC BY 4.0"}   # verificado 2026-09-27: clase 3 = 263 de 266 cajas, forma de placa
   - {name: ocr_placas_colombia, workspace: sergio-ponce-asprilla, project: ocr-placas-colombia-etll5-lwpkc, target: ocr,
      license: "CC BY 4.0"}   # fork de ia-xgdnt/ocr-placas-colombia-etll5 (sin versiones)

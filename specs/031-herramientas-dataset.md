@@ -140,7 +140,14 @@ def cmd_chars_to_ocr(args: argparse.Namespace, config: AppConfig) -> int: ...
    2. Por split (`SPLIT_MAP`) e imagen: cajas en píxeles con `yolo_to_pixels`; por cada caja `placa` (índice `k` en orden de archivo):
       `text = plate_text_from_boxes(...)`; si `text` no cumple `PLATE_TEXT_REGEX` o `catalog.matching(text)` está vacío → `skipped += 1`;
       si no, `crop = crop_image(image, placa)` y `dhash(crop)`.
-   3. Deduplicación igual que en el paso 4.4 (val contra train y contra val aceptado).
+   2b. **Fuente sin `valid` ni `test`** (corrección 2026-09-27; el export de Roboflow del OCR solo trae `train`): si ninguno de los
+      splits de `SPLIT_MAP` que mapean a `val` existe en `source_dir`, los recortes de `train` se reparten por **grupo de imagen de
+      origen**: `grupo = re.sub(r"\.rf\.[0-9a-fA-F]+$", "", image_path.stem)` (Roboflow añade `.rf.<hash>` a cada copia de la misma
+      imagen). El recorte va a `val` si `int(hashlib.sha256(grupo.encode("utf-8")).hexdigest(), 16) % 10 == 0` y a `train` si no; así
+      ninguna copia del mismo origen queda repartida entre train y val. Si la fuente sí trae `valid` o `test`, no se aplica y se respeta
+      su partición.
+   3. Deduplicación igual que en el paso 4.4 (val contra train y contra val aceptado). En el caso 2b se descartan además de val,
+      sumándolos a `dropped_duplicates`, los recortes cuyo `text` aparece en algún recorte de train (el mismo vehículo con otro nombre).
    4. Escribe `output_dir/<split>/images/<fuente>__<stem>_<k>.png` (`cv2.imwrite`) y `output_dir/<split>/annotations.csv` con cabecera
       `image_path,plate_text` y rutas `images/<nombre>` (formato de fast-plate-ocr). `fuente = source_dir.name`.
    5. Devuelve `OcrSummary`.
@@ -404,6 +411,54 @@ def test_unknown_class(tmp_path: Path) -> None:
     source = make_source(tmp_path / "raw", "fuente", ["placa", "persona"], [])
     with pytest.raises(DatasetError):
         chars_to_ocr(source, tmp_path / "ocr", build_test_catalog())
+
+
+ALT_CHARS = [
+    "5 0.55 0.45 0.08 0.3",
+    "0 0.20 0.45 0.08 0.3",
+    "3 0.75 0.45 0.08 0.3",
+    "2 0.40 0.45 0.08 0.3",
+    "1 0.30 0.45 0.08 0.3",
+    "4 0.65 0.45 0.08 0.3",
+]
+
+
+def test_train_only_source_is_split_by_group(tmp_path: Path) -> None:
+    # sha256(grupo) % 10: gA -> 0 (val); gB -> 3 y gD -> 5 (train)
+    source = make_source(
+        tmp_path / "raw",
+        "fuente",
+        NAMES,
+        [
+            ("train", "gA.rf.a1", noise(1, 100, 200), [PLATE, *ALT_CHARS]),
+            ("train", "gA.rf.b2", noise(2, 100, 200), [PLATE, *ALT_CHARS]),
+            ("train", "gB.rf.c3", noise(3, 100, 200), [PLATE, *CHARS]),
+            ("train", "gD.rf.d4", noise(4, 100, 200), [PLATE, *CHARS]),
+        ],
+    )
+    out = tmp_path / "ocr"
+    summary = chars_to_ocr(source, out, build_test_catalog())
+    assert (summary.train_crops, summary.val_crops, summary.skipped, summary.dropped_duplicates) == (2, 2, 0, 0)
+    val_rows = list(csv.DictReader((out / "val" / "annotations.csv").open(encoding="utf-8")))
+    assert sorted(row["image_path"] for row in val_rows) == [
+        "images/fuente__gA.rf.a1_0.png",
+        "images/fuente__gA.rf.b2_0.png",
+    ]
+    assert {row["plate_text"] for row in val_rows} == {"ABC321"}
+
+
+def test_group_split_drops_val_text_already_in_train(tmp_path: Path) -> None:
+    source = make_source(
+        tmp_path / "raw",
+        "fuente",
+        NAMES,
+        [
+            ("train", "gA.rf.a1", noise(1, 100, 200), [PLATE, *CHARS]),
+            ("train", "gB.rf.c3", noise(3, 100, 200), [PLATE, *CHARS]),
+        ],
+    )
+    summary = chars_to_ocr(source, tmp_path / "ocr", build_test_catalog())
+    assert (summary.train_crops, summary.val_crops, summary.skipped, summary.dropped_duplicates) == (1, 0, 0, 1)
 ```
 ```python
 # tests/unit/cli/test_dataset_commands.py

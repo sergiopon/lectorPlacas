@@ -110,13 +110,11 @@ def cmd_prepare(args: argparse.Namespace, config: AppConfig) -> int: ...
 version: 1
 format: yolov8
 datasets:
-  - {name: usco, workspace: usco-thj9e, project: placas-colombia-ixdpr, target: detector,
-     plate_classes: [placa], license: "MIT (declarada por quien lo subió)"}
   - {name: placas_motos_carros, workspace: reimerjsuarez, project: placas_motos_carros, target: detector,
      plate_classes: ["Proyecto_Placas - vdataset reimerjsuarezs-workspace"], license: "CC BY 4.0"}
      # la placa es la clase 1 (1239 cajas); 'Placas' (clase 0) solo tiene 2 y dejaba ~1000 imágenes sin etiqueta
   - {name: motos_placas, workspace: placas-sn7fb, project: motos-placas, target: detector,
-     plate_classes: [motos-placas], license: "CC BY 4.0"}   # NO VERIFICADO que motos-placas sea la clase de placa
+     plate_classes: [motos-placas], license: "CC BY 4.0"}   # verificado 2026-09-27: clase 3 = 263 de 266 cajas, forma de placa
   - {name: ocr_placas_colombia, workspace: sergio-ponce-asprilla, project: ocr-placas-colombia-etll5-lwpkc, target: ocr,
      license: "CC BY 4.0"}   # fork de ia-xgdnt/ocr-placas-colombia-etll5 (sin versiones)
 ```
@@ -192,7 +190,6 @@ ROOT = Path(__file__).resolve().parents[3]
 def test_real_registry_is_valid() -> None:
     registry = load_registry(ROOT / "config" / "datasets.yaml")
     assert [d.name for d in registry.datasets] == [
-        "usco",
         "placas_motos_carros",
         "motos_placas",
         "ocr_placas_colombia",
@@ -214,19 +211,19 @@ def test_resolve_auto_and_explicit(tmp_path: Path) -> None:
         name="auto", workspace="ws", project="proj", target="detector", license="CC BY 4.0"
     )
     assert resolve_plate_classes(auto, make_raw(tmp_path, "a", ["plate"])) == ("plate",)
-    assert resolve_plate_classes(explicit, tmp_path) == ("placa",)
+    assert resolve_plate_classes(explicit, tmp_path) == ("Proyecto_Placas - vdataset reimerjsuarezs-workspace",)
     with pytest.raises(DatasetError):
         resolve_plate_classes(auto, make_raw(tmp_path, "b", ["car", "plate"]))
 
 
 def test_write_sources_only_for_downloaded(tmp_path: Path) -> None:
     registry = load_registry(ROOT / "config" / "datasets.yaml")
-    make_raw(tmp_path, "usco", ["placa"])
+    make_raw(tmp_path, "placas_motos_carros", ["Placas", "Proyecto_Placas - vdataset reimerjsuarezs-workspace"])
     out = tmp_path / "sources.yaml"
     assert write_sources_file(registry, tmp_path / "raw", out) == 1
     data = yaml.safe_load(out.read_text(encoding="utf-8"))
-    assert data["sources"][0]["plate_classes"] == ["placa"]
-    assert data["sources"][0]["url"] == "https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr"
+    assert data["sources"][0]["plate_classes"] == ["Proyecto_Placas - vdataset reimerjsuarezs-workspace"]
+    assert data["sources"][0]["url"] == "https://universe.roboflow.com/reimerjsuarez/placas_motos_carros"
     with pytest.raises(DatasetError):
         write_sources_file(registry, tmp_path / "vacio", tmp_path / "s2.yaml")
 ```
@@ -343,8 +340,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_parser_download_and_prepare_use_network() -> None:
     parser = build_parser()
-    download = parser.parse_args(["dataset", "download", "--only", "usco"])
-    assert (download.network, download.only) == (True, ["usco"])
+    download = parser.parse_args(["dataset", "download", "--only", "motos_placas"])
+    assert (download.network, download.only) == (True, ["motos_placas"])
     assert parser.parse_args(["dataset", "prepare"]).network is True
     assert getattr(download, "key", None) is None
 
