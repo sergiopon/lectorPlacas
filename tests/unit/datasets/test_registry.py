@@ -19,7 +19,6 @@ ROOT = Path(__file__).resolve().parents[3]
 def test_real_registry_is_valid() -> None:
     registry = load_registry(ROOT / "config" / "datasets.yaml")
     assert [d.name for d in registry.datasets] == [
-        "usco",
         "placas_motos_carros",
         "motos_placas",
         "ocr_placas_colombia",
@@ -41,21 +40,29 @@ def test_resolve_auto_and_explicit(tmp_path: Path) -> None:
         name="auto", workspace="ws", project="proj", target="detector", license="CC BY 4.0"
     )
     assert resolve_plate_classes(auto, make_raw(tmp_path, "a", ["plate"])) == ("plate",)
-    assert resolve_plate_classes(explicit, tmp_path) == ("placa",)
+    assert resolve_plate_classes(explicit, tmp_path) == (
+        "Proyecto_Placas - vdataset reimerjsuarezs-workspace",
+    )
     with pytest.raises(DatasetError):
         resolve_plate_classes(auto, make_raw(tmp_path, "b", ["car", "plate"]))
 
 
 def test_write_sources_only_for_downloaded(tmp_path: Path) -> None:
     registry = load_registry(ROOT / "config" / "datasets.yaml")
-    make_raw(tmp_path, "usco", ["placa"])
+    make_raw(
+        tmp_path,
+        "placas_motos_carros",
+        ["Placas", "Proyecto_Placas - vdataset reimerjsuarezs-workspace"],
+    )
     out = tmp_path / "sources.yaml"
     assert write_sources_file(registry, tmp_path / "raw", out) == 1
     data = yaml.safe_load(out.read_text(encoding="utf-8"))
-    assert data["sources"][0]["plate_classes"] == ["placa"]
+    assert data["sources"][0]["plate_classes"] == [
+        "Proyecto_Placas - vdataset reimerjsuarezs-workspace"
+    ]
     assert (
         data["sources"][0]["url"]
-        == "https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr"
+        == "https://universe.roboflow.com/reimerjsuarez/placas_motos_carros"
     )
     with pytest.raises(DatasetError):
         write_sources_file(registry, tmp_path / "vacio", tmp_path / "s2.yaml")
