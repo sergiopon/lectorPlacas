@@ -6,7 +6,8 @@ datasets:
   - {name: usco, workspace: usco-thj9e, project: placas-colombia-ixdpr, target: detector,
      plate_classes: [placa], license: "MIT (declarada por quien lo subió)"}
   - {name: placas_motos_carros, workspace: reimerjsuarez, project: placas_motos_carros, target: detector,
-     plate_classes: [Placas], license: "CC BY 4.0"}
+     plate_classes: ["Proyecto_Placas - vdataset reimerjsuarezs-workspace"], license: "CC BY 4.0"}
+     # la placa es la clase 1 (1239 cajas); 'Placas' (clase 0) solo tiene 2 y dejaba ~1000 imágenes sin etiqueta
   - {name: motos_placas, workspace: placas-sn7fb, project: motos-placas, target: detector,
      plate_classes: [motos-placas], license: "CC BY 4.0"}   # NO VERIFICADO que motos-placas sea la clase de placa
   - {name: ocr_placas_colombia, workspace: sergio-ponce-asprilla, project: ocr-placas-colombia-etll5-lwpkc, target: ocr,

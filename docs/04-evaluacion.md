@@ -94,7 +94,7 @@ Se implementa en `specs/029-evaluacion.md` (módulo `lector_placas.evaluation`):
 | placas colombianas | https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas | 1 770 | NO USABLE: sin versiones y con clases corruptas (verificado 2026-09-26) | CC BY 4.0 | Excluido |
 | Placas Colombia (usco) | https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr | 1 106 | Caja `placa` | MIT (declarada) | Detector |
 | OCR Placas Colombia | https://universe.roboflow.com/ia-xgdnt/ocr-placas-colombia-etll5 | 926 | Caja por carácter (0-9, A-Z, `ciudad`, `placa`) | CC BY 4.0 | OCR (texto derivado) |
-| Placas_Motos_Carros | https://universe.roboflow.com/reimerjsuarez/placas_motos_carros | 469 | Caja `Placas` (carros y motos) | CC BY 4.0 | Detector (motos) |
+| Placas_Motos_Carros | https://universe.roboflow.com/reimerjsuarez/placas_motos_carros | 469 | Caja de placa (carros y motos); clase 1, llamada `Proyecto_Placas - vdataset reimerjsuarezs-workspace` (verificado 2026-09-27) | CC BY 4.0 | Detector (motos) |
 | motos-placas | https://universe.roboflow.com/placas-sn7fb/motos-placas | 264 | Caja; clases H, I, Q, `motos-placas` | CC BY 4.0 | Detector (motos; origen colombiano NO VERIFICADO) |
 
 NO VERIFICADO: duplicados entre proyectos (p. ej. `placas-colombia-detection-nano` parece copia de
