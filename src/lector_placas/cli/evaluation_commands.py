@@ -21,7 +21,7 @@ from lector_placas.application.ports import (
 )
 from lector_placas.application.process_video import ProcessVideo, RunResult
 from lector_placas.application.purge_expired import PurgeResult
-from lector_placas.cli import commands, composition
+from lector_placas.cli import commands, composition, detector_evaluation_commands
 from lector_placas.cli.commands import _run_with_repository
 from lector_placas.domain.entities import SightingRecord
 from lector_placas.domain.errors import EvaluationError
@@ -61,6 +61,8 @@ def register_evaluation_commands(
     ocr_parser = subparsers.add_parser("evaluate-ocr")
     ocr_parser.add_argument("--crops", type=Path, required=True)
     ocr_parser.set_defaults(handler=cmd_evaluate_ocr, network=False)
+
+    detector_evaluation_commands.register_detector_evaluation(subparsers)
 
 
 def cmd_evaluate(args: argparse.Namespace, config: AppConfig) -> int:
