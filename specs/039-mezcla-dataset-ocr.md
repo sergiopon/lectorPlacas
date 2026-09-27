@@ -236,7 +236,7 @@ Usa la variable de módulo `DATASETS_DIR` importada de `common` (los tests la su
     - Devuelve `{"version": 1, "samples": n, "candidate": dataclasses.asdict(cand), "baseline": dataclasses.asdict(base),
       "accepted": not reasons, "reasons": reasons, "warnings": warnings}` (sin textos de placa).
 18. `write_report(report, reports_dir, now)`: `now` sin zona horaria → `TrainingError`; `reports_dir.mkdir(parents=True,
-    exist_ok=True)`; archivo `ocr-eval-{now.astimezone(UTC):%Y%m%dT%H%M%SZ}.json` creado con
+    exist_ok=True, mode=0o700)` (SEG-04); archivo `ocr-eval-{now.astimezone(UTC):%Y%m%dT%H%M%SZ}.json` creado con
     `os.open(path, O_WRONLY | O_CREAT | O_EXCL, 0o600)` (`FileExistsError` → `TrainingError("el reporte ya existe")`) y
     contenido `json.dumps(report, indent=2, sort_keys=True)`. Devuelve la ruta.
 19. CLI: `--crops` (Path, obligatorio, relativo a `DATASETS_DIR`), `--candidate` (Path, obligatorio, relativo a
