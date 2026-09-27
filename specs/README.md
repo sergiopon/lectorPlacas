@@ -40,7 +40,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 032 | [Entrenamiento del OCR (fine-tuning)](032-entrenamiento-ocr.md) | 000 (031 para entrenar con datos reales) | Implementada |
 | 033 | [Generador de placas sintéticas](033-generador-sintetico.md) | 032 | Implementada |
 | 034 | [Revisión: interfaz en la ventana](034-revision-ui-ventana.md) | 027 | Implementada |
-| 035 | [Exportar lecturas revisadas para reentrenar el OCR](035-exportar-revisados.md) | 006, 021, 025, 026, 028, 031 | Lista |
+| 035 | [Exportar lecturas revisadas para reentrenar el OCR](035-exportar-revisados.md) | 006, 021, 025, 026, 028, 031 | Implementada |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
