@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Final
 
 from lector_placas.application.ports import (
     AuditEvent,
@@ -19,6 +20,10 @@ from lector_placas.domain.errors import CropNotFoundError, ReviewError
 
 MIN_LIMIT = 1
 MAX_LIMIT = 10000
+AUDIT_PAGE_SIZE: Final[int] = 500
+REVIEWABLE_STATUSES: Final[frozenset[ReviewStatus]] = frozenset(
+    {ReviewStatus.UNVERIFIED, ReviewStatus.CONFIRMED}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,20 +80,25 @@ class ReviewSightings:
         self._ui = ui
         self._clock = clock
 
-    def execute(self, limit: int) -> ReviewSummary:
-        """Revisa hasta `limit` avistamientos en estado `unverified`.
+    def execute(self, limit: int, status: ReviewStatus = ReviewStatus.UNVERIFIED) -> ReviewSummary:
+        """Revisa hasta `limit` avistamientos del estado indicado.
+
+        Con `unverified` revisa los pendientes sin verificar; con `confirmed` audita los
+        avistamientos ya confirmados que todavía no ha visto un humano.
 
         Args:
             limit: número máximo de avistamientos a revisar, entre 1 y 10000.
+            status: estado a revisar, dentro de `REVIEWABLE_STATUSES`.
 
         Returns:
             Resumen con el conteo de cada tipo de decisión.
 
         Raises:
-            ReviewError: si `limit` está fuera del rango admitido.
+            ReviewError: si `limit` está fuera del rango admitido o el estado no es revisable.
         """
         _require_limit(limit)
-        records = self._repository.list_sightings(ReviewStatus.UNVERIFIED, limit, 0)
+        _require_reviewable(status)
+        records = self._select(limit, status)
         counters = _Counters()
         try:
             for record in records:
@@ -98,6 +108,24 @@ class ReviewSightings:
             self._ui.close()
         self._repository.log_event(AuditEvent.REVIEW, self._clock.now(), counters.detail())
         return counters.summary()
+
+    def _select(self, limit: int, status: ReviewStatus) -> list[SightingRecord]:
+        """Recupera los avistamientos a revisar según el estado pedido."""
+        if status is ReviewStatus.UNVERIFIED:
+            return self._repository.list_sightings(status, limit, 0)
+        return self._unreviewed_confirmed(limit)
+
+    def _unreviewed_confirmed(self, limit: int) -> list[SightingRecord]:
+        """Audita los confirmados sin revisar, paginando hasta reunir `limit`."""
+        pending: list[SightingRecord] = []
+        offset = 0
+        while len(pending) < limit:
+            page = self._repository.list_sightings(ReviewStatus.CONFIRMED, AUDIT_PAGE_SIZE, offset)
+            pending.extend(record for record in page if record.reviewed_at is None)
+            if len(page) < AUDIT_PAGE_SIZE:
+                break
+            offset += AUDIT_PAGE_SIZE
+        return pending[:limit]
 
     def _review(self, record: SightingRecord, counters: _Counters) -> bool:
         """Pide y aplica la decisión de un avistamiento; `False` si el operador sale."""
@@ -137,3 +165,9 @@ def _require_limit(limit: int) -> None:
     """Exige un límite dentro del rango admitido."""
     if not MIN_LIMIT <= limit <= MAX_LIMIT:
         raise ReviewError(f"limit fuera de [{MIN_LIMIT}, {MAX_LIMIT}]: {limit}")
+
+
+def _require_reviewable(status: ReviewStatus) -> None:
+    """Exige un estado susceptible de revisión humana."""
+    if status not in REVIEWABLE_STATUSES:
+        raise ReviewError(f"estado no revisable: {status.value}")
