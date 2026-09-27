@@ -44,6 +44,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 036 | [Descarga automática de datasets (Roboflow) y preparación](036-descarga-datasets.md) | 007, 019, 028, 031 | Implementada |
 | 037 | [Métrica del detector de placas sobre dataset](037-evaluar-detector.md) | 014, 015, 029, 031 | Implementada |
 | 038 | [Auditoría de confirmadas y métricas desde la revisión](038-metricas-revision.md) | 027, 029, 034 | Implementada |
+| 039 | [Mezcla real + sintético y aceptación del OCR](039-mezcla-dataset-ocr.md) | 031, 032, 033 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
@@ -70,3 +71,4 @@ Decisión del usuario (2026-09-26): métricas con datasets en vez de ground trut
 | 2026-09-27 | 036, docs/04 | `placas_motos_carros`: `plate_classes` pasa de `Placas` a `Proyecto_Placas - vdataset reimerjsuarezs-workspace` | Verificado en las etiquetas descargadas: la clase 1 (nombre tomado del README de Roboflow) tiene 1 239 cajas de placa y `Placas` (clase 0) solo 2; con la clase equivocada 1 027 de 1 029 imágenes quedaban como negativas sin caja |
 | 2026-09-27 | 031, 036, docs/04 | `usco` se elimina del registro del detector; `chars_to_ocr` divide `train` por grupo de imagen de origen (sufijo `.rf.<hash>`, ~10 % de grupos a val por SHA-256) cuando la fuente no trae `valid`/`test`, y descarta de val los textos ya presentes en train; tests del registro y del CLI ajustados | Decisión delegada a Opus 5.5 con datos verificados: en `usco` el 100 % de las imágenes tienen una caja >80 % de la imagen (recortes de placa) y sesgaría el detector e inflaría la validación; el export del OCR solo trae `train` (926 imágenes de 686 orígenes, con copias que el dHash no detecta) y una división aleatoria de Roboflow filtraría copias entre train y val |
 | 2026-09-27 | 019, docs/03 §5 | Hash y tamaño reales de `yolo26n-plates.onnx` en el manifiesto; el test de 019 comprueba `fpo-cct-xs-v2-colombia` como pendiente | Registro del detector de placas entrenado (spec 030, paso del operador) |
+| 2026-09-27 | docs/04 §5.3, ARQUITECTURA §8, docs/05 | Nota de la primera iteración del OCR (ADR-014: 1 106 de train, 88 val + 215 test reales, partición por componente); ADR-014 en el índice; 039 asignada | Datos reales verificados: 856 recortes / 492 componentes, 7,2 % motos; la val de 50 recortes de `chars-to-ocr` no permite medir M-04 |

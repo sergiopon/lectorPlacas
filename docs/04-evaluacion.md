@@ -124,6 +124,10 @@ versión y licencia en `docs/datasets/ATRIBUCIONES.md` (obligatorio por CC BY 4.
 | Detector de placas (YOLO26n, 1 clase `plate`) | ≥ 3 000 imágenes | ≥ 400 | ≥ 25 % motos, ≥ 25 % noche, ≥ 500 frames propios |
 | OCR (cct-xs-v2 fine-tune) | ≥ 5 000 recortes reales + sintéticos | ≥ 500 reales | ≥ 20 % motos; sintéticos ≤ 50 % del train |
 
+Primera iteración del OCR (ADR-014, 2026-09-27): con los datos disponibles se entrena con 1 106 recortes (553 reales +
+553 sintéticos, 20,1 % motos) y se evalúa con 88 reales en val (elección de checkpoint) y 215 reales en un `test`
+apartado (aceptación). Las metas de esta tabla no se cumplen todavía y se mantienen para las iteraciones siguientes.
+
 ### 5.4 Etiquetado y consistencia
 - Detector: una caja ajustada al borde exterior de la placa (incluye el texto de municipio/"COLOMBIA").
 - OCR: `plate_text` solo con los caracteres principales (sin municipio ni "COLOMBIA"), mayúsculas,

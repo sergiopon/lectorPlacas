@@ -219,3 +219,4 @@ umbrales de consolidación. Valores iniciales **provisionales**; se calibran con
 | [011](docs/adr/ADR-011-entorno-python.md) | Entorno | Python 3.13 + uv; PyTorch 2.14 cu130 solo en `training/`; proyectos uv separados. |
 | [012](docs/adr/ADR-012-modelos-sin-red.md) | Modelos y red | Sin red en runtime; `models fetch` explícito; SHA-256 fijado en `config/models.yaml`. |
 | [013](docs/adr/ADR-013-placa-en-vehiculo.md) | Placa dentro del vehículo | La placa se detecta en el recorte del vehículo, lo que asocia placa↔track sin heurísticas. |
+| [014](docs/adr/ADR-014-receta-entrenamiento-ocr.md) | Receta del fine-tuning del OCR | Partición real por componente en train/val/test, sintéticos ≤ 50 % solo en train con cuota de motos, aceptación en test real contra el modelo base. |
