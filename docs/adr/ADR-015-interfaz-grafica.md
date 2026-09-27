@@ -1,8 +1,7 @@
 # ADR-015 — Interfaz gráfica (frontend)
 
-- Estado: **Aprobado** (2026-09-27): opción 2, escritorio nativo con PySide6. Condicionado a la prueba de convivencia
-  PySide6 + `opencv-python` (ver "Recomendación"); hasta que pase, RF-28 y `docs/00-requisitos.md` §7 no cambian y no se
-  escriben specs de pantallas.
+- Estado: **Aprobado** (2026-09-27): opción 2, escritorio nativo con PySide6. La prueba de convivencia PySide6 +
+  `opencv-python` se hizo el 2026-09-27 y pasó (ver "Resultado de la prueba de convivencia").
 - Requisitos afectados: RF-28, §7 (fuera de alcance), RF-34 (stream futuro), SEG-05, SEG-07, SEG-20, SEG-26.
 
 ## Contexto
@@ -73,3 +72,26 @@ SEG nuevas y se amplía el nivel F.
 - Puertos nuevos o ampliados antes de la GUI: `ProgressReporter` (progreso + cancelación de `ProcessVideo`) y búsqueda en
   `PlateRepository`. Van en specs propias (040, 041) que sirven también a la CLI.
 - Todo el código lo implementa DeepSeek por specs, según `docs/05-orquestacion.md`; Claude diseña y revisa.
+
+## Resultado de la prueba de convivencia (2026-09-27)
+Proyecto desechable fuera del repo (`lectorPlacas-wt/SPIKE-pyside6/`, implementado por DeepSeek; README y
+`resultados.json` allí). PySide6 6.11.2 + opencv-python 4.14.0.94 + numpy 2.5.3, Python 3.13, sesión Wayland en GNOME.
+Cada escenario en un subproceso, en la sesión real y con `QT_QPA_PLATFORM=offscreen`:
+
+| Escenario | Real | Offscreen |
+|---|---|---|
+| Importar `cv2` y después PySide6 | ok (plataforma `wayland`) | ok |
+| Crear la `QApplication` antes de importar `cv2` | ok | ok |
+| Importar `cv2`, restaurar `QT_QPA_*` y crear la `QApplication` | ok | ok |
+| Ventana Qt6 y `cv2.imshow` abiertas a la vez | ok (la de cv2 por xcb/XWayland) | aborta (SIGABRT): el Qt5 de cv2 no tiene plugin `offscreen` |
+| cv2 solo para procesar imagen, sin ventanas cv2 | ok | ok |
+
+Hechos observados: Qt6 no usa el `QT_QPA_PLATFORM_PLUGIN_PATH` que fija `cv2` (resuelve sus plugins en
+`PySide6/Qt/plugins`); el orden de importación no importa; sin avisos de fuentes. El motivo por el que Qt6 ignora la
+variable queda NO VERIFICADO en la documentación de Qt. Que las ventanas se dibujaran se comprobó solo por ausencia de
+errores, no por captura. Tamaño instalado: PySide6 + shiboken6 638 MB (paquete completo; con solo
+`PySide6-Essentials` NO VERIFICADO); cv2 + libs 201 MB.
+
+Consecuencias para las specs: no hace falta ninguna mitigación de importación. La GUI no debe abrir ventanas
+de `cv2` (`imshow`/`namedWindow`): la revisión se reescribe en widgets Qt y `cv2` queda solo para procesar imagen, lo
+que además permite probar la GUI con `QT_QPA_PLATFORM=offscreen` en los tests.
