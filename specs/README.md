@@ -44,7 +44,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 036 | [Descarga automática de datasets (Roboflow) y preparación](036-descarga-datasets.md) | 007, 019, 028, 031 | Implementada |
 | 037 | [Métrica del detector de placas sobre dataset](037-evaluar-detector.md) | 014, 015, 029, 031 | Implementada |
 | 038 | [Auditoría de confirmadas y métricas desde la revisión](038-metricas-revision.md) | 027, 029, 034 | Implementada |
-| 039 | [Mezcla real + sintético y aceptación del OCR](039-mezcla-dataset-ocr.md) | 031, 032, 033 | Lista |
+| 039 | [Mezcla real + sintético y aceptación del OCR](039-mezcla-dataset-ocr.md) | 031, 032, 033 | Implementada |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
