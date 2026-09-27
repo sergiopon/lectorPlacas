@@ -6,9 +6,8 @@ descargar cada dataset.
 
 | Dataset | URL | Licencia | Versión descargada | Fecha de descarga | Uso |
 |---|---|---|---|---|---|
-| placas colombianas | https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas | CC BY 4.0 | COMPLETAR | COMPLETAR | Detector |
 | Placas Colombia (usco) | https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr | MIT (declarada) | COMPLETAR | COMPLETAR | Detector |
-| OCR Placas Colombia | https://universe.roboflow.com/ia-xgdnt/ocr-placas-colombia-etll5 | CC BY 4.0 | COMPLETAR | COMPLETAR | OCR (texto derivado) |
+| OCR Placas Colombia | https://universe.roboflow.com/ia-xgdnt/ocr-placas-colombia-etll5 (fork propio: sergio-ponce-asprilla/ocr-placas-colombia-etll5-lwpkc) | CC BY 4.0 | COMPLETAR | COMPLETAR | OCR (texto derivado) |
 | Placas_Motos_Carros | https://universe.roboflow.com/reimerjsuarez/placas_motos_carros | CC BY 4.0 | COMPLETAR | COMPLETAR | Detector (motos) |
 | motos-placas | https://universe.roboflow.com/placas-sn7fb/motos-placas | CC BY 4.0 | COMPLETAR | COMPLETAR | Detector (motos; origen colombiano NO VERIFICADO) |
 

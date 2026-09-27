@@ -91,7 +91,7 @@ Se implementa en `specs/029-evaluacion.md` (módulo `lector_placas.evaluation`):
 ### 5.1 Fuentes verificadas (2026-09-24)
 | Dataset | URL | Imágenes | Anotación | Licencia | Uso |
 |---|---|---|---|---|---|
-| placas colombianas | https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas | 1 770 | Caja de placa | CC BY 4.0 | Detector |
+| placas colombianas | https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas | 1 770 | NO USABLE: sin versiones y con clases corruptas (verificado 2026-09-26) | CC BY 4.0 | Excluido |
 | Placas Colombia (usco) | https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr | 1 106 | Caja `placa` | MIT (declarada) | Detector |
 | OCR Placas Colombia | https://universe.roboflow.com/ia-xgdnt/ocr-placas-colombia-etll5 | 926 | Caja por carácter (0-9, A-Z, `ciudad`, `placa`) | CC BY 4.0 | OCR (texto derivado) |
 | Placas_Motos_Carros | https://universe.roboflow.com/reimerjsuarez/placas_motos_carros | 469 | Caja `Placas` (carros y motos) | CC BY 4.0 | Detector (motos) |

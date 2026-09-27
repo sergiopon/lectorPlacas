@@ -1,13 +1,13 @@
 version: 1
 format: yolov8
 datasets:
-  - {name: placas_colombianas, workspace: licenseplates-gk27i, project: placas-colombianas, target: detector,
-     plate_classes: auto, license: "CC BY 4.0"}
+# placas_colombianas (licenseplates-gk27i/placas-colombianas) excluido: sin versiones y sus clases están corruptas
+# (texto del README de Roboflow como nombres de clase, 50 clases); no sirve como detector de placas.
   - {name: usco, workspace: usco-thj9e, project: placas-colombia-ixdpr, target: detector,
      plate_classes: [placa], license: "MIT (declarada por quien lo subió)"}
   - {name: placas_motos_carros, workspace: reimerjsuarez, project: placas_motos_carros, target: detector,
      plate_classes: [Placas], license: "CC BY 4.0"}
   - {name: motos_placas, workspace: placas-sn7fb, project: motos-placas, target: detector,
      plate_classes: [motos-placas], license: "CC BY 4.0"}   # NO VERIFICADO que motos-placas sea la clase de placa
-  - {name: ocr_placas_colombia, workspace: ia-xgdnt, project: ocr-placas-colombia-etll5, target: ocr,
-     license: "CC BY 4.0"}
+  - {name: ocr_placas_colombia, workspace: sergio-ponce-asprilla, project: ocr-placas-colombia-etll5-lwpkc, target: ocr,
+     license: "CC BY 4.0"}   # fork de ia-xgdnt/ocr-placas-colombia-etll5 (sin versiones)

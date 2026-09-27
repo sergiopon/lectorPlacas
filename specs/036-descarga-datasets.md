@@ -18,7 +18,10 @@ REST verificada, y `lector dataset prepare` encadena descarga → `merge-detecti
 - Exportación: `GET https://api.roboflow.com/{workspace}/{project}/{version}/{format}?api_key={KEY}&nocache=true` →
   **202** mientras se genera (JSON con `"progress"`), **200** cuando está lista con `payload["export"]["link"]`.
 - Descarga: `GET {link}` → zip. Formato usado: `yolov8`.
-- NO VERIFICADO: la forma exacta de `"id"`. Si el último segmento no es un entero, el comando se detiene con
+- VERIFICADO (2026-09-26, respuesta real de la API): `"id"` tiene la forma `<workspace>/<project>/<n>` (p. ej.
+  `usco-thj9e/placas-colombia-ixdpr/4`); las versiones no vienen ordenadas, por eso se toma el máximo. Un proyecto sin
+  versión generada devuelve `"versions": []` (y `project.versions: 0`) y no se puede exportar: se detiene con
+  `DatasetError("sin versiones generadas: <workspace>/<project>")`. Si el último segmento no es un entero, con
   `DatasetError("formato de versiones inesperado: <workspace>/<project>")`.
 
 ## Archivos a crear/modificar
@@ -107,16 +110,14 @@ def cmd_prepare(args: argparse.Namespace, config: AppConfig) -> int: ...
 version: 1
 format: yolov8
 datasets:
-  - {name: placas_colombianas, workspace: licenseplates-gk27i, project: placas-colombianas, target: detector,
-     plate_classes: auto, license: "CC BY 4.0"}
   - {name: usco, workspace: usco-thj9e, project: placas-colombia-ixdpr, target: detector,
      plate_classes: [placa], license: "MIT (declarada por quien lo subió)"}
   - {name: placas_motos_carros, workspace: reimerjsuarez, project: placas_motos_carros, target: detector,
      plate_classes: [Placas], license: "CC BY 4.0"}
   - {name: motos_placas, workspace: placas-sn7fb, project: motos-placas, target: detector,
      plate_classes: [motos-placas], license: "CC BY 4.0"}   # NO VERIFICADO que motos-placas sea la clase de placa
-  - {name: ocr_placas_colombia, workspace: ia-xgdnt, project: ocr-placas-colombia-etll5, target: ocr,
-     license: "CC BY 4.0"}
+  - {name: ocr_placas_colombia, workspace: sergio-ponce-asprilla, project: ocr-placas-colombia-etll5-lwpkc, target: ocr,
+     license: "CC BY 4.0"}   # fork de ia-xgdnt/ocr-placas-colombia-etll5 (sin versiones)
 ```
 2. `registry.py`:
    - `load_registry`: `yaml.safe_load` + validación; errores → `DatasetError("registro de datasets inválido: <detalle>")`.
@@ -132,8 +133,9 @@ datasets:
      **Nunca** incluye la URL (contiene la clave) en mensajes ni logs.
    - `api_key_from_env(environ)`: valor no vacío de `ROBOFLOW_API_KEY` o `ConfigurationError("defina la variable de entorno ROBOFLOW_API_KEY")`.
    - `latest_version`: GET del proyecto; status ≠ 200 → `DatasetError(f"no se pudo consultar {workspace}/{project} (HTTP {status})")`;
-     `max(int(str(v["id"]).rsplit("/", 1)[-1]) for v in json["versions"])`; lista vacía o `KeyError`/`ValueError`/`TypeError`/
-     `json.JSONDecodeError` → `DatasetError(f"formato de versiones inesperado: {workspace}/{project}")`.
+     `max(int(str(v["id"]).rsplit("/", 1)[-1]) for v in json["versions"])`; **lista vacía** (proyecto sin versión generada;
+     Roboflow solo exporta versiones generadas) → `DatasetError(f"sin versiones generadas: {workspace}/{project}")`;
+     `KeyError`/`ValueError`/`TypeError`/`json.JSONDecodeError` → `DatasetError(f"formato de versiones inesperado: {workspace}/{project}")`.
    - `export_link`: hasta `MAX_POLLS` intentos: 202 → `sleep(POLL_SECONDS)`; 200 → `json["export"]["link"]` (debe empezar por
      `https://`, si no o si falta → `DatasetError`); otro status → `DatasetError(f"exportación falló: {workspace}/{project} (HTTP {status})")`.
      Agotados los intentos → `DatasetError("la exportación no terminó a tiempo")`.
@@ -172,7 +174,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-from lector_placas.datasets.registry import load_registry, resolve_plate_classes, write_sources_file
+from lector_placas.datasets.registry import (
+    DatasetEntry,
+    load_registry,
+    resolve_plate_classes,
+    write_sources_file,
+)
 from lector_placas.domain.errors import DatasetError
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -180,7 +187,12 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_real_registry_is_valid() -> None:
     registry = load_registry(ROOT / "config" / "datasets.yaml")
-    assert [d.name for d in registry.datasets][:2] == ["placas_colombianas", "usco"]
+    assert [d.name for d in registry.datasets] == [
+        "usco",
+        "placas_motos_carros",
+        "motos_placas",
+        "ocr_placas_colombia",
+    ]
     assert registry.datasets[-1].target == "ocr"
 
 
@@ -193,7 +205,10 @@ def make_raw(tmp_path: Path, name: str, names: object) -> Path:
 
 def test_resolve_auto_and_explicit(tmp_path: Path) -> None:
     registry = load_registry(ROOT / "config" / "datasets.yaml")
-    auto, explicit = registry.datasets[0], registry.datasets[1]
+    explicit = registry.datasets[0]
+    auto = DatasetEntry(
+        name="auto", workspace="ws", project="proj", target="detector", license="CC BY 4.0"
+    )
     assert resolve_plate_classes(auto, make_raw(tmp_path, "a", ["plate"])) == ("plate",)
     assert resolve_plate_classes(explicit, tmp_path) == ("placa",)
     with pytest.raises(DatasetError):
@@ -270,6 +285,8 @@ def test_latest_version_picks_max_and_hides_key() -> None:
     assert KEY not in str(error.value)
     with pytest.raises(DatasetError):
         latest_version(FakeHttp({PROJECT: [(200, b'{"versions": [{"id": "x/y/z"}]}')]}), KEY, "ws", "proj")
+    with pytest.raises(DatasetError, match="sin versiones generadas: ws/proj"):
+        latest_version(FakeHttp({PROJECT: [(200, b'{"versions": []}')]}), KEY, "ws", "proj")
 
 
 def test_export_link_polls_until_ready() -> None:
