@@ -54,7 +54,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 046 | [Decidir sobre un avistamiento (`DecideSighting`)](046-decidir-avistamiento.md) | 027 | Implementada |
 | 047 | [GUI: tema, tarjeta de placa y cuadrícula](047-gui-tema-tarjetas.md) | 042, 044 | Implementada |
 | 048 | [GUI: página Lecturas (galería y revisión)](048-gui-lecturas-revision.md) | 041, 046, 047 | Implementada |
-| 049 | [GUI: ventana rediseñada y flujo de procesar](049-gui-ventana-procesar.md) | 043, 045, 047, 048 | Lista |
+| 049 | [GUI: ventana rediseñada y flujo de procesar](049-gui-ventana-procesar.md) | 043, 045, 047, 048 | Implementada |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
