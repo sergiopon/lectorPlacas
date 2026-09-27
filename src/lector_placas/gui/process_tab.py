@@ -6,17 +6,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
 
-from PySide6.QtCore import (
-    QAbstractTableModel,
-    QModelIndex,
-    QObject,
-    QPersistentModelIndex,
-    Qt,
-    QThread,
-    Signal,
-)
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QComboBox,
     QFileDialog,
     QHBoxLayout,
@@ -24,61 +15,39 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QTableView,
     QVBoxLayout,
     QWidget,
 )
 
-from lector_placas.application.ports import ProgressUpdate, RunRecord, RunStatus
+from lector_placas.application.ports import ProgressUpdate
 from lector_placas.application.process_video import RunResult
 from lector_placas.cli import composition
 from lector_placas.domain.errors import LectorPlacasError, RepositoryError
 from lector_placas.gui.processing import ProcessingRequest, ProcessingWorker
+from lector_placas.gui.runs_model import NOT_AVAILABLE, RUN_COLUMNS, RunsTableModel
 from lector_placas.gui.session import GuiSession
+from lector_placas.gui.widgets import NoCopyTableView
+
+__all__ = ["RUN_COLUMNS", "ProcessTab", "RunsTableModel"]
 
 RUNS_PAGE_SIZE: Final[int] = 50
-RUN_COLUMNS: Final[tuple[str, ...]] = (
-    "Corrida",
-    "Inicio",
-    "Perfil",
-    "Estado",
-    "Duración",
-    "Confirmadas",
-    "Sin verificar",
-    "Sin lectura",
-    "Velocidad",
-)
 STATUS_CANCELLING: Final[str] = "cancelando…"
 STATUS_CANCELLED: Final[str] = "procesamiento cancelado"
-NOT_AVAILABLE: Final[str] = "n/d"
 DIALOG_TITLE: Final[str] = "lectorPlacas"
 VIDEO_DIALOG_CAPTION: Final[str] = "Elegir video"
 
-_STATUS_TEXT: Final[dict[RunStatus, str]] = {
-    RunStatus.COMPLETED: "completada",
-    RunStatus.FAILED: "fallida",
-    RunStatus.RUNNING: "en curso",
-}
-
-
-def _format_duration(duration_ms: int | None) -> str:
-    """Formatea una duración de video en `mm:ss` o `n/d` si se desconoce."""
-    if duration_ms is None:
-        return NOT_AVAILABLE
-    minutes, seconds = divmod(duration_ms // 1000, 60)
-    return f"{minutes:02d}:{seconds:02d}"
-
-
-def _format_count(value: int | None) -> str:
-    """Formatea un conteo entero o `n/d` si se desconoce."""
-    return NOT_AVAILABLE if value is None else str(value)
-
-
-def _format_velocity(duration_ms: int | None, processing_ms: int | None) -> str:
-    """Formatea la velocidad de procesamiento como `d.dd x` o `n/d` si falta algún dato."""
-    if duration_ms is None or processing_ms is None or processing_ms == 0:
-        return NOT_AVAILABLE
-    return f"{duration_ms / processing_ms:.2f}x"
+_Controls = tuple[
+    QPushButton,
+    QLabel,
+    QComboBox,
+    QPushButton,
+    QPushButton,
+    QProgressBar,
+    QLabel,
+    RunsTableModel,
+    NoCopyTableView,
+    QPushButton,
+]
 
 
 def _video_filter(extensions: Sequence[str]) -> str:
@@ -86,75 +55,86 @@ def _video_filter(extensions: Sequence[str]) -> str:
     return "Videos (" + " ".join(f"*{extension}" for extension in extensions) + ")"
 
 
-class RunsTableModel(QAbstractTableModel):
-    """Modelo de tabla de solo lectura con una fila por `RunRecord`."""
+def _progress_text(update: ProgressUpdate) -> str:
+    """Compone el texto de estado mientras avanza el procesamiento."""
+    return (
+        f"frames {update.frames_processed}/{update.frames_decoded} "
+        f"· avistamientos {update.sightings_saved}"
+    )
 
-    def __init__(self, parent: QObject | None = None) -> None:
-        """Crea un modelo vacío.
 
-        Args:
-            parent: objeto padre del modelo.
-        """
-        super().__init__(parent)
-        self._runs: tuple[RunRecord, ...] = ()
+def _success_text(result: RunResult) -> str:
+    """Compone el resumen final de una corrida exitosa."""
+    stats = result.stats
+    velocity = f"{stats.speed_factor:.2f}x" if stats.speed_factor is not None else NOT_AVAILABLE
+    return (
+        f"run_id={result.run_id} frames={stats.frames_processed}/{stats.frames_decoded} "
+        f"confirmadas={stats.sightings_confirmed} sin_verificar={stats.sightings_unverified} "
+        f"sin_lectura={stats.tracks_without_reading} velocidad={velocity}"
+    )
 
-    def set_runs(self, runs: Sequence[RunRecord]) -> None:
-        """Reemplaza las corridas mostradas por `runs`."""
-        self.beginResetModel()
-        self._runs = tuple(runs)
-        self.endResetModel()
 
-    def rowCount(  # noqa: N802
-        self, parent: QModelIndex | QPersistentModelIndex | None = None
-    ) -> int:
-        """Número de filas (una por corrida)."""
-        return len(self._runs)
+def _make_controls(session: GuiSession, parent: QWidget) -> _Controls:
+    """Crea los diez controles propios de la pestaña, en el orden que devuelve la tupla."""
+    config = session.config
+    profile_combo = QComboBox(parent)
+    profile_combo.addItems(list(config.profiles))
+    profile_combo.setCurrentText(config.profile(None)[0])
+    cancel_button = QPushButton("Cancelar", parent)
+    cancel_button.setEnabled(False)
+    progress_bar = QProgressBar(parent)
+    progress_bar.setRange(0, 0)
+    model = RunsTableModel(parent)
+    table_view = NoCopyTableView(parent)
+    table_view.setModel(model)
+    return (
+        QPushButton("Elegir video…", parent),
+        QLabel(parent),
+        profile_combo,
+        QPushButton("Procesar", parent),
+        cancel_button,
+        progress_bar,
+        QLabel(parent),
+        model,
+        table_view,
+        QPushButton("Actualizar", parent),
+    )
 
-    def columnCount(  # noqa: N802
-        self, parent: QModelIndex | QPersistentModelIndex | None = None
-    ) -> int:
-        """Número de columnas, fijo e igual a `RUN_COLUMNS`."""
-        return len(RUN_COLUMNS)
 
-    def data(
-        self,
-        index: QModelIndex | QPersistentModelIndex,
-        role: int = Qt.ItemDataRole.DisplayRole,
-    ) -> str | None:
-        """Texto de la celda `index` para el rol de visualización."""
-        if role != Qt.ItemDataRole.DisplayRole or not index.isValid():
-            return None
-        return self._cell_text(self._runs[index.row()], index.column())
+def _wire_worker(tab: ProcessTab, worker: ProcessingWorker, thread: QThread) -> None:
+    """Conecta las señales del worker a los slots de `tab`."""
+    worker.moveToThread(thread)
+    thread.started.connect(worker.run)
+    # `quit()` corre en el hilo del worker (conexión directa): si fuera encolada al hilo de
+    # la GUI, `wait_for_worker()` (que bloquea con `thread.wait()`) nunca la procesaría.
+    worker.finished.connect(thread.quit, Qt.ConnectionType.DirectConnection)
+    worker.progress.connect(tab._on_progress)
+    worker.succeeded.connect(tab._on_succeeded)
+    worker.cancelled.connect(tab._on_cancelled)
+    worker.failed.connect(tab._on_failed)
+    worker.finished.connect(tab._on_finished)
 
-    def headerData(  # noqa: N802
-        self,
-        section: int,
-        orientation: Qt.Orientation,
-        role: int = Qt.ItemDataRole.DisplayRole,
-    ) -> str | None:
-        """Título de la columna `section` en orientación horizontal."""
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            return RUN_COLUMNS[section]
-        return None
 
-    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
-        """Solo lectura: las celdas se pueden seleccionar pero no editar."""
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-
-    def _cell_text(self, run: RunRecord, column: int) -> str:
-        """Devuelve el texto de la celda de `run` en la columna `column`."""
-        values = (
-            str(run.run_id),
-            run.started_at.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-            run.profile,
-            _STATUS_TEXT[run.status],
-            _format_duration(run.duration_ms),
-            _format_count(run.sightings_confirmed),
-            _format_count(run.sightings_unverified),
-            _format_count(run.tracks_without_reading),
-            _format_velocity(run.duration_ms, run.processing_ms),
-        )
-        return values[column]
+def _make_layout(controls: _Controls) -> QVBoxLayout:
+    """Arma los layouts de la pestaña a partir de sus controles, en el mismo orden."""
+    choose_button, file_label, profile_combo, process_button, cancel_button = controls[:5]
+    progress_bar, status_label, _model, table_view, refresh_button = controls[5:]
+    choose_row = QHBoxLayout()
+    choose_row.addWidget(choose_button)
+    choose_row.addWidget(file_label, 1)
+    profile_row = QHBoxLayout()
+    profile_row.addWidget(profile_combo)
+    profile_row.addWidget(process_button)
+    profile_row.addWidget(cancel_button)
+    profile_row.addStretch(1)
+    layout = QVBoxLayout()
+    layout.addLayout(choose_row)
+    layout.addLayout(profile_row)
+    layout.addWidget(progress_bar)
+    layout.addWidget(status_label)
+    layout.addWidget(table_view, 1)
+    layout.addWidget(refresh_button)
+    return layout
 
 
 class ProcessTab(QWidget):
@@ -197,17 +177,7 @@ class ProcessTab(QWidget):
         worker = ProcessingWorker(
             self._session.config, self._session.keys, ProcessingRequest(video, profile_name)
         )
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
-        # Conexión directa: `quit()` es seguro entre hilos y debe ejecutarse en el hilo del
-        # worker al final de `run()`. Si fuera encolada al hilo de la GUI, `wait_for_worker()`
-        # (que bloquea con `thread.wait()`) nunca llegaría a procesarla y se colgaría.
-        worker.finished.connect(thread.quit, Qt.ConnectionType.DirectConnection)
-        worker.progress.connect(self._on_progress)
-        worker.succeeded.connect(self._on_succeeded)
-        worker.cancelled.connect(self._on_cancelled)
-        worker.failed.connect(self._on_failed)
-        worker.finished.connect(self._on_finished)
+        _wire_worker(self, worker, thread)
         self._thread = thread
         self._worker = worker
         thread.start()
@@ -215,9 +185,8 @@ class ProcessTab(QWidget):
 
     def cancel(self) -> None:
         """Pide cancelar el procesamiento en curso y deshabilita el botón "Cancelar"."""
-        worker = self._worker
-        if worker is not None:
-            worker.request_cancel()
+        if self._worker is not None:
+            self._worker.request_cancel()
         self._cancel_button.setEnabled(False)
         self._status_label.setText(STATUS_CANCELLING)
 
@@ -237,55 +206,21 @@ class ProcessTab(QWidget):
         self._model.set_runs(runs)
 
     def _build_ui(self) -> None:
-        """Crea y conecta los controles de la pestaña."""
-        self._create_controls()
-        layout = self._create_layout()
-        self.setLayout(layout)
-        self._connect_signals()
-
-    def _create_controls(self) -> None:
-        """Crea todos los controles de la pestaña."""
-        config = self._session.config
-        self._choose_button = QPushButton("Elegir video…", self)
-        self._file_label = QLabel(self)
-        self._profile_combo = QComboBox(self)
-        self._profile_combo.addItems(list(config.profiles))
-        self._profile_combo.setCurrentText(config.profile(None)[0])
-        self._process_button = QPushButton("Procesar", self)
-        self._cancel_button = QPushButton("Cancelar", self)
-        self._cancel_button.setEnabled(False)
-        self._progress_bar = QProgressBar(self)
-        self._progress_bar.setRange(0, 0)
-        self._status_label = QLabel(self)
-        self._model = RunsTableModel(self)
-        self._table_view = QTableView(self)
-        self._table_view.setModel(self._model)
-        self._table_view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self._refresh_button = QPushButton("Actualizar", self)
-
-    def _create_layout(self) -> QVBoxLayout:
-        """Crea y arma los layouts de la pestaña."""
-        choose_row = QHBoxLayout()
-        choose_row.addWidget(self._choose_button)
-        choose_row.addWidget(self._file_label, 1)
-
-        profile_row = QHBoxLayout()
-        profile_row.addWidget(self._profile_combo)
-        profile_row.addWidget(self._process_button)
-        profile_row.addWidget(self._cancel_button)
-        profile_row.addStretch(1)
-
-        layout = QVBoxLayout()
-        layout.addLayout(choose_row)
-        layout.addLayout(profile_row)
-        layout.addWidget(self._progress_bar)
-        layout.addWidget(self._status_label)
-        layout.addWidget(self._table_view, 1)
-        layout.addWidget(self._refresh_button)
-        return layout
-
-    def _connect_signals(self) -> None:
-        """Conecta las señales de los controles a los slots de la pestaña."""
+        """Crea los controles, arma el layout y conecta las señales de la pestaña."""
+        controls = _make_controls(self._session, self)
+        (
+            self._choose_button,
+            self._file_label,
+            self._profile_combo,
+            self._process_button,
+            self._cancel_button,
+            self._progress_bar,
+            self._status_label,
+            self._model,
+            self._table_view,
+            self._refresh_button,
+        ) = controls
+        self.setLayout(_make_layout(controls))
         self._choose_button.clicked.connect(self._on_choose_clicked)
         self._process_button.clicked.connect(self._on_process_clicked)
         self._cancel_button.clicked.connect(self.cancel)
@@ -294,11 +229,10 @@ class ProcessTab(QWidget):
     def _on_choose_clicked(self) -> None:
         """Abre el diálogo de archivo y muestra el nombre del video elegido."""
         config = self._session.config
-        directory = config.under_root(config.input.allowed_dirs[0])
         filename, _selected = QFileDialog.getOpenFileName(
             self,
             VIDEO_DIALOG_CAPTION,
-            str(directory),
+            str(config.under_root(config.input.allowed_dirs[0])),
             _video_filter(config.input.allowed_extensions),
         )
         if not filename:
@@ -334,20 +268,11 @@ class ProcessTab(QWidget):
         else:
             self._progress_bar.setRange(0, 1000)
             self._progress_bar.setValue(round(fraction * 1000))
-        self._status_label.setText(
-            f"frames {update.frames_processed}/{update.frames_decoded} "
-            f"· avistamientos {update.sightings_saved}"
-        )
+        self._status_label.setText(_progress_text(update))
 
     def _on_succeeded(self, result: RunResult) -> None:
         """Muestra el resumen final de la corrida exitosa."""
-        stats = result.stats
-        velocity = f"{stats.speed_factor:.2f}x" if stats.speed_factor is not None else NOT_AVAILABLE
-        self._status_label.setText(
-            f"run_id={result.run_id} frames={stats.frames_processed}/{stats.frames_decoded} "
-            f"confirmadas={stats.sightings_confirmed} sin_verificar={stats.sightings_unverified} "
-            f"sin_lectura={stats.tracks_without_reading} velocidad={velocity}"
-        )
+        self._status_label.setText(_success_text(result))
 
     def _on_cancelled(self) -> None:
         """Muestra el aviso de procesamiento cancelado."""
