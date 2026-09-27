@@ -15,16 +15,24 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
         "lector_placas.cli",
         "lector_placas.evaluation",
         "lector_placas.datasets",
+        "lector_placas.gui",
     ),
     "infrastructure": (
         "lector_placas.adapters",
         "lector_placas.cli",
         "lector_placas.evaluation",
         "lector_placas.datasets",
+        "lector_placas.gui",
     ),
-    "adapters": ("lector_placas.cli", "lector_placas.evaluation", "lector_placas.datasets"),
-    "evaluation": ("lector_placas.cli", "lector_placas.datasets"),
-    "datasets": ("lector_placas.cli", "lector_placas.evaluation"),
+    "adapters": (
+        "lector_placas.cli",
+        "lector_placas.evaluation",
+        "lector_placas.datasets",
+        "lector_placas.gui",
+    ),
+    "evaluation": ("lector_placas.cli", "lector_placas.datasets", "lector_placas.gui"),
+    "datasets": ("lector_placas.cli", "lector_placas.evaluation", "lector_placas.gui"),
+    "cli": ("lector_placas.gui",),
 }
 
 
@@ -73,3 +81,27 @@ def test_nobody_imports_torch_or_ultralytics() -> None:
     for path in sorted(SRC.rglob("*.py")):
         for name in _imports(path):
             assert name.split(".")[0] not in {"torch", "ultralytics", "pickle"}, f"{path}: {name}"
+
+
+def test_gui_imports_from_cli_only_composition() -> None:
+    for path in _files("gui"):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not alias.name.startswith("lector_placas.cli"), f"{path}: {alias.name}"
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                if not node.module.startswith("lector_placas.cli"):
+                    continue
+                allowed = node.module == "lector_placas.cli.composition" or (
+                    node.module == "lector_placas.cli"
+                    and all(alias.name == "composition" for alias in node.names)
+                )
+                assert allowed, f"{path}: {node.module}"
+
+
+def test_nobody_outside_gui_imports_pyside6() -> None:
+    for path in sorted(SRC.rglob("*.py")):
+        if "gui" in path.relative_to(SRC).parts:
+            continue
+        for name in _imports(path):
+            assert name.split(".")[0] != "PySide6", f"{path}: {name}"
