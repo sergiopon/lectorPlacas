@@ -216,6 +216,7 @@ consolidation:
 retention:
   crops_days: 30
   records_days: 90
+  training_days: 180                 # exportaciones de entrenamiento (spec 035)
 
 logging:
   level: INFO                          # DEBUG | INFO | WARNING | ERROR
@@ -267,7 +268,7 @@ Notas del catálogo:
 | `default_profile` | existe en `profiles` |
 | `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1] |
 | `consolidation.confusions` | pares `[letra A-Z, dígito 0-9]`, sin letras ni dígitos repetidos |
-| `retention` | `1 <= crops_days <= records_days <= 3650` |
+| `retention` | `1 <= crops_days <= records_days <= 3650`; `1 <= training_days <= 3650` |
 | `plate_formats` | ≥ 1; `format_id` únicos; `regex` compila; `pattern` `^[LD]{1,10}$` |
 
 ## 5. Manifiesto de modelos — `config/models.yaml`
