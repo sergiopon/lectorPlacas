@@ -52,8 +52,8 @@
 
 | ID | Regla |
 |---|---|
-| SEG-20 | En runtime NO DEBE haber llamadas de red. Todo comando excepto `lector models fetch` DEBE llamar `block_network()` antes de cargar modelos o abrir la BD. La clave maestra se lee del keyring antes de `block_network()`: el keyring usa D-Bus sobre un socket Unix local, que la guardia también bloquea. |
-| SEG-21 | `lector models fetch` DEBE aceptar solo URLs `https://github.com/` del manifiesto y verificar tamaño y SHA-256 antes de mover el archivo a `models/`. |
+| SEG-20 | En runtime NO DEBE haber llamadas de red. Todo comando excepto `lector models fetch` DEBE llamar `block_network()` antes de cargar modelos o abrir la BD. La clave maestra se lee del keyring antes de `block_network()`: el keyring usa D-Bus sobre un socket Unix local, que la guardia también bloquea. Excepción: `lector dataset download` y `lector dataset prepare` (spec 036) también usan red, solo para descargar datasets de entrenamiento. |
+| SEG-21 | `lector models fetch` DEBE aceptar solo URLs `https://github.com/` del manifiesto y verificar tamaño y SHA-256 antes de mover el archivo a `models/`. `lector dataset download` solo llama a `https://api.roboflow.com` y al enlace `https` de exportación que esa API devuelve; la API key se lee solo de la variable de entorno `ROBOFLOW_API_KEY` y NO DEBE aparecer en logs, mensajes de error, archivos ni el repo. |
 | SEG-22 | En `training/`, los scripts DEBEN exportar `YOLO_OFFLINE=True` y `YOLO_AUTOINSTALL=False`, salvo el paso explícito de descarga de pesos base. |
 
 ## 7. Dependencias y secretos
@@ -73,7 +73,7 @@
 - [ ] ¿Toda ruta de salida pasa por `resolve_within` y todo directorio por `ensure_private_dir`? (SEG-04, SEG-13)
 - [ ] ¿Los archivos nuevos se crean 0600 y de forma atómica cuando contienen datos? (SEG-04)
 - [ ] ¿Se escribe algo descifrado a disco? (SEG-01, SEG-07)
-- [ ] ¿Algún import de red (`requests`, `urllib`, `socket`, `http`) fuera de `infrastructure/model_fetcher.py`? (SEG-20)
+- [ ] ¿Algún import de red (`requests`, `urllib`, `socket`, `http`) fuera de `infrastructure/model_fetcher.py` e `infrastructure/dataset_fetcher.py`? (SEG-20)
 - [ ] ¿Los modelos se obtienen solo con `ModelRegistry.verified_path`? (SEG-17, SEG-19)
 - [ ] ¿Los fixtures son sintéticos y no hay binarios reales en el diff? (SEG-10)
 - [ ] ¿Se capturan excepciones genéricas fuera de `cli/main.py`? (ARQUITECTURA §6)

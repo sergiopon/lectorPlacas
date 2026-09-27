@@ -41,10 +41,12 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 033 | [Generador de placas sintéticas](033-generador-sintetico.md) | 032 | Implementada |
 | 034 | [Revisión: interfaz en la ventana](034-revision-ui-ventana.md) | 027 | Implementada |
 | 035 | [Exportar lecturas revisadas para reentrenar el OCR](035-exportar-revisados.md) | 006, 021, 025, 026, 028, 031 | Implementada |
+| 036 | [Descarga automática de datasets (Roboflow) y preparación](036-descarga-datasets.md) | 007, 019, 028, 031 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
 Decisión del usuario (2026-09-26): exportar lecturas revisadas con retención propia (180 días) → spec 035; excepción documentada en SEG-07/SEG-03 y ADR-005.
+Decisión del usuario (2026-09-26): métricas con datasets en vez de ground truth manual → spec 036 (descarga por API REST de Roboflow; excepción de red en SEG-20/SEG-21 y ADR-012; clave solo en `ROBOFLOW_API_KEY`).
 
 ## Correcciones de specs (hechas por el orquestador)
 

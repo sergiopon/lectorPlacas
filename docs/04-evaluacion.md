@@ -93,8 +93,11 @@ usco), veracidad de licencias declaradas, proporción día/noche y de motos. Exc
 usuario: RodoSol-ALPR, UFPR-ALPR. Excluido por licencia ambigua: generador de `ddfulaa/deteccion_placas`
 (README dice MIT, el repositorio no tiene archivo LICENSE).
 
-Descarga: manual desde el navegador en formato "YOLOv8" (detector) / "YOLOv8" o "COCO" (caracteres),
-a `training/detector/datasets/raw/<nombre>/` y `training/ocr/datasets/raw/<nombre>/`. Registrar URL,
+Descarga automática (spec 036, decisión del usuario 2026-09-26): `lector dataset download` baja la última versión
+de cada proyecto listado en `config/datasets.yaml` en formato "yolov8" por la API REST de Roboflow (clave solo en la
+variable de entorno `ROBOFLOW_API_KEY`) a `training/detector/datasets/raw/<nombre>/` y
+`training/ocr/datasets/raw/<nombre>/`, y genera `training/detector/sources.yaml`; `lector dataset prepare` además
+ejecuta `merge-detection` y `chars-to-ocr`. La descarga manual desde el navegador sigue siendo válida. Registrar URL,
 versión y licencia en `docs/datasets/ATRIBUCIONES.md` (obligatorio por CC BY 4.0).
 
 ### 5.2 Datos propios
