@@ -16,7 +16,7 @@ models:
      sha256: 28d570970b867a53a4c5c7787db0c22372882bbbcc1d68d3c0a657ea97cf7b64, size_bytes: 9942097,
      license: AGPL-3.0, source: "exportado localmente desde yolo26n.pt (spec 030)"}
   - {model_id: yolo26n-plates, filename: yolo26n-plates.onnx, url: null,
-     sha256: PENDIENTE_EXPORT, size_bytes: 0,
+     sha256: 8676a19b5388ce852b0a71fcb6ced841efce33bbc2fa638fbf2a76484f4ea770, size_bytes: 9804866,
      license: AGPL-3.0, source: "YOLO26n fine-tuneado con placas colombianas (spec 030)"}
   - {model_id: fpo-cct-xs-v2-colombia, filename: fpo-cct-xs-v2-colombia.onnx, url: null,
      sha256: PENDIENTE_EXPORT, size_bytes: 0,
