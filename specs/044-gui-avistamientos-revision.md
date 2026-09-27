@@ -20,8 +20,17 @@ rechazar) con un diálogo Qt que implementa el puerto `ReviewUI`, reutilizando `
 - `src/lector_placas/gui/sightings_tab.py` (nuevo: filtros, modelo de tabla, detalle y acciones de revisión)
 - `src/lector_placas/gui/main_window.py` (inserta la pestaña y conecta `busy_changed` y `run_finished`)
 - `src/lector_placas/gui/process_tab.py` (usa `labels.py` y `NoCopyTableView` para la tabla de corridas)
+- `src/lector_placas/gui/runs_model.py` (nuevo: `RunsTableModel` y `RUN_COLUMNS` salen de `process_tab.py`)
+- `src/lector_placas/gui/sightings_model.py` (nuevo: `SightingsTableModel`, `SIGHTING_COLUMNS` y textos de detalle)
+- `src/lector_placas/gui/sightings_filters.py` (nuevo: widget de filtros de la pestaña Avistamientos)
+- `src/lector_placas/gui/sightings_detail.py` (nuevo: widget de detalle con el recorte)
 - `tests/unit/gui/test_labels.py`, `tests/unit/gui/test_widgets.py`, `tests/unit/gui/test_review_dialog.py`,
-  `tests/unit/gui/test_sightings_tab.py` (nuevos)
+  `tests/unit/gui/test_sightings_tab.py` (nuevos); `tests/unit/gui/test_process_tab.py` (solo imports, si cambian)
+
+Tamaño (ARQUITECTURA §6): cada módulo ≤ 300 líneas y cada clase ≤ 150. Los nombres públicos del contrato siguen
+importables desde el módulo que indica el contrato (`process_tab.RunsTableModel`, `sightings_tab.SightingsTableModel`,
+`sightings_tab.SIGHTING_COLUMNS`, …), reexportándolos si se movieron. `ReviewDialog` puede delegar la lógica del texto
+en edición en una clase auxiliar privada del mismo módulo.
 
 ## Dependencias externas
 Ninguna nueva.
@@ -87,6 +96,9 @@ class SightingsTab(QWidget):
      solo `A-Z0-9`): Enter → si el texto cumple `PLATE_TEXT_REGEX` y es distinto de `plate_text` →
      `ReviewDecision(CORRECT, texto)`; si es igual → `CONFIRM`; si no cumple → muestra `INVALID_TEXT` y sigue en edición.
      Esc en edición → vuelve al modo menú restaurando `plate_text`.
+   - En modo menú, cualquier otra tecla (incluidas Enter y Espacio) no hace nada: los botones no reciben foco
+     (`Qt.NoFocus`) ni son botón por defecto (`autoDefault`/`default` en `False`), para que Enter no confirme por
+     accidente. El campo de texto lleva delante la etiqueta "Texto actual".
    - Devuelve la decisión al cerrarse el `exec()`. No escribe nada a disco ni al portapapeles; no registra el texto.
 4. **`QtReviewUI`**: crea un único `ReviewDialog(parent)` perezosamente y lo reutiliza en cada `ask`; `close()` lo
    cierra y descarta (idempotente). Así `ReviewSightings.execute` funciona sin cambios: su bucle llama `ask` y el
@@ -145,6 +157,8 @@ Sin pantalla (conftest de la spec 042). Datos sintéticos: `InMemoryPlateReposit
    - `test_confirm_reject_skip_quit_keys`: C, R, S y Esc devuelven la acción correspondiente.
    - `test_edit_and_correct`: E, escribir `xyz98k`, Enter → `CORRECT` con `"XYZ98K"`.
    - `test_edit_same_text_confirms`.
+   - `test_enter_and_space_in_menu_do_nothing`: en modo menú, Enter y Espacio no cierran el diálogo; luego C →
+     `CONFIRM`.
    - `test_edit_invalid_text_stays`: E, borrar todo, Enter → sigue abierto con `INVALID_TEXT` visible; luego Esc, Esc →
      `QUIT`.
    - `test_dialog_without_crop_shows_placeholder`.
