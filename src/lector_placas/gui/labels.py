@@ -57,6 +57,17 @@ RUN_STATUS_LABELS: Final[Mapping[RunStatus, str]] = MappingProxyType(
     }
 )
 
+PROFILE_LABELS: Final[Mapping[str, tuple[str, str]]] = MappingProxyType(
+    {
+        "parqueadero": (
+            "Parqueadero o entrada",
+            "Vehículos lentos o detenidos, cerca de la cámara",
+        ),
+        "calle_lenta": ("Calle con tráfico lento", "Tráfico urbano normal"),
+        "calle_rapida": ("Vía rápida", "Vehículos a mayor velocidad"),
+    }
+)
+
 _MS_PER_SECOND: Final[int] = 1000
 _MS_PER_MINUTE: Final[int] = 60 * _MS_PER_SECOND
 _MS_PER_HOUR: Final[int] = 60 * _MS_PER_MINUTE
@@ -121,6 +132,22 @@ def short_time(ms: int) -> str:
     if hours:
         return f"{hours}:{minutes:02d}:{seconds:02d}"
     return f"{minutes}:{seconds:02d}"
+
+
+def profile_label(profile: str) -> str:
+    """Devuelve el nombre legible de un perfil de escenario.
+
+    Args:
+        profile: clave de perfil (p. ej. `"calle_lenta"`).
+
+    Returns:
+        El nombre del catálogo o, si el perfil es desconocido, la clave con espacios
+        y la primera letra en mayúscula.
+    """
+    known = PROFILE_LABELS.get(profile)
+    if known is not None:
+        return known[0]
+    return profile.replace("_", " ").capitalize()
 
 
 def format_plate(text: str) -> str:

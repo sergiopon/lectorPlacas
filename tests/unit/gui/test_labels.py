@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from lector_placas.application.ports import RunStatus
 from lector_placas.domain.entities import ReviewStatus, UnverifiedReason, VehicleType
 from lector_placas.gui.labels import (
+    PROFILE_LABELS,
     REASON_TEXTS,
     RUN_STATUS_LABELS,
     STATUS_BADGES,
@@ -13,6 +14,7 @@ from lector_placas.gui.labels import (
     format_plate,
     local_datetime,
     percent,
+    profile_label,
     short_time,
     video_time,
 )
@@ -75,3 +77,15 @@ def test_short_time() -> None:
     assert short_time(0) == "0:00"
     assert short_time(83_456) == "1:23"
     assert short_time(3_723_004) == "1:02:03"
+
+
+def test_profile_label_known_and_unknown() -> None:
+    assert profile_label("parqueadero") == "Parqueadero o entrada"
+    assert profile_label("calle_lenta") == "Calle con tráfico lento"
+    assert profile_label("calle_rapida") == "Vía rápida"
+    assert profile_label("otro_perfil") == "Otro perfil"
+    assert profile_label("desconocido") == "Desconocido"
+    assert set(PROFILE_LABELS) == {"parqueadero", "calle_lenta", "calle_rapida"}
+    for name, description in PROFILE_LABELS.values():
+        assert name
+        assert description
