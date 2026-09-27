@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from lector_placas.application.ports import (
     AuditEvent,
@@ -12,6 +12,7 @@ from lector_placas.application.ports import (
     CropStore,
     ExportStore,
     PlateRepository,
+    TrainingExportStore,
 )
 from lector_placas.domain.errors import ConfigurationError
 
@@ -20,21 +21,25 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class RetentionPolicy:
-    """Días de retención de recortes y de registros."""
+    """Días de retención de recortes, registros y exportaciones de entrenamiento."""
 
     crops_days: int
     records_days: int
+    training_days: int = 180
 
     def __post_init__(self) -> None:
         """Valida la relación entre los días de retención.
 
         Raises:
-            ConfigurationError: si no se cumple `1 <= crops_days <= records_days`.
+            ConfigurationError: si no se cumple `1 <= crops_days <= records_days` o
+                `training_days >= 1`.
         """
         if not 1 <= self.crops_days <= self.records_days:
             raise ConfigurationError(
                 f"retención inválida: crops_days={self.crops_days} records_days={self.records_days}"
             )
+        if self.training_days < 1:
+            raise ConfigurationError(f"retención inválida: training_days={self.training_days}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +51,7 @@ class PurgeResult:
     runs_deleted: int
     plates_deleted: int
     exports_deleted: int
+    training_deleted: int = 0
 
 
 class PurgeExpiredData:
@@ -63,6 +69,7 @@ class PurgeExpiredData:
         export_store: ExportStore,
         clock: Clock,
         policy: RetentionPolicy,
+        training_store: TrainingExportStore | None = None,
     ) -> None:
         """Inicializa el caso de uso con sus puertos y su política.
 
@@ -71,13 +78,15 @@ class PurgeExpiredData:
             crop_store: almacén de recortes de placa cifrados.
             export_store: almacén de exportaciones de avistamientos.
             clock: fuente de la hora actual en UTC.
-            policy: días de retención de recortes y de registros.
+            policy: días de retención de recortes, registros y entrenamiento.
+            training_store: almacén de exportaciones de entrenamiento; `None` no borra ninguna.
         """
         self._repository = repository
         self._crop_store = crop_store
         self._export_store = export_store
         self._clock = clock
         self._policy = policy
+        self._training_store = training_store
 
     def execute(self) -> PurgeResult:
         """Ejecuta la purga en orden y registra el evento de auditoría.
@@ -95,18 +104,27 @@ class PurgeExpiredData:
             self._crop_store.delete(ref)
         swept = self._crop_store.delete_older_than(crops_cutoff)
         exports = self._export_store.delete_older_than(records_cutoff)
+        training = self._delete_training(now)
         result = PurgeResult(
             crops_deleted=len(refs) + swept,
             sightings_deleted=purge.sightings_deleted,
             runs_deleted=purge.runs_deleted,
             plates_deleted=purge.plates_deleted,
             exports_deleted=exports,
+            training_deleted=training,
         )
         detail = (
             f"recortes={result.crops_deleted} avistamientos={result.sightings_deleted}"
             f" corridas={result.runs_deleted} placas={result.plates_deleted}"
-            f" exportaciones={result.exports_deleted}"
+            f" exportaciones={result.exports_deleted} entrenamiento={training}"
         )
         self._repository.log_event(AuditEvent.PURGE, now, detail)
         logger.info("purga completada %s", detail)
         return result
+
+    def _delete_training(self, now: datetime) -> int:
+        """Borra las exportaciones de entrenamiento vencidas, si hay almacén."""
+        if self._training_store is None:
+            return 0
+        cutoff = now - timedelta(days=self._policy.training_days)
+        return self._training_store.delete_older_than(cutoff)

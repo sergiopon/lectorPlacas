@@ -654,6 +654,38 @@ class ExportStore(Protocol):
         ...
 
 
+class TrainingExportStore(Protocol):
+    """Escribe muestras de entrenamiento del OCR y limpia las vencidas."""
+
+    def write_samples(self, samples: Sequence[tuple[str, ImageBGR]], created_at: datetime) -> Path:
+        """Escribe un conjunto de recortes etiquetados para reentrenar el OCR.
+
+        Precondiciones:
+            `created_at` en UTC; cada texto cumple `PLATE_TEXT_REGEX`.
+
+        Postcondiciones:
+            Directorio nuevo con los PNG y su `annotations.csv`, en modo 0600/0700.
+
+        Raises:
+            ExportError: si un texto es inválido, ya existe el directorio o falla la escritura.
+        """
+        ...
+
+    def delete_older_than(self, cutoff: datetime) -> int:
+        """Borra las exportaciones de entrenamiento anteriores al corte.
+
+        Precondiciones:
+            `cutoff` en UTC.
+
+        Postcondiciones:
+            Exportaciones anteriores a `cutoff` borradas; devuelve cuántas.
+
+        Raises:
+            ExportError: si falla el borrado.
+        """
+        ...
+
+
 class KeyProvider(Protocol):
     """Entrega la clave maestra de cifrado."""
 

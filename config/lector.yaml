@@ -82,6 +82,7 @@ consolidation:
 retention:
   crops_days: 30
   records_days: 90
+  training_days: 180
 
 logging:
   level: INFO                          # DEBUG | INFO | WARNING | ERROR
