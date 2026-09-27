@@ -10,8 +10,8 @@
 |---|---|
 | SEG-01 | La BD DEBE estar cifrada con SQLCipher; los recortes DEBEN estar cifrados con AES-256-GCM (ADR-005). NO DEBE existir ningún archivo con texto de placa o imagen de placa en claro en disco. |
 | SEG-02 | La clave maestra DEBE vivir solo en el keyring del SO (servicio `lector-placas`, usuario `master-key`). NO DEBE escribirse en disco, logs, variables de entorno, config ni repo. |
-| SEG-03 | Retención: recortes DEBEN borrarse a los 30 días y registros (avistamientos, corridas, placas huérfanas, exportaciones) a los 90 días (`retention` en config). La purga DEBE ejecutarse al inicio de todo comando que abra la BD y con `lector purge`. Las exportaciones de entrenamiento (`training/ocr/datasets/own/`) se borran a los `retention.training_days` días (180 por defecto) con la misma purga. |
-| SEG-04 | Todo el proceso DEBE ejecutarse con `os.umask(0o077)` (primera instrucción de `cli/main.py`). Directorios de datos, logs y exportaciones DEBEN ser 0700; archivos 0600. |
+| SEG-03 | Retención: recortes DEBEN borrarse a los 30 días y registros (avistamientos, corridas, placas huérfanas, exportaciones) a los 90 días (`retention` en config). La purga DEBE ejecutarse al inicio de todo comando que abra la BD, al abrir la sesión de la GUI (`lector-gui`) y con `lector purge` o la acción de purga de la GUI. Las exportaciones de entrenamiento (`training/ocr/datasets/own/`) se borran a los `retention.training_days` días (180 por defecto) con la misma purga. |
+| SEG-04 | Todo el proceso DEBE ejecutarse con `os.umask(0o077)` (primera instrucción de `cli/main.py` y de `gui/app.py:main`). Directorios de datos, logs y exportaciones DEBEN ser 0700; archivos 0600. |
 | SEG-05 | Los logs NO DEBEN contener texto de placa en claro: el código DEBE usar `mask_plate()` y los handlers DEBEN tener `PlateRedactionFilter`. `audit_log.detail` NO DEBE contener texto de placa. |
 | SEG-06 | NO DEBE guardarse la ruta ni el nombre del video en BD; solo su SHA-256 y metadatos técnicos. |
 | SEG-07 | Los recortes descifrados NO DEBEN escribirse a disco; solo existen en memoria durante la revisión. Excepción controlada (decisión del usuario 2026-09-26): `lector dataset export-reviewed` escribe los recortes de avistamientos `confirmed`/`corrected` en `training/ocr/datasets/own/` (directorios 0700, archivos 0600, gitignored), registra `audit_log` y solo sirve para reentrenar el OCR localmente; nunca salen de la máquina ni van a la API externa. |
@@ -52,9 +52,15 @@
 
 | ID | Regla |
 |---|---|
-| SEG-20 | En runtime NO DEBE haber llamadas de red. Todo comando excepto `lector models fetch` DEBE llamar `block_network()` antes de cargar modelos o abrir la BD. La clave maestra se lee del keyring antes de `block_network()`: el keyring usa D-Bus sobre un socket Unix local, que la guardia también bloquea. Excepción: `lector dataset download` y `lector dataset prepare` (spec 036) también usan red, solo para descargar datasets de entrenamiento. `block_network()` es una guardia de Python y no frena código nativo: ONNX Runtime 1.30 trae telemetría de Microsoft (subida HTTPS desde un hilo C++, verificada con `strace`), por lo que el paquete `lector_placas` DEBE fijar `ORT_DISABLE_TELEMETRY=1` en `lector_placas/__init__.py`, antes de que se importe `onnxruntime`. Fijarla después del import o llamar a `onnxruntime.disable_telemetry_events()` NO basta (verificado). El nivel F (`strace -f -e trace=connect`) es la comprobación de esta regla. |
+| SEG-20 | En runtime NO DEBE haber llamadas de red. Todo comando excepto `lector models fetch` DEBE llamar `block_network()` antes de cargar modelos o abrir la BD; la GUI (`lector-gui`) DEBE llamarla antes de crear la `QApplication` y NO DEBE crear sockets de escucha ni usar `QtNetwork`. La clave maestra se lee del keyring antes de `block_network()`: el keyring usa D-Bus sobre un socket Unix local, que la guardia también bloquea. Excepción: `lector dataset download` y `lector dataset prepare` (spec 036) también usan red, solo para descargar datasets de entrenamiento. `block_network()` es una guardia de Python y no frena código nativo: ONNX Runtime 1.30 trae telemetría de Microsoft (subida HTTPS desde un hilo C++, verificada con `strace`), por lo que el paquete `lector_placas` DEBE fijar `ORT_DISABLE_TELEMETRY=1` en `lector_placas/__init__.py`, antes de que se importe `onnxruntime`. Fijarla después del import o llamar a `onnxruntime.disable_telemetry_events()` NO basta (verificado). El nivel F (`strace -f -e trace=connect`) es la comprobación de esta regla. |
 | SEG-21 | `lector models fetch` DEBE aceptar solo URLs `https://github.com/` del manifiesto y verificar tamaño y SHA-256 antes de mover el archivo a `models/`. `lector dataset download` solo llama a `https://api.roboflow.com` y al enlace `https` de exportación que esa API devuelve; la API key se lee solo de la variable de entorno `ROBOFLOW_API_KEY` y NO DEBE aparecer en logs, mensajes de error, archivos ni el repo. |
 | SEG-22 | En `training/`, los scripts DEBEN exportar `YOLO_OFFLINE=True` y `YOLO_AUTOINSTALL=False`, salvo el paso explícito de descarga de pesos base. |
+
+## 6b. Interfaz gráfica (ADR-015)
+
+| ID | Regla |
+|---|---|
+| SEG-27 | La GUI muestra texto de placa y recortes solo dentro de sus widgets. NO DEBE: persistir estado de la interfaz con datos (no se usa `QSettings` ni archivos de estado; filtros, textos y miniaturas viven solo en memoria), escribir recortes o miniaturas a disco (SEG-07), copiar texto de placa al portapapeles por su cuenta ni ofrecer "copiar" en tablas (los gestores de portapapeles guardan historial en claro), ni poner texto de placa en el título de ventanas o en notificaciones del sistema. Los mensajes de error que muestra al operador siguen SEG-26. |
 
 ## 7. Dependencias y secretos
 
@@ -78,4 +84,5 @@
 - [ ] ¿Los fixtures son sintéticos y no hay binarios reales en el diff? (SEG-10)
 - [ ] ¿Se capturan excepciones genéricas fuera de `cli/main.py`? (ARQUITECTURA §6)
 - [ ] ¿Versiones fijadas con `==` y `uv.lock` actualizado? (SEG-23)
+- [ ] GUI: ¿algún `QSettings`, archivo de estado, `QtNetwork`, copia al portapapeles o placa en títulos/notificaciones? ¿Alguna llamada a `cv2.imshow`/`cv2.namedWindow` en `gui/`? (SEG-27, ADR-015)
 - [ ] ¿`.gitignore` sigue cubriendo datos, modelos, logs, videos y `.env`? (SEG-11)

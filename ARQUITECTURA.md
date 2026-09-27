@@ -10,7 +10,7 @@ Sistema ALPR local en Python 3.13. Procesa un archivo de video (cualquier resolu
 rotación, cámara fija o en movimiento), detecta vehículos, los sigue (tracking), detecta y lee sus
 placas, consolida las lecturas de cada track y persiste un **avistamiento** por track en una base
 SQLCipher cifrada, con el recorte de la placa cifrado en disco. Precisión primero: lo dudoso queda
-`unverified` para la CLI de revisión.
+`unverified` para la revisión humana (CLI o GUI de escritorio, ADR-015).
 
 **Decisión transversal:** la inferencia en runtime usa **ONNX Runtime** (no PyTorch). PyTorch y
 Ultralytics viven solo en entornos de entrenamiento separados (`training/`). Ver ADR-009 y ADR-011.
@@ -23,20 +23,27 @@ Ultralytics viven solo en entornos de entrenamiento separados (`training/`). Ver
 | Aplicación | `lector_placas.application` | Puertos (Protocols), casos de uso, muestreo de frames, registro de tracks | `domain`, `numpy` (solo como tipo de imagen), stdlib |
 | Infraestructura | `lector_placas.infrastructure` | Configuración, rutas seguras, cripto, logging, registro de modelos, guardia de red, reloj | `domain`, `application`, librerías de terceros |
 | Adaptadores | `lector_placas.adapters` | Implementaciones concretas de los puertos (PyAV, ONNX, trackers, fast-plate-ocr, SQLCipher, keyring, OpenCV) | `domain`, `application`, `infrastructure`, terceros |
-| Entrada (composición) | `lector_placas.cli` | Composition root y comandos de la CLI | Todo |
+| Entrada (composición) | `lector_placas.cli` | Composition root y comandos de la CLI | Todo, excepto `gui` |
+| Entrada (GUI) | `lector_placas.gui` | Segundo composition root: GUI de escritorio PySide6 (ADR-015) | Todo, excepto `cli`; de `cli` solo `lector_placas.cli.composition` |
 | Evaluación | `lector_placas.evaluation` | Métricas contra ground truth | `domain`, `application`, `infrastructure`, `adapters` |
 | Datasets | `lector_placas.datasets` | Preparación de datos de entrenamiento (offline) | `domain`, `application`, `infrastructure`, `adapters` |
 
 Reglas obligatorias:
 1. `domain` no importa nada fuera de la stdlib (ni numpy, ni pydantic, ni cv2).
 2. `application` no importa `adapters`, `infrastructure` ni `cli`; depende de abstracciones (DIP).
-3. Nadie importa `lector_placas.cli`.
+3. Nadie importa `lector_placas.cli`, salvo `gui`, que puede importar solo `lector_placas.cli.composition` (constructores
+   de adaptadores, para no duplicar la composición). Nadie importa `lector_placas.gui`.
 4. Los casos de uso reciben sus dependencias por constructor (inyección manual en `cli/composition.py`).
-   No hay contenedores de DI, singletons ni variables globales mutables.
+   No hay contenedores de DI, singletons ni variables globales mutables. `gui` compone igual, llamando a
+   `composition.<función>`.
+6. PySide6 solo se importa en `lector_placas.gui`. Ninguna capa interior conoce Qt.
 5. La regla se verifica con `tests/architecture/test_dependency_rule.py` (spec 000).
 
 ```mermaid
 flowchart TB
+    gui["gui (PySide6)"] --> cli
+    gui --> evaluation
+    gui --> application
     cli["cli (composition root)"] --> adapters
     cli --> infrastructure
     cli --> application
@@ -100,7 +107,9 @@ Las firmas exactas están en `docs/02-contratos.md` (y copiadas en `CONTEXT.md`)
 | `ExportStore` | Escribir CSV de avistamientos y borrar exportaciones vencidas | `CsvExportStore` | 026 |
 | `KeyProvider` | Entregar la clave maestra de 32 bytes | `KeyringKeyProvider` | 008 |
 | `ModelRegistry` | Ruta local verificada (SHA-256) de un modelo | `ManifestModelRegistry` (infrastructure) | 019 |
-| `ReviewUI` | Mostrar recorte y pedir decisión al operador | `OpenCvReviewUI` | 027 |
+| `ReviewUI` | Mostrar recorte y pedir decisión al operador | `OpenCvReviewUI` (CLI) / `QtReviewUI` (GUI, diálogo modal) | 027 / 044 |
+| `ProgressReporter` | Recibir el avance de `ProcessVideo` y pedir su cancelación | `QtProgressReporter` (GUI) | 040 / 043 |
+| `SightingBrowser` | Buscar avistamientos con filtros, contarlos y listar corridas | `SqlCipherSightingBrowser` | 041 |
 | `Clock` | Hora UTC actual | `SystemClock` (infrastructure) | 005 |
 
 El orquestador (`ProcessVideo`) y los demás casos de uso dependen solo de estos Protocols.
@@ -132,7 +141,8 @@ lectorPlacas/
 │   │   └── export/          # csv_export_store
 │   ├── evaluation/          # ground_truth, metrics, cer, vram_monitor, report
 │   ├── datasets/            # dhash, yolo_format, sources, merge_detection, chars_to_ocr
-│   └── cli/                 # main (argparse), composition
+│   ├── cli/                 # main (argparse), composition
+│   └── gui/                 # app (arranque), main_window, pestañas, diálogo de revisión, worker de procesamiento
 ├── tests/
 │   ├── architecture/        # regla de dependencia
 │   ├── unit/                # espejo de src/, fixtures sintéticos
@@ -179,7 +189,10 @@ lectorPlacas/
 **Errores**
 - Solo excepciones propias que heredan de `LectorPlacasError` (`domain/errors.py`).
 - Prohibido `raise Exception`, `except Exception:` y `except:` desnudos, salvo en `cli/main.py`
-  (último nivel, que registra y devuelve código de salida 1).
+  (último nivel, que registra y devuelve código de salida 1) y, en la GUI, en `gui/app.py` (arranque y
+  `sys.excepthook`) y en el método que ejecuta el trabajo del hilo de procesamiento (`gui/processing.py`): un hilo que
+  muere en silencio dejaría la ventana esperando. En esos puntos se registra con `logger.exception` y se muestra al
+  operador un mensaje genérico.
 - Los adaptadores capturan excepciones específicas de la librería y las envuelven con `raise ... from e`.
 - No se usan excepciones para control de flujo normal; no se retorna `None` para señalar error.
 
@@ -196,13 +209,26 @@ lectorPlacas/
 - Imports absolutos (`from lector_placas.domain.entities import ...`).
 - Tests: pytest, nombres `test_<unidad>_<comportamiento>`, fixtures **sintéticos**, sin red.
 
-## 7. Configuración y perfiles
+## 7. GUI de escritorio (ADR-015)
+
+- Arranque (`gui/app.py`): `os.umask(0o077)` primero, configuración, logging, clave maestra del keyring, `block_network()`,
+  y solo después la `QApplication`. Al abrir la sesión se purga por retención (SEG-03), como en cada comando de la CLI.
+- Hilos: el hilo de la GUI tiene su propio `SqlCipherPlateRepository` (lecturas, revisión, exportación, purga).
+  `ProcessVideo` corre en un `QThread` que construye **su propia** conexión a la BD, su almacén de recortes y los modelos
+  (una conexión SQLite no se comparte entre hilos). Mientras procesa, la GUI deshabilita las acciones que escriben
+  (revisión, exportación, purga); solo lee.
+- La revisión reutiliza `ReviewSightings` sin cambios: `QtReviewUI.ask` abre un diálogo modal (`QDialog.exec`), que
+  mantiene vivo el bucle de eventos mientras espera la decisión.
+- cv2 se usa solo para procesar imagen; la GUI no llama `cv2.imshow` ni `cv2.namedWindow` (el Qt5 de OpenCV y el Qt6
+  de PySide6 conviven, pero sus ventanas no deben mezclarse).
+
+## 8. Configuración y perfiles
 
 Un único archivo `config/lector.yaml` validado con pydantic (spec 006). Tres perfiles de escenario
 (`parqueadero`, `calle_lenta`, `calle_rapida`) ajustan muestreo, filtros, finalización de tracks y
 umbrales de consolidación. Valores iniciales **provisionales**; se calibran con `docs/04-evaluacion.md`.
 
-## 8. Índice de ADRs
+## 9. Índice de ADRs
 
 | ADR | Título | Resumen |
 |---|---|---|
@@ -220,4 +246,4 @@ umbrales de consolidación. Valores iniciales **provisionales**; se calibran con
 | [012](docs/adr/ADR-012-modelos-sin-red.md) | Modelos y red | Sin red en runtime; `models fetch` explícito; SHA-256 fijado en `config/models.yaml`. |
 | [013](docs/adr/ADR-013-placa-en-vehiculo.md) | Placa dentro del vehículo | La placa se detecta en el recorte del vehículo, lo que asocia placa↔track sin heurísticas. |
 | [014](docs/adr/ADR-014-receta-entrenamiento-ocr.md) | Receta del fine-tuning del OCR | Partición real por componente en train/val/test, sintéticos ≤ 50 % solo en train con cuota de motos, aceptación en test real contra el modelo base. |
-| [015](docs/adr/ADR-015-interfaz-grafica.md) | Interfaz gráfica | Escritorio nativo PySide6 sin sockets, condicionado a una prueba de convivencia con el Qt5 de `opencv-python`. |
+| [015](docs/adr/ADR-015-interfaz-grafica.md) | Interfaz gráfica | GUI de escritorio PySide6-Essentials en el mismo proceso, sin sockets; convivencia con el Qt5 de `opencv-python` probada; la GUI no abre ventanas de cv2. |

@@ -40,6 +40,7 @@ class NetworkAccessError(LectorPlacasError): ...
 class ReviewError(LectorPlacasError): ...
 class EvaluationError(LectorPlacasError): ...
 class DatasetError(LectorPlacasError): ...
+class ProcessingCancelledError(LectorPlacasError): ...   # spec 040: el operador canceló `ProcessVideo`
 ```
 
 Cada clase tiene un docstring de una línea en español. No añaden atributos.
@@ -377,6 +378,53 @@ class ReviewUI(Protocol):
 
 class Clock(Protocol):
     def now(self) -> datetime: ...
+
+# --- Specs 040 y 041 (GUI, ADR-015) ---
+@dataclass(frozen=True, slots=True)
+class ProgressUpdate:                   # todos los enteros >= 0; si no → InvalidEntityError
+    frames_decoded: int
+    frames_processed: int
+    position_ms: int                    # timestamp del último frame decodificado
+    duration_ms: int | None             # VideoInfo.duration_ms
+    sightings_saved: int                # confirmados + sin verificar guardados hasta ahora
+    @property
+    def fraction(self) -> float | None: ...   # min(1, position_ms / duration_ms); None si duration_ms es None o 0
+
+class ProgressReporter(Protocol):
+    def report(self, update: ProgressUpdate) -> None: ...
+    def cancel_requested(self) -> bool: ...
+
+class RunStatus(StrEnum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+@dataclass(frozen=True, slots=True)
+class RunRecord:
+    run_id: int
+    profile: str
+    status: RunStatus
+    started_at: datetime
+    finished_at: datetime | None
+    duration_ms: int | None
+    frames_processed: int | None
+    sightings_confirmed: int | None
+    sightings_unverified: int | None
+    tracks_without_reading: int | None
+    processing_ms: int | None
+
+@dataclass(frozen=True, slots=True)
+class SightingQuery:                    # validación en __post_init__ → InvalidEntityError
+    status: ReviewStatus | None = None
+    plate_prefix: str | None = None     # ^[A-Z0-9]{1,10}$; compara con el inicio de plate_text
+    run_id: int | None = None           # >= 1
+    created_from: datetime | None = None   # con tzinfo; inclusivo
+    created_to: datetime | None = None     # con tzinfo; exclusivo; > created_from si ambos
+
+class SightingBrowser(Protocol):
+    def search_sightings(self, query: SightingQuery, limit: int, offset: int) -> list[SightingRecord]: ...
+    def count_sightings(self, query: SightingQuery) -> int: ...
+    def list_runs(self, limit: int, offset: int) -> list[RunRecord]: ...
 ```
 
 ### Pre/postcondiciones de los puertos
@@ -406,6 +454,11 @@ class Clock(Protocol):
 | `KeyProvider.master_key` | — | 32 bytes | `KeyUnavailableError` |
 | `ModelRegistry.verified_path` | `model_id` en el manifiesto | Ruta existente cuyo SHA-256 coincide | `ModelIntegrityError` |
 | `Clock.now` | — | `datetime` con `tzinfo=UTC` | — |
+| `ProgressReporter.report` | Se llama desde el hilo que ejecuta `ProcessVideo` | Retorna rápido; no lanza | — |
+| `ProgressReporter.cancel_requested` | Puede llamarse desde cualquier hilo | `True` desde que se pidió cancelar | — |
+| `SightingBrowser.search_sightings` | `1 <= limit <= 10000`, `offset >= 0` | Filtros combinados con AND; orden `sighting_id` descendente | `RepositoryError` |
+| `SightingBrowser.count_sightings` | — | Total que devolvería la búsqueda sin paginar | `RepositoryError` |
+| `SightingBrowser.list_runs` | `1 <= limit <= 10000`, `offset >= 0` | Orden `run_id` descendente | `RepositoryError` |
 
 ## 5. Aplicación — casos de uso y servicios
 
@@ -478,7 +531,9 @@ class RunResult:
 
 class ProcessVideo:
     def __init__(self, deps: PipelineDependencies, settings: ProcessingSettings) -> None: ...
-    def execute(self, video_path: Path, video_sha256: str) -> RunResult: ...
+    def execute(
+        self, video_path: Path, video_sha256: str, progress: ProgressReporter | None = None
+    ) -> RunResult: ...   # `progress` desde la spec 040
 ```
 
 `application/purge_expired.py`
@@ -592,7 +647,10 @@ def load_config(path: Path) -> AppConfig: ...
   `cryptography.exceptions.InvalidTag`, `keyring.errors.KeyringError`, `OSError`) con `raise ... from e`.
 - `ProcessVideo.execute` ante cualquier `LectorPlacasError`: registra `ERROR`, llama
   `finish_run(succeeded=False)` con las estadísticas parciales y relanza. Los avistamientos ya
-  guardados se conservan.
+  guardados se conservan. La cancelación (spec 040) sigue el mismo camino con `ProcessingCancelledError`: la corrida
+  queda `failed` y los tracks aún abiertos se descartan.
+- La GUI (`gui/app.py`) no usa códigos de salida por tipo: ante un `LectorPlacasError` al arrancar muestra el mensaje y
+  devuelve 1; durante la sesión, cada acción muestra el mensaje del error en un diálogo y la ventana sigue abierta.
 - `cli/main.py` es el único que captura todo: mapea a códigos de salida:
 
 | Excepción | Código |

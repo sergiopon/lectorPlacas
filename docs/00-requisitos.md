@@ -70,7 +70,8 @@ Origen: número del requisito confirmado por el usuario en el brief de esta fase
 | RF-25 | El recorte de placa de cada avistamiento se guarda cifrado en disco. | MUST | 10 |
 | RF-26 | La base de datos está cifrada; la clave se almacena en el llavero del sistema operativo, nunca en el repo ni en texto plano. | MUST | 10 |
 | RF-27 | Existe una CLI de revisión que muestra el recorte y permite al operador confirmar, corregir o descartar la lectura. | MUST | 7 |
-| RF-28 | La CLI permite procesar un video, revisar, exportar a CSV y purgar. No hay UI web. | MUST | 11 |
+| RF-28 | La CLI permite procesar un video, revisar, exportar a CSV y purgar. No hay UI web; la interfaz gráfica de escritorio es la de RF-36. | MUST | 11 |
+| RF-36 | Existe una interfaz gráfica de escritorio local (PySide6, ADR-015), sin sockets de red, que permite procesar un video con progreso y cancelación, listar y filtrar avistamientos con su recorte, revisar (confirmar, corregir, rechazar), exportar a CSV, purgar y ver las métricas de la revisión. La CLI sigue siendo completa. | SHOULD | cambio 2026-09-27 (ADR-015) |
 | RF-29 | La exportación a CSV está disponible desde la CLI. | MUST | 11 |
 | RF-30 | La purga por retención se ejecuta automáticamente al iniciar cada ejecución y también está disponible como comando manual. Retención por defecto: recortes 30 días, registros 90 días. | MUST | 10 |
 | RF-31 | Los logs enmascaran las placas: nunca se escribe una placa en claro en un log. | MUST | 10 |
@@ -138,7 +139,7 @@ Notas adicionales del catálogo:
 | Streaming en vivo y app móvil (celular como cámara) | v1 procesa archivos locales en batch; la arquitectura no debe impedir agregarlo después (RF-34). |
 | VLM y PaddleOCR como lectores de placa | El diseño debe permitir agregarlos como lectores alternativos, pero no se implementan en v1. |
 | Clasificación de color o tipo de servicio de la placa | Solo se guarda el texto (RF-20). |
-| UI web | La interacción es exclusivamente por CLI (RF-28). |
+| UI web y acceso remoto | La interacción es por CLI (RF-28) o por la GUI de escritorio local (RF-36); no se abre ningún puerto de red (ADR-015). |
 | Multiusuario y control de acceso por roles | Un solo operador local (RF-35). |
 | Identificación de personas | Fuera del propósito del sistema. |
 | Integración con RUNT u otras bases externas | Implica llamadas de red y tratamiento de datos de terceros. |

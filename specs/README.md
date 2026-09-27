@@ -45,10 +45,17 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 037 | [Métrica del detector de placas sobre dataset](037-evaluar-detector.md) | 014, 015, 029, 031 | Implementada |
 | 038 | [Auditoría de confirmadas y métricas desde la revisión](038-metricas-revision.md) | 027, 029, 034 | Implementada |
 | 039 | [Mezcla real + sintético y aceptación del OCR](039-mezcla-dataset-ocr.md) | 031, 032, 033 | Implementada |
+| 040 | [Progreso y cancelación de `ProcessVideo`](040-progreso-cancelacion.md) | 024 | Lista |
+| 041 | [Búsqueda de avistamientos y corridas (`SightingBrowser`)](041-busqueda-avistamientos.md) | 005, 020 | Lista |
+| 042 | [GUI: dependencia, arranque, sesión y ventana](042-gui-base.md) | 028, 041 | Lista |
+| 043 | [GUI: pestaña Procesar](043-gui-procesar.md) | 040, 041, 042 | Lista |
+| 044 | [GUI: avistamientos y revisión en diálogo Qt](044-gui-avistamientos-revision.md) | 038, 041, 042, 043 | Lista |
+| 045 | [GUI: exportar, retención y métricas](045-gui-exportar-retencion-metricas.md) | 025, 026, 038, 042–044 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
 Decisión del usuario (2026-09-26): exportar lecturas revisadas con retención propia (180 días) → spec 035; excepción documentada en SEG-07/SEG-03 y ADR-005.
+Decisión del usuario (2026-09-27): GUI de escritorio PySide6 (ADR-015, RF-36) → specs 040–045. Todo el código lo implementa DeepSeek; desde estas specs los tests de aceptación se describen en prosa (Claude no escribe código, tampoco en specs), así que la compuerta de "tests intactos por AST" se sustituye por la revisión de que existan los casos nombrados con el comportamiento descrito.
 Decisión del usuario (2026-09-26): métricas con datasets en vez de ground truth manual → spec 036 (descarga por API REST de Roboflow; excepción de red en SEG-20/SEG-21 y ADR-012; clave solo en `ROBOFLOW_API_KEY`).
 
 ## Correcciones de specs (hechas por el orquestador)
@@ -78,3 +85,4 @@ Decisión del usuario (2026-09-26): métricas con datasets en vez de ground trut
 | 2026-09-27 | config/lector.yaml | `models.ocr.model_id` pasa a `fpo-cct-xs-v2-colombia` (PROVISIONAL, ADR-014) | Mejora al modelo base en el `test` congelado (CER 0,0373 frente a 0,0536; exact-match 0,921 frente a 0,865; motos no empeoran); `lector evaluate-ocr` reproduce el CER de `evaluate_ocr` exactamente |
 | 2026-09-27 | 011, 028 | `ensure_cuda_libraries` (pública en `onnx_session.py`) se llama también en `build_reader` y en `build_plate_detector` (backend `open_image_models`) | `evaluate-ocr` y `evaluate-detector` no pasaban por `create_session` y caían a CPU por `libcublasLt.so.13` no cargada; `process` funcionaba porque el detector de vehículos ya precargaba |
 | 2026-09-27 | SEG-20, ADR-012, CONTEXT, docs/06 | `lector_placas/__init__.py` fija `ORT_DISABLE_TELEMETRY=1` antes de importar `onnxruntime`; el log de `strace` del nivel F se crea 0600 | El nivel F detectó 10 `connect` HTTPS (puerto 443, IPs de Microsoft) desde un hilo nativo de ONNX Runtime 1.30 (telemetría), que `block_network()` no ve. Con la variable puesta antes del import hay 0; puesta después del import o con `disable_telemetry_events()` siguen 6-8 (medido). Además `strace` creaba su log con 0644 y el chequeo de permisos fallaba |
+| 2026-09-27 | 00-requisitos (RF-28, RF-36, §7), ARQUITECTURA §2/§4/§5/§6/§7, SEG-03/04/20, SEG-27, CONTEXT, docs/02 §1/§4/§5/§7 | Capa `gui` (segundo composition root; de `cli` solo importa `composition`), puertos `ProgressReporter` y `SightingBrowser`, `ProcessingCancelledError`, reglas de la GUI; nuevas specs 040–045 | ADR-015 aprobado (opción 2) tras la prueba de convivencia PySide6 + opencv-python |
