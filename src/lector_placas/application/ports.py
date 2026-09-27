@@ -766,6 +766,111 @@ class Clock(Protocol):
         ...
 
 
+class RunStatus(StrEnum):
+    """Estado de una corrida de procesamiento."""
+
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True, slots=True)
+class RunRecord:
+    """Resumen de una corrida tal como lo expone el navegador de avistamientos."""
+
+    run_id: int
+    profile: str
+    status: RunStatus
+    started_at: datetime
+    finished_at: datetime | None
+    duration_ms: int | None
+    frames_processed: int | None
+    sightings_confirmed: int | None
+    sightings_unverified: int | None
+    tracks_without_reading: int | None
+    processing_ms: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class SightingQuery:
+    """Filtros de solo lectura para buscar avistamientos."""
+
+    status: ReviewStatus | None = None
+    plate_prefix: str | None = None
+    run_id: int | None = None
+    created_from: datetime | None = None
+    created_to: datetime | None = None
+
+    def __post_init__(self) -> None:
+        """Valida el prefijo, el identificador de corrida y el rango de fechas.
+
+        Raises:
+            InvalidEntityError: si el prefijo no cumple `PLATE_TEXT_REGEX`, el `run_id` es
+                `< 1`, alguna fecha carece de zona horaria o el rango está invertido.
+        """
+        if self.plate_prefix is not None and PLATE_TEXT_REGEX.fullmatch(self.plate_prefix) is None:
+            raise InvalidEntityError("plate_prefix inválido")
+        if self.run_id is not None and self.run_id < 1:
+            raise InvalidEntityError("run_id debe ser >= 1")
+        for value in (self.created_from, self.created_to):
+            if value is not None and value.tzinfo is None:
+                raise InvalidEntityError("las fechas del rango deben tener zona horaria")
+        if (
+            self.created_from is not None
+            and self.created_to is not None
+            and self.created_to <= self.created_from
+        ):
+            raise InvalidEntityError("created_to debe ser posterior a created_from")
+
+
+class SightingBrowser(Protocol):
+    """Consulta de solo lectura de avistamientos y corridas."""
+
+    def search_sightings(
+        self, query: SightingQuery, limit: int, offset: int
+    ) -> list[SightingRecord]:
+        """Busca avistamientos combinando los filtros de `query`.
+
+        Precondiciones:
+            `1 <= limit <= 10000`; `offset >= 0`.
+
+        Postcondiciones:
+            Filtros combinados con AND; orden `sighting_id` descendente.
+
+        Raises:
+            RepositoryError: si la paginación es inválida o la consulta falla.
+        """
+        ...
+
+    def count_sightings(self, query: SightingQuery) -> int:
+        """Cuenta los avistamientos que devolvería la búsqueda sin paginar.
+
+        Precondiciones:
+            Ninguna.
+
+        Postcondiciones:
+            Total de filas que satisfacen `query`.
+
+        Raises:
+            RepositoryError: si la consulta falla.
+        """
+        ...
+
+    def list_runs(self, limit: int, offset: int) -> list[RunRecord]:
+        """Lista las corridas registradas, de la más reciente a la más antigua.
+
+        Precondiciones:
+            `1 <= limit <= 10000`; `offset >= 0`.
+
+        Postcondiciones:
+            Corridas ordenadas por `run_id` descendente.
+
+        Raises:
+            RepositoryError: si la paginación es inválida o la consulta falla.
+        """
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class ProgressUpdate:
     """Avance del procesamiento de un video, tal como se reporta al operador."""
