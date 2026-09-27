@@ -766,6 +766,68 @@ class Clock(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class ProgressUpdate:
+    """Avance del procesamiento de un video, tal como se reporta al operador."""
+
+    frames_decoded: int
+    frames_processed: int
+    position_ms: int
+    duration_ms: int | None
+    sightings_saved: int
+
+    def __post_init__(self) -> None:
+        """Valida que los contadores y la posición sean no negativos.
+
+        Raises:
+            InvalidEntityError: si algún contador o `position_ms` es negativo, o si
+                `duration_ms` es negativo.
+        """
+        for name, value in (
+            ("frames_decoded", self.frames_decoded),
+            ("frames_processed", self.frames_processed),
+            ("position_ms", self.position_ms),
+            ("sightings_saved", self.sightings_saved),
+        ):
+            if value < 0:
+                raise InvalidEntityError(f"{name} debe ser >= 0: {value}")
+        if self.duration_ms is not None and self.duration_ms < 0:
+            raise InvalidEntityError(f"duration_ms debe ser >= 0: {self.duration_ms}")
+
+    @property
+    def fraction(self) -> float | None:
+        """Fracción del video procesada, o `None` si no se conoce su duración."""
+        if self.duration_ms is None or self.duration_ms == 0:
+            return None
+        return min(1.0, self.position_ms / self.duration_ms)
+
+
+class ProgressReporter(Protocol):
+    """Informa del avance del procesamiento y responde a las cancelaciones."""
+
+    def report(self, update: ProgressUpdate) -> None:
+        """Recibe el avance acumulado de una corrida de procesamiento.
+
+        Precondiciones:
+            Se llama desde el hilo que ejecuta `ProcessVideo`, con contadores no decrecientes.
+
+        Postcondiciones:
+            El avance queda comunicado al operador; el método retorna rápido y no lanza.
+        """
+        ...
+
+    def cancel_requested(self) -> bool:
+        """Indica si el operador pidió cancelar el procesamiento.
+
+        Precondiciones:
+            Ninguna; puede llamarse desde cualquier hilo.
+
+        Postcondiciones:
+            `True` desde que se pidió cancelar y mientras siga vigente esa petición.
+        """
+        ...
+
+
 def _require_utc(value: datetime, name: str) -> None:
     """Exige un datetime con zona horaria UTC."""
     if value.tzinfo is None or value.utcoffset() != timedelta(0):
