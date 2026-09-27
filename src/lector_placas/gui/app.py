@@ -18,6 +18,7 @@ from lector_placas.cli import composition
 from lector_placas.domain.errors import KeyUnavailableError, LectorPlacasError
 from lector_placas.gui.main_window import WINDOW_TITLE, MainWindow
 from lector_placas.gui.session import open_session
+from lector_placas.gui.theme import apply_theme
 from lector_placas.infrastructure import network_guard
 from lector_placas.infrastructure.config import AppConfig, load_config
 from lector_placas.infrastructure.logging_setup import configure_logging
@@ -135,6 +136,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         prepared = _try_prepare(argv)
         network_guard.block_network()
         app = _create_application()
+        apply_theme(app)
         if isinstance(prepared, LectorPlacasError):
             return _report_startup_failure(prepared)
         config, keys = prepared

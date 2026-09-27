@@ -8,7 +8,7 @@ from types import MappingProxyType
 from typing import Final
 
 from lector_placas.application.ports import RunStatus
-from lector_placas.domain.entities import ReviewStatus, VehicleType
+from lector_placas.domain.entities import ReviewStatus, UnverifiedReason, VehicleType
 
 STATUS_LABELS: Final[Mapping[ReviewStatus, str]] = MappingProxyType(
     {
@@ -16,6 +16,27 @@ STATUS_LABELS: Final[Mapping[ReviewStatus, str]] = MappingProxyType(
         ReviewStatus.UNVERIFIED: "sin verificar",
         ReviewStatus.REJECTED: "rechazado",
         ReviewStatus.CORRECTED: "corregido",
+    }
+)
+
+STATUS_BADGES: Final[Mapping[ReviewStatus, str]] = MappingProxyType(
+    {
+        ReviewStatus.UNVERIFIED: "Por revisar",
+        ReviewStatus.CONFIRMED: "Confirmada",
+        ReviewStatus.CORRECTED: "Corregida",
+        ReviewStatus.REJECTED: "Descartada",
+    }
+)
+
+REASON_TEXTS: Final[Mapping[UnverifiedReason, str]] = MappingProxyType(
+    {
+        UnverifiedReason.INSUFFICIENT_READINGS: "Se leyó pocas veces",
+        UnverifiedReason.LOW_CONFIDENCE: "El lector no estaba seguro",
+        UnverifiedReason.LOW_AGREEMENT: "Las lecturas no coinciden entre sí",
+        UnverifiedReason.UNRECOGNIZED_FORMAT: "No parece una placa colombiana",
+        UnverifiedReason.UNVERIFIED_FORMAT: "Formato de placa poco común",
+        UnverifiedReason.VEHICLE_FORMAT_MISMATCH: "El formato no corresponde al tipo de vehículo",
+        UnverifiedReason.AMBIGUOUS_FORMAT: "Encaja en más de un formato",
     }
 )
 
@@ -40,6 +61,8 @@ _MS_PER_SECOND: Final[int] = 1000
 _MS_PER_MINUTE: Final[int] = 60 * _MS_PER_SECOND
 _MS_PER_HOUR: Final[int] = 60 * _MS_PER_MINUTE
 _PERCENT_FACTOR: Final[int] = 100
+_PLATE_GROUP_SIZE: Final[int] = 6
+_PLATE_GROUP_SPLIT: Final[int] = 3
 
 
 def video_time(ms: int) -> str:
@@ -81,3 +104,34 @@ def percent(value: float) -> str:
         El texto `"NN %"`, p. ej. `percent(0.873) == "87 %"`.
     """
     return f"{round(value * _PERCENT_FACTOR)} %"
+
+
+def short_time(ms: int) -> str:
+    """Formatea una posición de video de forma breve para una tarjeta.
+
+    Args:
+        ms: milisegundos, `>= 0`.
+
+    Returns:
+        `"m:ss"` (p. ej. `"1:23"`), o `"h:mm:ss"` si `ms` alcanza una hora o más.
+    """
+    hours, rest = divmod(ms, _MS_PER_HOUR)
+    minutes, rest = divmod(rest, _MS_PER_MINUTE)
+    seconds, _ = divmod(rest, _MS_PER_SECOND)
+    if hours:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes}:{seconds:02d}"
+
+
+def format_plate(text: str) -> str:
+    """Separa en dos grupos el texto de una placa de seis caracteres.
+
+    Args:
+        text: texto de placa.
+
+    Returns:
+        El texto con un espacio tras el tercer carácter si mide seis, o `text` sin cambios.
+    """
+    if len(text) == _PLATE_GROUP_SIZE:
+        return f"{text[:_PLATE_GROUP_SPLIT]} {text[_PLATE_GROUP_SPLIT:]}"
+    return text
