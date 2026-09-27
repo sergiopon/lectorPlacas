@@ -13,7 +13,11 @@ from typing import Final
 from lector_placas.adapters.export.csv_export_store import CsvExportStore
 from lector_placas.adapters.export.training_export_store import FilesystemTrainingExportStore
 from lector_placas.adapters.imaging.quality import LaplacianQualityScorer
-from lector_placas.adapters.inference.onnx_session import create_session, providers_for
+from lector_placas.adapters.inference.onnx_session import (
+    create_session,
+    ensure_cuda_libraries,
+    providers_for,
+)
 from lector_placas.adapters.inference.plate_detector_oim import create_oim_plate_detector
 from lector_placas.adapters.inference.plate_detector_yolo import YoloPlateDetector
 from lector_placas.adapters.inference.plate_reader_fpo import create_fast_plate_ocr_reader
@@ -127,6 +131,7 @@ def build_plate_detector(config: AppConfig, registry: ModelRegistry) -> PlateDet
     pd = config.models.plate_detector
     model_path = registry.verified_path(pd.model_id)
     if pd.backend == "open_image_models":
+        ensure_cuda_libraries(ep)
         return create_oim_plate_detector(model_path, pd.score_threshold, providers_for(ep))
     session = create_session(model_path, ep)
     model = YoloEnd2EndOnnxModel(session, pd.input_size)
@@ -137,6 +142,7 @@ def build_reader(config: AppConfig, registry: ModelRegistry) -> PlateReader:
     """Construye el lector OCR de placas a partir del modelo y la configuración configurados."""
     ep = config.inference.execution_provider
     ocr = config.models.ocr
+    ensure_cuda_libraries(ep)
     return create_fast_plate_ocr_reader(
         registry.verified_path(ocr.model_id),
         registry.verified_path(ocr.config_id),
