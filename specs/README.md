@@ -45,7 +45,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 037 | [Métrica del detector de placas sobre dataset](037-evaluar-detector.md) | 014, 015, 029, 031 | Implementada |
 | 038 | [Auditoría de confirmadas y métricas desde la revisión](038-metricas-revision.md) | 027, 029, 034 | Implementada |
 | 039 | [Mezcla real + sintético y aceptación del OCR](039-mezcla-dataset-ocr.md) | 031, 032, 033 | Implementada |
-| 040 | [Progreso y cancelación de `ProcessVideo`](040-progreso-cancelacion.md) | 024 | Lista |
+| 040 | [Progreso y cancelación de `ProcessVideo`](040-progreso-cancelacion.md) | 024 | Implementada |
 | 041 | [Búsqueda de avistamientos y corridas (`SightingBrowser`)](041-busqueda-avistamientos.md) | 005, 020 | Lista |
 | 042 | [GUI: dependencia, arranque, sesión y ventana](042-gui-base.md) | 028, 041 | Lista |
 | 043 | [GUI: pestaña Procesar](043-gui-procesar.md) | 040, 041, 042 | Lista |
