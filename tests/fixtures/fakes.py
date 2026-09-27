@@ -10,14 +10,22 @@ from lector_placas.application.ports import (
     AuditEvent,
     ImageBGR,
     RecordPurge,
+    RunRecord,
     RunStart,
     RunStats,
+    RunStatus,
+    SightingQuery,
 )
 from lector_placas.domain.entities import ReviewStatus, Sighting, SightingRecord
-from lector_placas.domain.errors import CropNotFoundError, SightingNotFoundError
+from lector_placas.domain.errors import (
+    CropNotFoundError,
+    RepositoryError,
+    SightingNotFoundError,
+)
 
 START = datetime(2026, 9, 24, 12, 0, tzinfo=UTC)
 LINKED = (ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED)
+MAX_PAGE = 10_000
 
 
 class FakeClock:
@@ -193,3 +201,67 @@ class InMemoryPlateRepository:
 
     def close(self) -> None:
         self.closed = True
+
+    def search_sightings(
+        self, query: SightingQuery, limit: int, offset: int
+    ) -> list[SightingRecord]:
+        _require_page(limit, offset)
+        rows = self._matching(query)
+        return rows[offset : offset + limit]
+
+    def count_sightings(self, query: SightingQuery) -> int:
+        return len(self._matching(query))
+
+    def list_runs(self, limit: int, offset: int) -> list[RunRecord]:
+        _require_page(limit, offset)
+        ordered = [self._run_record(run_id) for run_id in sorted(self.runs, reverse=True)]
+        return ordered[offset : offset + limit]
+
+    def browser(self) -> InMemoryPlateRepository:
+        return self
+
+    def _matching(self, query: SightingQuery) -> list[SightingRecord]:
+        return [
+            record
+            for _, record in sorted(self.records.items(), reverse=True)
+            if _matches(record, query)
+        ]
+
+    def _run_record(self, run_id: int) -> RunRecord:
+        run = self.runs[run_id]
+        stats = run.stats
+        return RunRecord(
+            run_id=run_id,
+            profile=run.start.profile,
+            status=_run_status(run),
+            started_at=run.start.started_at,
+            finished_at=run.finished_at,
+            duration_ms=run.start.video.duration_ms,
+            frames_processed=None if stats is None else stats.frames_processed,
+            sightings_confirmed=None if stats is None else stats.sightings_confirmed,
+            sightings_unverified=None if stats is None else stats.sightings_unverified,
+            tracks_without_reading=None if stats is None else stats.tracks_without_reading,
+            processing_ms=None if stats is None else stats.processing_ms,
+        )
+
+
+def _require_page(limit: int, offset: int) -> None:
+    if not 1 <= limit <= MAX_PAGE or offset < 0:
+        raise RepositoryError("parámetros de paginación inválidos")
+
+
+def _matches(record: SightingRecord, query: SightingQuery) -> bool:
+    prefix = query.plate_prefix
+    return (
+        (query.status is None or record.status is query.status)
+        and (prefix is None or record.plate_text.startswith(prefix))
+        and (query.run_id is None or record.run_id == query.run_id)
+        and (query.created_from is None or record.created_at >= query.created_from)
+        and (query.created_to is None or record.created_at < query.created_to)
+    )
+
+
+def _run_status(run: StoredRun) -> RunStatus:
+    if run.finished_at is None or run.succeeded is None:
+        return RunStatus.RUNNING
+    return RunStatus.COMPLETED if run.succeeded else RunStatus.FAILED

@@ -5,19 +5,24 @@ from __future__ import annotations
 import importlib.resources
 import os
 import re
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Final
+from datetime import datetime
+from typing import TYPE_CHECKING, Final
 
 import sqlcipher3.dbapi2 as sqlcipher
 
+from lector_placas.adapters.persistence.rows import (
+    SIGHTING_COLUMNS,
+    from_db_time,
+    row_to_record,
+    to_db_time,
+)
+from lector_placas.adapters.persistence.sqlcipher_browser import SqlCipherSightingBrowser
 from lector_placas.application.ports import AuditEvent, RecordPurge, RunStart, RunStats
 from lector_placas.domain.entities import (
     PLATE_TEXT_REGEX,
     ReviewStatus,
     Sighting,
     SightingRecord,
-    UnverifiedReason,
-    VehicleType,
 )
 from lector_placas.domain.errors import EncryptionError, RepositoryError, SightingNotFoundError
 from lector_placas.infrastructure.crypto import KeyPurpose, derive_key
@@ -26,6 +31,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from lector_placas.application.ports import KeyProvider
+
+__all__ = ["SIGHTING_COLUMNS", "SqlCipherPlateRepository", "from_db_time", "to_db_time"]
 
 SCHEMA_VERSION: Final[int] = 1
 MAX_PAGE: Final[int] = 10_000
@@ -46,30 +53,6 @@ _SELECT_SIGHTING_BY_ID = (
 )
 
 _REVIEWABLE_STATUSES = (ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED, ReviewStatus.REJECTED)
-
-
-def to_db_time(value: datetime) -> str:
-    """Convierte un `datetime` a su representación ISO-8601 UTC con microsegundos.
-
-    Args:
-        value: fecha a convertir.
-
-    Returns:
-        Texto ISO-8601 en UTC con microsegundos.
-    """
-    return value.astimezone(UTC).isoformat(timespec="microseconds")
-
-
-def from_db_time(value: str) -> datetime:
-    """Convierte una fecha ISO-8601 almacenada en su `datetime` equivalente.
-
-    Args:
-        value: texto ISO-8601 leído de la base de datos.
-
-    Returns:
-        `datetime` reconstruido.
-    """
-    return datetime.fromisoformat(value)
 
 
 class SqlCipherPlateRepository:
@@ -310,7 +293,7 @@ class SqlCipherPlateRepository:
             ).fetchall()
         except sqlcipher.Error as e:
             raise RepositoryError("list_sightings falló") from e
-        return [_row_to_record(row) for row in rows]
+        return [row_to_record(row) for row in rows]
 
     def get_sighting(self, sighting_id: int) -> SightingRecord:
         """Obtiene un avistamiento por su identificador.
@@ -334,7 +317,7 @@ class SqlCipherPlateRepository:
             raise RepositoryError("get_sighting falló") from e
         if row is None:
             raise SightingNotFoundError(f"sighting_id={sighting_id}")
-        return _row_to_record(row)
+        return row_to_record(row)
 
     def record_review(
         self,
@@ -507,58 +490,10 @@ class SqlCipherPlateRepository:
             self._connection.close()
             self._closed = True
 
+    def browser(self) -> SqlCipherSightingBrowser:
+        """Devuelve un navegador de solo lectura sobre la misma conexión.
 
-def _row_to_record(row: tuple[Any, ...]) -> SightingRecord:
-    """Convierte una fila de `sightings` en un `SightingRecord`."""
-    (
-        sighting_id,
-        run_id,
-        track_id,
-        first_seen_ms,
-        last_seen_ms,
-        vehicle_type,
-        ocr_text,
-        plate_text,
-        confidence,
-        agreement,
-        num_readings,
-        status,
-        reasons,
-        format_ids,
-        crop_ref,
-        created_at,
-        reviewed_at,
-    ) = row
-    return SightingRecord(
-        sighting_id,
-        run_id,
-        track_id,
-        first_seen_ms,
-        last_seen_ms,
-        VehicleType(vehicle_type),
-        ocr_text,
-        plate_text,
-        confidence,
-        agreement,
-        num_readings,
-        ReviewStatus(status),
-        _split_reasons(reasons),
-        _split_format_ids(format_ids),
-        crop_ref,
-        from_db_time(created_at),
-        from_db_time(reviewed_at) if reviewed_at is not None else None,
-    )
-
-
-def _split_reasons(value: str) -> tuple[UnverifiedReason, ...]:
-    """Divide la columna `reasons` en su tupla de motivos."""
-    if not value:
-        return ()
-    return tuple(UnverifiedReason(item) for item in value.split(","))
-
-
-def _split_format_ids(value: str) -> tuple[str, ...]:
-    """Divide la columna `format_ids` en su tupla de identificadores."""
-    if not value:
-        return ()
-    return tuple(value.split(","))
+        Returns:
+            Navegador que comparte la conexión de este repositorio.
+        """
+        return SqlCipherSightingBrowser(self._connection)
