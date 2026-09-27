@@ -51,11 +51,16 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 043 | [GUI: pestaña Procesar](043-gui-procesar.md) | 040, 041, 042 | Implementada |
 | 044 | [GUI: avistamientos y revisión en diálogo Qt](044-gui-avistamientos-revision.md) | 038, 041, 042, 043 | Implementada |
 | 045 | [GUI: exportar, retención y métricas](045-gui-exportar-retencion-metricas.md) | 025, 026, 038, 042–044 | Implementada |
+| 046 | [Decidir sobre un avistamiento (`DecideSighting`)](046-decidir-avistamiento.md) | 027 | Lista |
+| 047 | [GUI: tema, tarjeta de placa y cuadrícula](047-gui-tema-tarjetas.md) | 042, 044 | Lista |
+| 048 | [GUI: página Lecturas (galería y revisión)](048-gui-lecturas-revision.md) | 041, 046, 047 | Lista |
+| 049 | [GUI: ventana rediseñada y flujo de procesar](049-gui-ventana-procesar.md) | 043, 045, 047, 048 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
 Decisión del usuario (2026-09-26): exportar lecturas revisadas con retención propia (180 días) → spec 035; excepción documentada en SEG-07/SEG-03 y ADR-005.
 Decisión del usuario (2026-09-27): GUI de escritorio PySide6 (ADR-015, RF-36) → specs 040–045. Todo el código lo implementa DeepSeek; desde estas specs los tests de aceptación se describen en prosa (Claude no escribe código, tampoco en specs), así que la compuerta de "tests intactos por AST" se sustituye por la revisión de que existan los casos nombrados con el comportamiento descrito.
+Decisión del usuario (2026-09-27, tras probar la GUI): rediseño ("quiero ver los recortes de cada matrícula con su lectura; una buena UI no debería necesitar explicación") → specs 046–049 (galería de placas, revisión en panel lateral, flujo guiado para procesar); implementa DeepSeek flash, no pro.
 Decisión del usuario (2026-09-26): métricas con datasets en vez de ground truth manual → spec 036 (descarga por API REST de Roboflow; excepción de red en SEG-20/SEG-21 y ADR-012; clave solo en `ROBOFLOW_API_KEY`).
 
 ## Correcciones de specs (hechas por el orquestador)

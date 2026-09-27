@@ -107,7 +107,7 @@ Las firmas exactas están en `docs/02-contratos.md` (y copiadas en `CONTEXT.md`)
 | `ExportStore` | Escribir CSV de avistamientos y borrar exportaciones vencidas | `CsvExportStore` | 026 |
 | `KeyProvider` | Entregar la clave maestra de 32 bytes | `KeyringKeyProvider` | 008 |
 | `ModelRegistry` | Ruta local verificada (SHA-256) de un modelo | `ManifestModelRegistry` (infrastructure) | 019 |
-| `ReviewUI` | Mostrar recorte y pedir decisión al operador | `OpenCvReviewUI` (CLI) / `QtReviewUI` (GUI, diálogo modal) | 027 / 044 |
+| `ReviewUI` | Mostrar recorte y pedir decisión al operador | `OpenCvReviewUI` (CLI); la GUI revisa desde la galería con `DecideSighting` | 027 / 046, 048 |
 | `ProgressReporter` | Recibir el avance de `ProcessVideo` y pedir su cancelación | `QtProgressReporter` (GUI) | 040 / 043 |
 | `SightingBrowser` | Buscar avistamientos con filtros, contarlos y listar corridas | `SqlCipherSightingBrowser` | 041 |
 | `Clock` | Hora UTC actual | `SystemClock` (infrastructure) | 005 |
@@ -142,7 +142,7 @@ lectorPlacas/
 │   ├── evaluation/          # ground_truth, metrics, cer, vram_monitor, report
 │   ├── datasets/            # dhash, yolo_format, sources, merge_detection, chars_to_ocr
 │   ├── cli/                 # main (argparse), composition
-│   └── gui/                 # app (arranque), main_window, pestañas, diálogo de revisión, worker de procesamiento
+│   └── gui/                 # app (arranque), main_window, páginas Procesar y Lecturas, tarjetas, worker
 ├── tests/
 │   ├── architecture/        # regla de dependencia
 │   ├── unit/                # espejo de src/, fixtures sintéticos
@@ -217,8 +217,8 @@ lectorPlacas/
   `ProcessVideo` corre en un `QThread` que construye **su propia** conexión a la BD, su almacén de recortes y los modelos
   (una conexión SQLite no se comparte entre hilos). Mientras procesa, la GUI deshabilita las acciones que escriben
   (revisión, exportación, purga); solo lee.
-- La revisión reutiliza `ReviewSightings` sin cambios: `QtReviewUI.ask` abre un diálogo modal (`QDialog.exec`), que
-  mantiene vivo el bucle de eventos mientras espera la decisión.
+- La revisión se hace en la página "Lecturas" (galería de tarjetas con recorte y lectura, spec 048): cada decisión
+  sobre una tarjeta usa `DecideSighting` (spec 046), con las mismas reglas y la misma auditoría que `ReviewSightings`.
 - cv2 se usa solo para procesar imagen; la GUI no llama `cv2.imshow` ni `cv2.namedWindow` (el Qt5 de OpenCV y el Qt6
   de PySide6 conviven, pero sus ventanas no deben mezclarse).
 
