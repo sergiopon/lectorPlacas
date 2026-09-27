@@ -102,8 +102,8 @@ def latest_version(http_get: HttpGet, api_key: str, workspace: str, project: str
         El mayor número de versión publicado.
 
     Raises:
-        DatasetError: Si la consulta falla o la lista de versiones no tiene el
-            formato esperado.
+        DatasetError: Si la consulta falla, la lista de versiones no tiene el
+            formato esperado o el proyecto no tiene versiones generadas.
     """
     url = f"{API_URL}/{workspace}/{project}?api_key={api_key}"
     status, body = http_get(url, TIMEOUT_SECONDS)
@@ -112,6 +112,8 @@ def latest_version(http_get: HttpGet, api_key: str, workspace: str, project: str
     try:
         payload = json.loads(body.decode("utf-8"))
         versions = cast(list[Mapping[str, object]], payload["versions"])
+        if isinstance(versions, list) and not versions:
+            raise DatasetError(f"sin versiones generadas: {workspace}/{project}")
         return max(int(str(item["id"]).rsplit("/", 1)[-1]) for item in versions)
     except (KeyError, TypeError, ValueError) as error:
         raise DatasetError(f"formato de versiones inesperado: {workspace}/{project}") from error
