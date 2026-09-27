@@ -74,7 +74,10 @@ Se implementa en `specs/029-evaluacion.md` (módulo `lector_placas.evaluation`):
   calcula M-01, M-02, M-03, M-05 y M-06 para esa corrida.
 - `lector evaluate-ocr --crops <annotations.csv>`: ejecuta el `PlateReader` configurado sobre los
   recortes y calcula M-04.
-- Ambos escriben `data/eval/reports/report-<YYYYmmddTHHMMSSZ>.json` (0600) y un resumen en consola
+- `lector evaluate-detector [--dataset <dir>] [--split val] [--iou 0.5]` (spec 037): ejecuta el
+  `PlateDetector` configurado sobre un dataset YOLO (por defecto el unificado de `merge-detection`) y reporta
+  precisión, recall y F1 con emparejamiento voraz por confianza a IoU ≥ 0,5.
+- Los tres escriben `data/eval/reports/report-<YYYYmmddTHHMMSSZ>.json` (0600) y un resumen en consola
   **sin texto de placa** (solo conteos y métricas).
 
 ## 5. Plan de datos para fine-tuning
