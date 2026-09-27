@@ -13,6 +13,7 @@ from typing import Final
 from lector_placas.application.ports import KeyProvider
 from lector_placas.cli import commands, composition, dataset_commands
 from lector_placas.cli.evaluation_commands import register_evaluation_commands
+from lector_placas.cli.review_evaluation_commands import register_review_evaluation
 from lector_placas.domain.errors import (
     ConfigurationError,
     CropStoreError,
@@ -36,6 +37,7 @@ from lector_placas.infrastructure.logging_setup import configure_logging
 
 DEFAULT_CONFIG_PATH: Final[Path] = Path("config/lector.yaml")
 DEFAULT_REVIEW_LIMIT: Final[int] = 50
+REVIEW_STATUS_CHOICES: Final[tuple[str, ...]] = ("unverified", "confirmed")
 EXPORT_STATUS_CHOICES: Final[tuple[str, ...]] = (
     "confirmed",
     "unverified",
@@ -75,6 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_export_parser(subparsers)
     _add_purge_parser(subparsers)
     register_evaluation_commands(subparsers)
+    register_review_evaluation(subparsers)
     dataset_commands.register_dataset_commands(subparsers)
     return parser
 
@@ -106,9 +109,12 @@ def _add_process_parser(subparsers: argparse._SubParsersAction) -> None:  # type
 
 
 def _add_review_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
-    """Agrega `review [--limit N]`."""
+    """Agrega `review [--limit N] [--status {...}]`."""
     review_parser = subparsers.add_parser("review")
     review_parser.add_argument("--limit", type=int, default=DEFAULT_REVIEW_LIMIT)
+    review_parser.add_argument(
+        "--status", choices=REVIEW_STATUS_CHOICES, default=REVIEW_STATUS_CHOICES[0]
+    )
     review_parser.set_defaults(handler=commands.cmd_review, network=False, key="load")
 
 

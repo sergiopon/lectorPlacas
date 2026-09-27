@@ -131,7 +131,7 @@ def cmd_process(args: argparse.Namespace, config: AppConfig) -> int:
 
 
 def cmd_review(args: argparse.Namespace, config: AppConfig) -> int:
-    """Revisa hasta `args.limit` avistamientos sin verificar por terminal."""
+    """Revisa hasta `args.limit` avistamientos del estado indicado por terminal."""
 
     def action(
         repository: PlateRepository,
@@ -142,7 +142,7 @@ def cmd_review(args: argparse.Namespace, config: AppConfig) -> int:
     ) -> int:
         del export_store, purge
         use_case = ReviewSightings(repository, crop_store, OpenCvReviewUI(), clock)
-        summary = use_case.execute(args.limit)
+        summary = use_case.execute(args.limit, ReviewStatus(args.status))
         sys.stdout.write(
             f"confirmados={summary.confirmed} corregidos={summary.corrected} "
             f"rechazados={summary.rejected} omitidos={summary.skipped}\n"
