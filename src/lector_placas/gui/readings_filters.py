@@ -26,6 +26,7 @@ FILTER_ORDER: Final[tuple[ReviewStatus | None, ...]] = (
     ReviewStatus.CONFIRMED,
     ReviewStatus.CORRECTED,
     ReviewStatus.REJECTED,
+    ReviewStatus.ILLEGIBLE,
     None,
 )
 FILTER_LABELS: Final[Mapping[ReviewStatus | None, str]] = MappingProxyType(
@@ -34,6 +35,7 @@ FILTER_LABELS: Final[Mapping[ReviewStatus | None, str]] = MappingProxyType(
         ReviewStatus.CONFIRMED: "Confirmadas",
         ReviewStatus.CORRECTED: "Corregidas",
         ReviewStatus.REJECTED: "Descartadas",
+        ReviewStatus.ILLEGIBLE: "Borrosas",
         None: "Todas",
     }
 )

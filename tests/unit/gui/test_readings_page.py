@@ -239,6 +239,25 @@ def test_shortcuts_confirm_and_skip(config: AppConfig, show_page, qapp) -> None:
     assert (page._panel.is_editing(), page._grid.selected_id()) == (True, selected)
 
 
+def test_shortcut_b_marks_illegible_and_advances(config: AppConfig, show_page, qapp) -> None:
+    session = _session(config)
+    _seed_pending(session, 2)
+    page = show_page(ReadingsPage(session))
+    page.activateWindow()
+    qapp.processEvents()
+    order = page._grid.ids()
+    page._grid.select(order[0])
+
+    QTest.keyClick(page, Qt.Key.Key_B)
+
+    assert order[0] not in page._grid.ids()
+    assert session.repository.get_sighting(order[0]).status is ReviewStatus.ILLEGIBLE
+    assert page._grid.selected_id() == order[1]
+    assert page._panel._record.sighting_id == order[1]
+    assert page.pending_count() == 1
+    assert page._filters._buttons[ReviewStatus.UNVERIFIED].text() == "Por revisar (1)"
+
+
 def test_busy_blocks_decisions(config: AppConfig, qapp) -> None:
     session = _session(config)
     ids = _seed_pending(session, 2)

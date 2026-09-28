@@ -115,6 +115,35 @@ def test_confirm_and_reject_emit_decisions(qapp) -> None:
     ]
 
 
+def test_mark_illegible_emits_decision(qapp) -> None:
+    panel = ReviewPanel()
+    decided: list[ReviewDecision] = []
+    panel.decided.connect(decided.append)
+
+    panel.mark_illegible()
+    assert decided == []
+
+    panel.show_record(_record(), None, None)
+    panel.mark_illegible()
+    button = next(button for button in panel._buttons if button.text() == "◐ Placa borrosa   B")
+    button.click()
+    assert decided == [
+        ReviewDecision(ReviewAction.ILLEGIBLE),
+        ReviewDecision(ReviewAction.ILLEGIBLE),
+    ]
+
+
+def test_actions_order_includes_illegible(qapp) -> None:
+    panel = ReviewPanel()
+    assert [button.text() for button in panel._buttons] == [
+        "✓ Es correcta   C",
+        "✎ Corregir   E",
+        "✗ No es una placa   R",
+        "◐ Placa borrosa   B",
+        "Saltar   S",
+    ]
+
+
 def test_edit_correct_emits_corrected_text(qapp) -> None:
     panel = ReviewPanel()
     decided: list[ReviewDecision] = []

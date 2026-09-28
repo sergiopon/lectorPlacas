@@ -7,7 +7,7 @@ from PySide6.QtTest import QTest
 from lector_placas.application.ports import RunRecord, RunStatus
 from lector_placas.domain.entities import ReviewStatus
 from lector_placas.gui.labels import profile_label
-from lector_placas.gui.readings_filters import ReadingsFilters
+from lector_placas.gui.readings_filters import FILTER_ORDER, ReadingsFilters
 
 STARTED_AT = datetime(2026, 9, 27, 8, 30, tzinfo=UTC)
 
@@ -48,6 +48,19 @@ def test_counts_render_in_buttons(qapp) -> None:
     filters.set_counts({})
     assert filters._buttons[ReviewStatus.UNVERIFIED].text() == "Por revisar (0)"
     assert filters._buttons[None].text() == "Todas (0)"
+
+
+def test_illegible_filter_button(qapp) -> None:
+    filters = ReadingsFilters()
+    assert filters._buttons[ReviewStatus.ILLEGIBLE].text() == "Borrosas (0)"
+
+    filters.set_counts({ReviewStatus.ILLEGIBLE: 4})
+    assert filters._buttons[ReviewStatus.ILLEGIBLE].text() == "Borrosas (4)"
+
+    order = [filters._buttons[status] for status in FILTER_ORDER]
+    index = order.index(filters._buttons[ReviewStatus.ILLEGIBLE])
+    assert order[index - 1] is filters._buttons[ReviewStatus.REJECTED]
+    assert order[index + 1] is filters._buttons[None]
 
 
 def test_set_status_does_not_emit_but_click_does(qapp) -> None:

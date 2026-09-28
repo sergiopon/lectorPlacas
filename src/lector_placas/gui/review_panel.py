@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Final
 
 from PySide6.QtCore import QEvent, QObject, Qt, Signal
@@ -31,6 +30,7 @@ from lector_placas.gui.labels import (
     percent,
     short_time,
 )
+from lector_placas.gui.review_actions import make_actions, make_button, make_column
 from lector_placas.gui.theme import STATUS_COLORS, SURFACE
 
 PANEL_WIDTH: Final[int] = 380
@@ -126,6 +126,11 @@ class ReviewPanel(QFrame):
         if self._can_decide():
             self.decided.emit(ReviewDecision(ReviewAction.REJECT))
 
+    def mark_illegible(self) -> None:
+        """Emite `decided(ILLEGIBLE)` si hay un registro y se puede decidir."""
+        if self._can_decide():
+            self.decided.emit(ReviewDecision(ReviewAction.ILLEGIBLE))
+
     def skip(self) -> None:
         """Emite `skip_requested` si hay un registro y se puede decidir."""
         if self._can_decide():
@@ -185,7 +190,7 @@ def _build_body(body: QWidget, panel: ReviewPanel) -> None:
     panel._reasons_label.setWordWrap(True)
     panel._confidence_bar = QProgressBar(body)
     panel._confidence_bar.setRange(0, CONFIDENCE_MAX)
-    panel._actions, panel._buttons, panel._note_label = _make_actions(body, panel)
+    panel._actions, panel._buttons, panel._note_label = make_actions(body, panel)
     panel._editor, panel._edit, panel._error_label = _make_editor(body, panel)
     layout = QVBoxLayout(body)
     top = (
@@ -206,36 +211,6 @@ def _build_body(body: QWidget, panel: ReviewPanel) -> None:
     layout.addWidget(panel._editor)
 
 
-def _make_button(
-    parent: QWidget, text: str, slot: Callable[[], None], role: str | None = None
-) -> QPushButton:
-    button = QPushButton(text, parent)
-    if role is not None:
-        button.setProperty("role", role)
-    button.clicked.connect(slot)
-    return button
-
-
-def _make_actions(
-    parent: QWidget, panel: ReviewPanel
-) -> tuple[QWidget, tuple[QPushButton, ...], QLabel]:
-    specs = (
-        ("✓ Es correcta   C", panel.confirm, "primary"),
-        ("✎ Corregir   E", panel.start_edit, None),
-        ("✗ No es una placa   R", panel.reject, None),
-        ("Saltar   S", panel.skip, "ghost"),
-    )
-    buttons = tuple(_make_button(parent, text, slot, role) for text, slot, role in specs)
-    note = QLabel("Espera a que termine el procesamiento para revisar.", parent)
-    note.setProperty("role", "muted")
-    note.setWordWrap(True)
-    container, layout = _column(parent)
-    for button in buttons:
-        layout.addWidget(button)
-    layout.addWidget(note)
-    return container, buttons, note
-
-
 def _make_editor(parent: QWidget, panel: ReviewPanel) -> tuple[QWidget, QLineEdit, QLabel]:
     edit = QLineEdit(parent)
     edit.setMaxLength(10)
@@ -245,21 +220,14 @@ def _make_editor(parent: QWidget, panel: ReviewPanel) -> tuple[QWidget, QLineEdi
     edit.returnPressed.connect(panel._save_edit)
     row = QHBoxLayout()
     row.addWidget(edit)
-    row.addWidget(_make_button(parent, "Guardar   Enter", panel._save_edit, "primary"))
-    row.addWidget(_make_button(parent, "Cancelar   Esc", panel.cancel_edit))
+    row.addWidget(make_button(parent, "Guardar   Enter", panel._save_edit, "primary"))
+    row.addWidget(make_button(parent, "Cancelar   Esc", panel.cancel_edit))
     error = QLabel(parent)
     error.setStyleSheet(f"color: {STATUS_COLORS[ReviewStatus.REJECTED][0]};")
-    container, layout = _column(parent)
+    container, layout = make_column(parent)
     layout.addLayout(row)
     layout.addWidget(error)
     return container, edit, error
-
-
-def _column(parent: QWidget) -> tuple[QWidget, QVBoxLayout]:
-    container = QWidget(parent)
-    layout = QVBoxLayout(container)
-    layout.setContentsMargins(0, 0, 0, 0)
-    return container, layout
 
 
 def _set_editing(panel: ReviewPanel, editing: bool) -> None:
