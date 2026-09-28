@@ -148,6 +148,7 @@ def _build_shortcuts(page: ReadingsPage) -> None:
         ("C", panel.confirm),
         ("E", panel.start_edit),
         ("R", panel.reject),
+        ("B", panel.mark_illegible),
         ("S", panel.skip),
     )
     for key, trigger in triggers:

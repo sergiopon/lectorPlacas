@@ -183,11 +183,13 @@ _METRIC_FIELDS = (
     "confirmed_kept",
     "confirmed_corrected",
     "confirmed_rejected",
+    "confirmed_illegible",
     "unverified_total",
     "unverified_pending",
     "unverified_confirmed",
     "unverified_corrected",
     "unverified_rejected",
+    "unverified_illegible",
     "reviewed_readings",
 )
 
@@ -234,6 +236,8 @@ def test_metrics_paginates_and_displays(config: AppConfig, qapp) -> None:
     assert tab._metrics_message.text() == ""
     _assert_fixed_metrics(tab, expected)
     _assert_reason_rows(tab, expected)
+    assert tab._metric_labels["confirmed_illegible"].text() == "0"
+    assert tab._metric_labels["unverified_illegible"].text() == "0"
     assert tab._metric_labels["precision_confirmed"].text() == percent(expected.precision_confirmed)
     assert tab._metric_labels["cer"].text() == "n/d"
     assert tab._metric_labels["exact_match_rate"].text() == "n/d"
