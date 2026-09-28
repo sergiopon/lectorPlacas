@@ -36,6 +36,8 @@ class ReviewMetrics:
     reviewed_readings: int
     cer: float | None
     exact_match_rate: float | None
+    confirmed_illegible: int
+    unverified_illegible: int
 
 
 def compute_review_metrics(records: Sequence[SightingRecord]) -> ReviewMetrics:
@@ -73,6 +75,8 @@ def compute_review_metrics(records: Sequence[SightingRecord]) -> ReviewMetrics:
         reviewed_readings=len(pairs),
         cer=character_error_rate(pairs) if pairs else None,
         exact_match_rate=exact_match_rate(pairs) if pairs else None,
+        confirmed_illegible=_count(audited, ReviewStatus.ILLEGIBLE),
+        unverified_illegible=_count(unverified, ReviewStatus.ILLEGIBLE),
     )
 
 

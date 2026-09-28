@@ -58,6 +58,7 @@ class ReviewStatus(StrEnum):
     UNVERIFIED = "unverified"
     REJECTED = "rejected"
     CORRECTED = "corrected"
+    ILLEGIBLE = "illegible"
 
 
 class UnverifiedReason(StrEnum):

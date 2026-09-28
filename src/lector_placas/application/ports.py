@@ -179,6 +179,7 @@ class ReviewAction(StrEnum):
     REJECT = "reject"
     SKIP = "skip"
     QUIT = "quit"
+    ILLEGIBLE = "illegible"
 
 
 @dataclass(frozen=True, slots=True)
@@ -493,7 +494,8 @@ class PlateRepository(Protocol):
         """Registra la decisión de revisión de un avistamiento.
 
         Precondiciones:
-            `status` ∈ {CONFIRMED, CORRECTED, REJECTED}; `corrected_text` solo con CORRECTED.
+            `status` ∈ {CONFIRMED, CORRECTED, REJECTED, ILLEGIBLE}; `corrected_text` solo con
+            CORRECTED.
 
         Postcondiciones:
             Estado, `plate_text`, `plate_id` y `reviewed_at` actualizados.

@@ -43,6 +43,7 @@ EXPORT_STATUS_CHOICES: Final[tuple[str, ...]] = (
     "unverified",
     "rejected",
     "corrected",
+    "illegible",
 )
 LOG_FILENAME: Final[str] = "lector.log"
 

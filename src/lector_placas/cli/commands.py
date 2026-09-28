@@ -124,7 +124,8 @@ def cmd_review(args: argparse.Namespace, config: AppConfig) -> int:
         summary = use_case.execute(args.limit, ReviewStatus(args.status))
         sys.stdout.write(
             f"confirmados={summary.confirmed} corregidos={summary.corrected} "
-            f"rechazados={summary.rejected} omitidos={summary.skipped}\n"
+            f"rechazados={summary.rejected} borrosas={summary.illegible} "
+            f"omitidos={summary.skipped}\n"
         )
         return 0
 
