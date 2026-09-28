@@ -292,7 +292,7 @@ uv run python -m ocr_training.evaluate_ocr --crops mix_v1/test/annotations.csv -
 - `train.py` **sobrescribe** `models/fpo-cct-xs-v2-colombia/` aunque el modelo salga peor. Guarda antes una copia del
   `.onnx` en uso.
 
-**Reentrenar con tus revisiones** (spec 054; disponible cuando esté integrada):
+**Reentrenar con tus revisiones** (spec 054):
 ```bash
 uv run lector dataset export-reviewed                        # desde la raíz → training/ocr/datasets/own/reviewed-<fecha>
 cd training/ocr
@@ -374,7 +374,7 @@ una rama `feature/NNN-*` con merge `--no-ff`. El estado de cada spec y el regist
 
 ## 14. Estado actual y próximos pasos
 
-- Specs 000–053 implementadas; la 054 (reentrenar con reparto congelado) está en curso. Detalle en `specs/README.md`.
+- Specs 000–054 implementadas. Detalle en `specs/README.md`.
 - OCR en uso: `colombia_v1`, nivel **provisional** (CER 3,7 % en el test congelado). En video real, el CER medido con
   tus revisiones es 16 %.
 - Plan de mejora en **`docs/07-plan-mejora-lectura.md`**:
