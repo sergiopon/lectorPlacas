@@ -149,7 +149,7 @@ lecturas de mayor calidad (ancho de placa y nitidez, que ya vienen en `PlateRead
 `max_ocr_per_frame`, que ya existe. La spec fija el criterio de calidad, el desempate y los tests en prosa; se valida con la
 misma batería de la Fase 2.
 
-### Fase 4 - Reentrenar el OCR con datos del dominio (spec 054 + operador)
+### Fase 4 - Reentrenar el OCR con datos del dominio (spec 054, redactada, + operador)
 
 **Problema a resolver antes de entrenar:** `mix_dataset` reparte train/val/test ordenando los componentes por hash y
 tomando los primeros `round(n × 0,2)` para test. Si se añade `--real own/<carpeta>` a la mezcla original, cambian `n` y el
@@ -175,6 +175,11 @@ repite la Fase 2 con el modelo nuevo.
 
 - **Decodificación restringida por formato:** usar la distribución completa de probabilidades por posición en vez de la
   corrección fija O↔0, I↔1, B↔8, S↔5. Arregla solo los cruces letra↔dígito (≈ 4 % de los errores observados).
+  Sin spec a propósito (2026-09-27): fast-plate-ocr 1.1.0 solo expone el máximo por posición (`char_probs =
+  np.max(...)` en `core/process.py`). Tener la distribución completa exige ejecutar la sesión ONNX con el
+  preprocesado privado de la librería (`_load_image_from_source`), y eso toca el adaptador, `OcrResult`,
+  `PlateReading` y el consolidador. Con la spec 050 el riesgo de precisión de estos cruces ya está cubierto. Se
+  reconsidera solo si la Fase 2 muestra que los cruces letra↔dígito pesan más.
 - **Última letra de la moto nueva limitada a A–I:** NO VERIFICADO (el catálogo cita Res. 4923/1994 y permite `[A-Z]`).
   Se añade al catálogo solo con la fuente normativa; el efecto esperado es pequeño (1 de las 20 corregidas era moto `LLLDDL`).
 - **Tipo de vehículo:** revisar en la galería los 3 casos `LLLDDD` en moto; si el detector confunde la clase, se decide si
