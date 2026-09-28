@@ -217,3 +217,73 @@ def test_failed_migration_leaves_v1_intact(tmp_path: Path) -> None:
     rows = raw.execute("SELECT sighting_id, status FROM sightings").fetchall()
     assert rows == [(sighting_id, "unverified")]
     raw.close()
+
+
+class _LockingConnection:
+    """Envuelve una conexión SQLCipher real simulando que `BEGIN IMMEDIATE` está bloqueada.
+
+    `sqlcipher3.dbapi2.Connection` es un tipo inmutable: no admite parchear `execute` ni en la
+    clase ni en la instancia. Se envuelve el resultado de `sqlcipher.connect` para simular, de
+    forma rápida y determinista, el `sqlcipher.OperationalError("database is locked")` que
+    lanzaría un `BEGIN IMMEDIATE` real contra una base de datos bloqueada por otra conexión.
+    """
+
+    def __init__(self, real: sqlcipher.Connection) -> None:
+        object.__setattr__(self, "_real", real)
+
+    def execute(self, sql: str, *args: object) -> object:
+        if sql == "BEGIN IMMEDIATE":
+            raise sqlcipher.OperationalError("database is locked")
+        return self._real.execute(sql, *args)
+
+    def executescript(self, script: str) -> object:
+        return self._real.executescript(script)
+
+    def close(self) -> None:
+        self._real.close()
+
+    def __enter__(self) -> object:
+        return self._real.__enter__()
+
+    def __exit__(self, *exc_info: object) -> bool | None:
+        return self._real.__exit__(*exc_info)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._real, name)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        setattr(self._real, name, value)
+
+
+def test_locked_database_raises_repository_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    key_provider = FakeKeyProvider()
+    records_before = _build_v1_database(tmp_path, key_provider)
+
+    # Otra conexión mantiene un BEGIN IMMEDIATE abierto: la BD queda realmente bloqueada.
+    blocker = _raw_connect(tmp_path / "lector.db", key_provider)
+    blocker.isolation_level = None
+    blocker.execute("BEGIN IMMEDIATE")
+
+    real_connect = sqlcipher.connect
+
+    def locking_connect(path: str) -> _LockingConnection:
+        return _LockingConnection(real_connect(path))
+
+    # El timeout real de `sqlite3.connect` (5 s) haría el fallo lento pero no distinto: se
+    # simula con la conexión anterior para que sea rápido y determinista.
+    monkeypatch.setattr(sqlcipher, "connect", locking_connect)
+    with pytest.raises(RepositoryError):
+        SqlCipherPlateRepository(tmp_path / "lector.db", key_provider)
+    monkeypatch.undo()
+
+    blocker.execute("ROLLBACK")
+    blocker.close()
+
+    raw = _raw_connect(tmp_path / "lector.db", key_provider)
+    version = raw.execute("SELECT version FROM schema_version").fetchone()[0]
+    assert version == 1
+    rows = raw.execute("SELECT sighting_id, status FROM sightings ORDER BY sighting_id").fetchall()
+    assert rows == [(record.sighting_id, record.status.value) for record in records_before]
+    raw.close()
