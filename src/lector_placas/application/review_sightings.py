@@ -28,6 +28,7 @@ APPLICABLE_ACTIONS: Final[dict[ReviewAction, ReviewStatus]] = {
     ReviewAction.CONFIRM: ReviewStatus.CONFIRMED,
     ReviewAction.CORRECT: ReviewStatus.CORRECTED,
     ReviewAction.REJECT: ReviewStatus.REJECTED,
+    ReviewAction.ILLEGIBLE: ReviewStatus.ILLEGIBLE,
 }
 
 
@@ -39,6 +40,7 @@ class ReviewSummary:
     corrected: int
     rejected: int
     skipped: int
+    illegible: int = 0
 
 
 @dataclass(slots=True)
@@ -49,14 +51,17 @@ class _Counters:
     corrected: int = 0
     rejected: int = 0
     skipped: int = 0
+    illegible: int = 0
 
     def summary(self) -> ReviewSummary:
         """Devuelve el resumen inmutable con los conteos acumulados."""
-        return ReviewSummary(self.confirmed, self.corrected, self.rejected, self.skipped)
+        return ReviewSummary(
+            self.confirmed, self.corrected, self.rejected, self.skipped, self.illegible
+        )
 
     def detail(self) -> str:
         """Compone el detalle de auditoría, sin texto de placa."""
-        return _detail(self.confirmed, self.corrected, self.rejected, self.skipped)
+        return _detail(self.confirmed, self.corrected, self.rejected, self.illegible, self.skipped)
 
 
 class ReviewSightings:
@@ -159,6 +164,9 @@ class ReviewSightings:
         elif action is ReviewAction.REJECT:
             self._repository.record_review(sighting_id, ReviewStatus.REJECTED, None, reviewed_at)
             counters.rejected += 1
+        elif action is ReviewAction.ILLEGIBLE:
+            self._repository.record_review(sighting_id, ReviewStatus.ILLEGIBLE, None, reviewed_at)
+            counters.illegible += 1
         elif action is ReviewAction.SKIP:
             counters.skipped += 1
 
@@ -179,8 +187,9 @@ class DecideSighting:
     def execute(self, sighting_id: int, decision: ReviewDecision) -> SightingRecord:
         """Registra una decisión sobre un solo avistamiento.
 
-        Vale cualquier acción aplicable (`CONFIRM`, `CORRECT`, `REJECT`) sobre un avistamiento
-        en cualquier estado; el operador puede cambiar de opinión. `ocr_text` nunca cambia.
+        Vale cualquier acción aplicable (`CONFIRM`, `CORRECT`, `REJECT`, `ILLEGIBLE`) sobre un
+        avistamiento en cualquier estado; el operador puede cambiar de opinión. `ocr_text` nunca
+        cambia.
 
         Args:
             sighting_id: identificador del avistamiento a decidir.
@@ -206,10 +215,11 @@ class DecideSighting:
         return self._repository.get_sighting(sighting_id)
 
 
-def _detail(confirmed: int, corrected: int, rejected: int, skipped: int) -> str:
+def _detail(confirmed: int, corrected: int, rejected: int, illegible: int, skipped: int) -> str:
     """Compone el detalle de auditoría de una revisión, sin texto de placa."""
     return (
-        f"confirmados={confirmed} corregidos={corrected} rechazados={rejected} omitidos={skipped}"
+        f"confirmados={confirmed} corregidos={corrected} rechazados={rejected} "
+        f"borrosas={illegible} omitidos={skipped}"
     )
 
 
@@ -219,6 +229,7 @@ def _action_detail(action: ReviewAction) -> str:
         int(action is ReviewAction.CONFIRM),
         int(action is ReviewAction.CORRECT),
         int(action is ReviewAction.REJECT),
+        int(action is ReviewAction.ILLEGIBLE),
         0,
     )
 

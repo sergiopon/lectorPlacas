@@ -82,3 +82,11 @@ def test_invalid_limit() -> None:
     repo, crops = seed(0)
     with pytest.raises(ReviewError):
         ReviewSightings(repo, crops, ScriptedUI([]), FakeClock()).execute(0)
+
+
+def test_queue_counts_illegible() -> None:
+    repo, crops = seed(1)
+    ui = ScriptedUI([ReviewDecision(ReviewAction.ILLEGIBLE)])
+    summary = ReviewSightings(repo, crops, ui, FakeClock()).execute(10)
+    assert summary.illegible == 1
+    assert repo.get_sighting(1).status is ReviewStatus.ILLEGIBLE

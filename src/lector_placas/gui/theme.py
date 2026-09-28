@@ -24,6 +24,7 @@ STATUS_COLORS: Final[Mapping[ReviewStatus, tuple[str, str]]] = MappingProxyType(
         ReviewStatus.CONFIRMED: ("#166534", "#DCFCE7"),
         ReviewStatus.CORRECTED: ("#1E40AF", "#DBEAFE"),
         ReviewStatus.REJECTED: ("#991B1B", "#FEE2E2"),
+        ReviewStatus.ILLEGIBLE: ("#374151", "#F3F4F6"),
     }
 )
 

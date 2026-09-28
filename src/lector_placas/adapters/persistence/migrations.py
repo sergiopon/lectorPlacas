@@ -1,0 +1,130 @@
+"""Migración del esquema de la base de datos SQLCipher de la versión 1 a la 2 (spec 052).
+
+La versión 1 no admite `'illegible'` en el `CHECK` de `sightings.status`. SQLite no permite
+modificar un `CHECK` con `ALTER TABLE`, así que la tabla se recrea dentro de una transacción
+explícita, conservando `sighting_id` y el resto de columnas sin cambios.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import logging
+from typing import Final
+
+import sqlcipher3.dbapi2 as sqlcipher
+
+from lector_placas.domain.errors import RepositoryError
+
+logger = logging.getLogger(__name__)
+
+_MIGRATION_FAILED: Final[str] = "migración de esquema fallida"
+
+_CREATE_SIGHTINGS_V2: Final[str] = """
+CREATE TABLE sightings_v2 (
+    sighting_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id        INTEGER NOT NULL REFERENCES runs(run_id) ON DELETE CASCADE,
+    plate_id      INTEGER REFERENCES plates(plate_id) ON DELETE SET NULL,
+    track_id      INTEGER NOT NULL CHECK (track_id >= 0),
+    first_seen_ms INTEGER NOT NULL CHECK (first_seen_ms >= 0),
+    last_seen_ms  INTEGER NOT NULL CHECK (last_seen_ms >= first_seen_ms),
+    vehicle_type  TEXT    NOT NULL CHECK (vehicle_type IN ('car', 'motorcycle', 'bus', 'truck')),
+    ocr_text      TEXT    NOT NULL CHECK (length(ocr_text) BETWEEN 1 AND 10
+                                          AND ocr_text NOT GLOB '*[^A-Z0-9]*'),
+    plate_text    TEXT    NOT NULL CHECK (length(plate_text) BETWEEN 1 AND 10
+                                          AND plate_text NOT GLOB '*[^A-Z0-9]*'),
+    confidence    REAL    NOT NULL CHECK (confidence BETWEEN 0.0 AND 1.0),
+    agreement     REAL    NOT NULL CHECK (agreement BETWEEN 0.0 AND 1.0),
+    num_readings  INTEGER NOT NULL CHECK (num_readings >= 1),
+    status        TEXT    NOT NULL CHECK (status IN ('confirmed', 'unverified', 'rejected',
+                                                     'corrected', 'illegible')),
+    reasons       TEXT    NOT NULL,
+    format_ids    TEXT    NOT NULL,
+    crop_ref      TEXT CHECK (crop_ref IS NULL OR (length(crop_ref) = 32
+                                                   AND crop_ref NOT GLOB '*[^0-9a-f]*')),
+    created_at    TEXT    NOT NULL,
+    reviewed_at   TEXT,
+    UNIQUE (run_id, track_id, first_seen_ms)
+)
+"""
+
+# Lista de columnas fija (no se interpola: evita SEG-15 y el falso positivo de S608).
+_INSERT_SIGHTINGS_V2: Final[str] = """
+INSERT INTO sightings_v2 (
+    sighting_id, run_id, plate_id, track_id, first_seen_ms, last_seen_ms, vehicle_type,
+    ocr_text, plate_text, confidence, agreement, num_readings, status, reasons,
+    format_ids, crop_ref, created_at, reviewed_at
+)
+SELECT
+    sighting_id, run_id, plate_id, track_id, first_seen_ms, last_seen_ms, vehicle_type,
+    ocr_text, plate_text, confidence, agreement, num_readings, status, reasons,
+    format_ids, crop_ref, created_at, reviewed_at
+FROM sightings
+"""
+
+_RECREATE_INDEXES: Final[tuple[str, ...]] = (
+    "CREATE INDEX IF NOT EXISTS idx_sightings_status     ON sightings(status)",
+    "CREATE INDEX IF NOT EXISTS idx_sightings_created_at ON sightings(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_sightings_plate_id   ON sightings(plate_id)",
+    "CREATE INDEX IF NOT EXISTS idx_sightings_crop_ref   ON sightings(crop_ref) "
+    "WHERE crop_ref IS NOT NULL",
+)
+
+
+def migrate_v1_to_v2(connection: sqlcipher.Connection) -> None:
+    """Migra el esquema de avistamientos de la versión 1 a la 2.
+
+    Recrea `sightings` con el `CHECK` de `status` ampliado para admitir `'illegible'`, conservando
+    filas, `sighting_id`, índices y el contador de `AUTOINCREMENT`.
+
+    Args:
+        connection: conexión SQLCipher abierta sobre una base de datos en esquema v1.
+
+    Raises:
+        RepositoryError: si la migración falla. La base de datos queda en v1 intacta (el DDL de
+            SQLite es transaccional).
+    """
+    connection.execute("PRAGMA foreign_keys = OFF")
+    original_isolation_level = connection.isolation_level
+    connection.isolation_level = None
+    try:
+        count = _migrate_sightings_table(connection)
+    finally:
+        connection.isolation_level = original_isolation_level
+    _check_foreign_keys(connection)
+    logger.info("esquema migrado de v1 a v2 avistamientos=%d", count)
+
+
+def _migrate_sightings_table(connection: sqlcipher.Connection) -> int:
+    """Recrea `sightings` dentro de una transacción explícita y devuelve las filas copiadas.
+
+    Si `BEGIN IMMEDIATE` falla (p. ej. la base de datos está bloqueada por otra conexión), no
+    hay transacción que deshacer. Si falla un paso posterior, se intenta el `ROLLBACK`, pero un
+    fallo de ese `ROLLBACK` no oculta el error original.
+    """
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+    except sqlcipher.Error as e:
+        raise RepositoryError(_MIGRATION_FAILED) from e
+    try:
+        connection.execute(_CREATE_SIGHTINGS_V2)
+        cursor = connection.execute(_INSERT_SIGHTINGS_V2)
+        count = cursor.rowcount
+        connection.execute("DROP TABLE sightings")
+        connection.execute("ALTER TABLE sightings_v2 RENAME TO sightings")
+        for statement in _RECREATE_INDEXES:
+            connection.execute(statement)
+        connection.execute("UPDATE schema_version SET version = 2")
+        connection.execute("COMMIT")
+    except sqlcipher.Error as e:
+        with contextlib.suppress(sqlcipher.Error):
+            connection.execute("ROLLBACK")
+        raise RepositoryError(_MIGRATION_FAILED) from e
+    return int(count)
+
+
+def _check_foreign_keys(connection: sqlcipher.Connection) -> None:
+    """Comprueba la integridad referencial tras la migración y reactiva `foreign_keys`."""
+    violations = connection.execute("PRAGMA foreign_key_check").fetchall()
+    connection.execute("PRAGMA foreign_keys = ON")
+    if violations:
+        raise RepositoryError(_MIGRATION_FAILED)

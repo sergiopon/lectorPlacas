@@ -102,7 +102,14 @@ def test_enum_values() -> None:
         "purge",
         "export",
     ]
-    assert [a.value for a in ReviewAction] == ["confirm", "correct", "reject", "skip", "quit"]
+    assert [a.value for a in ReviewAction] == [
+        "confirm",
+        "correct",
+        "reject",
+        "skip",
+        "quit",
+        "illegible",
+    ]
 
 
 def test_fakes_satisfy_protocols() -> None:

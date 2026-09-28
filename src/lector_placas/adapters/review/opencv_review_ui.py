@@ -34,7 +34,9 @@ TEXT_COLOR: Final[tuple[int, int, int]] = (235, 235, 235)
 MUTED_COLOR: Final[tuple[int, int, int]] = (160, 160, 160)
 ACCENT_COLOR: Final[tuple[int, int, int]] = (80, 200, 255)
 ERROR_COLOR: Final[tuple[int, int, int]] = (80, 80, 255)
-MENU_TEXT: Final[str] = "[C] confirmar   [E] editar   [R] rechazar   [S] saltar   [Q] salir"
+MENU_TEXT: Final[str] = (
+    "[C] confirmar   [E] editar   [R] rechazar   [B] borrosa   [S] saltar   [Q] salir"
+)
 EDIT_HINT: Final[str] = "[Enter] guardar   [Esc] cancelar"
 INVALID_KEY: Final[str] = "tecla no valida"
 INVALID_TEXT: Final[str] = "texto invalido"
@@ -42,6 +44,7 @@ KEY_TO_ACTION: Final[Mapping[str, ReviewAction]] = MappingProxyType(
     {
         "c": ReviewAction.CONFIRM,
         "r": ReviewAction.REJECT,
+        "b": ReviewAction.ILLEGIBLE,
         "s": ReviewAction.SKIP,
         "q": ReviewAction.QUIT,
     }

@@ -165,7 +165,28 @@ def test_constraints_and_audit_limits(tmp_path: Path) -> None:
 def test_unsupported_schema_version(tmp_path: Path) -> None:
     repo = open_repo(tmp_path)
     with repo._connection:
-        repo._connection.execute("UPDATE schema_version SET version = 2")
+        repo._connection.execute("UPDATE schema_version SET version = 99")
     repo.close()
     with pytest.raises(RepositoryError):
         open_repo(tmp_path)
+
+
+def test_illegible_review_unlinks_plate(tmp_path: Path) -> None:
+    repo = open_repo(tmp_path)
+    run_id = repo.start_run(RunStart("f" * 64, "p", INFO, T0))
+    sid = repo.save_sighting(sighting(run_id, 1, CONFIRMED))
+    plate_id_before = repo._connection.execute(
+        "SELECT plate_id FROM sightings WHERE sighting_id = ?", (sid,)
+    ).fetchone()[0]
+    assert plate_id_before is not None
+    repo.record_review(sid, ReviewStatus.ILLEGIBLE, None, T0)
+    record = repo.get_sighting(sid)
+    assert record.status is ReviewStatus.ILLEGIBLE
+    assert record.plate_text == "ABC123"
+    plate_id_after = repo._connection.execute(
+        "SELECT plate_id FROM sightings WHERE sighting_id = ?", (sid,)
+    ).fetchone()[0]
+    assert plate_id_after is None
+    with pytest.raises(RepositoryError):
+        repo.record_review(sid, ReviewStatus.ILLEGIBLE, "XYZ98K", T0)
+    repo.close()

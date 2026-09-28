@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Final
 
 import sqlcipher3.dbapi2 as sqlcipher
 
+from lector_placas.adapters.persistence.migrations import migrate_v1_to_v2
 from lector_placas.adapters.persistence.rows import (
     SIGHTING_COLUMNS,
     from_db_time,
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
 
 __all__ = ["SIGHTING_COLUMNS", "SqlCipherPlateRepository", "from_db_time", "to_db_time"]
 
-SCHEMA_VERSION: Final[int] = 1
+SCHEMA_VERSION: Final[int] = 2
 MAX_PAGE: Final[int] = 10_000
 HEX_KEY_REGEX: Final[re.Pattern[str]] = re.compile(r"^[0-9a-f]{64}$")
 
@@ -52,7 +53,12 @@ _SELECT_SIGHTING_BY_ID = (
     "format_ids, crop_ref, created_at, reviewed_at FROM sightings WHERE sighting_id = ?"
 )
 
-_REVIEWABLE_STATUSES = (ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED, ReviewStatus.REJECTED)
+_REVIEWABLE_STATUSES = (
+    ReviewStatus.CONFIRMED,
+    ReviewStatus.CORRECTED,
+    ReviewStatus.REJECTED,
+    ReviewStatus.ILLEGIBLE,
+)
 
 
 class SqlCipherPlateRepository:
@@ -113,19 +119,29 @@ class SqlCipherPlateRepository:
         self._connection.executescript(schema)
 
     def _check_schema_version(self) -> None:
-        """Inserta la versión inicial del esquema o valida la existente."""
+        """Inserta la versión inicial del esquema, migra desde v1 o valida la existente."""
         with self._connection:
             row = self._connection.execute("SELECT version FROM schema_version").fetchone()
             if row is None:
                 self._connection.execute(
                     "INSERT INTO schema_version(version) VALUES (?)", (SCHEMA_VERSION,)
                 )
-                version = SCHEMA_VERSION
-            else:
-                version = row[0]
+                return
+            version = row[0]
+        if version == 1:
+            self._migrate_to_v2()
+            return
         if version != SCHEMA_VERSION:
             self._connection.close()
             raise RepositoryError("versión de esquema no soportada")
+
+    def _migrate_to_v2(self) -> None:
+        """Migra la base de datos de v1 a v2, cerrando la conexión si la migración falla."""
+        try:
+            migrate_v1_to_v2(self._connection)
+        except RepositoryError:
+            self._connection.close()
+            raise
 
     def start_run(self, run: RunStart) -> int:
         """Registra el inicio de una corrida de procesamiento.
@@ -330,7 +346,7 @@ class SqlCipherPlateRepository:
 
         Args:
             sighting_id: identificador del avistamiento.
-            status: nuevo estado (`CONFIRMED`, `CORRECTED` o `REJECTED`).
+            status: nuevo estado (`CONFIRMED`, `CORRECTED`, `REJECTED` o `ILLEGIBLE`).
             corrected_text: texto corregido (solo para `CORRECTED`).
             reviewed_at: fecha de la revisión.
 
@@ -365,7 +381,7 @@ class SqlCipherPlateRepository:
         ).fetchone()
         if current is None:
             raise SightingNotFoundError(f"sighting_id={sighting_id}")
-        if status is ReviewStatus.REJECTED:
+        if status in (ReviewStatus.REJECTED, ReviewStatus.ILLEGIBLE):
             cursor = self._connection.execute(
                 "UPDATE sightings SET status = ?, plate_id = NULL, reviewed_at = ? "
                 "WHERE sighting_id = ?",

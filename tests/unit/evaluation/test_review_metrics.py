@@ -55,6 +55,22 @@ def test_metrics_from_review_decisions() -> None:
     assert metrics.exact_match_rate == pytest.approx(2 / 3)
 
 
+def test_illegible_counts_and_precision() -> None:
+    repo = InMemoryPlateRepository()
+    run_id = repo.start_run(RunStart("a" * 64, "p", VideoInfo(1, 1, 0, None, None, "x"), START))
+    for track, plate in enumerate((CONFIRMED, UNVERIFIED)):
+        repo.save_sighting(Sighting(run_id, track, 0, 1, VehicleType.CAR, plate, None, START))
+    repo.record_review(1, ReviewStatus.ILLEGIBLE, None, START)
+    repo.record_review(2, ReviewStatus.ILLEGIBLE, None, START)
+    metrics = compute_review_metrics(repo.list_sightings(None, 100, 0))
+    assert metrics.confirmed_illegible == 1
+    assert metrics.confirmed_audited == 1
+    assert metrics.confirmed_kept == 0
+    assert metrics.unverified_illegible == 1
+    assert metrics.reviewed_readings == 0
+    assert metrics.cer is None
+
+
 def test_no_reviews_gives_none_and_empty_raises() -> None:
     repo = InMemoryPlateRepository()
     run_id = repo.start_run(RunStart("a" * 64, "p", VideoInfo(1, 1, 0, None, None, "x"), START))

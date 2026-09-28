@@ -11,6 +11,7 @@ from lector_placas.adapters.review.opencv_review_ui import (
     CANVAS_WIDTH,
     CROP_AREA_HEIGHT,
     MARGIN,
+    MENU_TEXT,
     OpenCvReviewUI,
     ReviewView,
     render_review_frame,
@@ -91,6 +92,12 @@ def test_idle_polling_keeps_window_alive_then_confirms() -> None:
 )
 def test_menu_keys(key: int, action: ReviewAction) -> None:
     assert ask([key])[0].action is action
+
+
+def test_b_key_marks_illegible() -> None:
+    assert ask([ord("b")])[0].action is ReviewAction.ILLEGIBLE
+    assert ask([ord("B")])[0].action is ReviewAction.ILLEGIBLE
+    assert "[B] borrosa" in MENU_TEXT
 
 
 def test_invalid_menu_key_is_ignored() -> None:

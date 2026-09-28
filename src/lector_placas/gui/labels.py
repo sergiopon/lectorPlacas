@@ -16,6 +16,7 @@ STATUS_LABELS: Final[Mapping[ReviewStatus, str]] = MappingProxyType(
         ReviewStatus.UNVERIFIED: "sin verificar",
         ReviewStatus.REJECTED: "rechazado",
         ReviewStatus.CORRECTED: "corregido",
+        ReviewStatus.ILLEGIBLE: "borrosa",
     }
 )
 
@@ -25,6 +26,7 @@ STATUS_BADGES: Final[Mapping[ReviewStatus, str]] = MappingProxyType(
         ReviewStatus.CONFIRMED: "Confirmada",
         ReviewStatus.CORRECTED: "Corregida",
         ReviewStatus.REJECTED: "Descartada",
+        ReviewStatus.ILLEGIBLE: "Borrosa",
     }
 )
 

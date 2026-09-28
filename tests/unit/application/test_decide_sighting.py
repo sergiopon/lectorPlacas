@@ -83,9 +83,26 @@ def test_skip_and_quit_raise_review_error_without_writing() -> None:
 
 def test_logs_review_audit_event_without_plate_text() -> None:
     cases = [
-        (ReviewAction.CONFIRM, None, "confirmados=1 corregidos=0 rechazados=0 omitidos=0"),
-        (ReviewAction.CORRECT, "XYZ98K", "confirmados=0 corregidos=1 rechazados=0 omitidos=0"),
-        (ReviewAction.REJECT, None, "confirmados=0 corregidos=0 rechazados=1 omitidos=0"),
+        (
+            ReviewAction.CONFIRM,
+            None,
+            "confirmados=1 corregidos=0 rechazados=0 borrosas=0 omitidos=0",
+        ),
+        (
+            ReviewAction.CORRECT,
+            "XYZ98K",
+            "confirmados=0 corregidos=1 rechazados=0 borrosas=0 omitidos=0",
+        ),
+        (
+            ReviewAction.REJECT,
+            None,
+            "confirmados=0 corregidos=0 rechazados=1 borrosas=0 omitidos=0",
+        ),
+        (
+            ReviewAction.ILLEGIBLE,
+            None,
+            "confirmados=0 corregidos=0 rechazados=0 borrosas=1 omitidos=0",
+        ),
     ]
     for action, corrected, expected in cases:
         repository, clock, sighting_id = _seeded("ABC123")
@@ -95,6 +112,15 @@ def test_logs_review_audit_event_without_plate_text() -> None:
         assert detail == expected
         assert "ABC123" not in detail
         assert "XYZ98K" not in detail
+
+
+def test_illegible_marks_illegible() -> None:
+    repository, clock, sighting_id = _seeded("ABC123")
+    updated = DecideSighting(repository, clock).execute(
+        sighting_id, ReviewDecision(ReviewAction.ILLEGIBLE)
+    )
+    assert updated.status is ReviewStatus.ILLEGIBLE
+    assert updated.reviewed_at == START
 
 
 def test_can_change_decision_on_rejected() -> None:

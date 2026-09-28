@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS sightings (
     confidence    REAL    NOT NULL CHECK (confidence BETWEEN 0.0 AND 1.0),
     agreement     REAL    NOT NULL CHECK (agreement BETWEEN 0.0 AND 1.0),
     num_readings  INTEGER NOT NULL CHECK (num_readings >= 1),
-    status        TEXT    NOT NULL CHECK (status IN ('confirmed', 'unverified', 'rejected', 'corrected')),
+    status        TEXT    NOT NULL CHECK (status IN ('confirmed', 'unverified', 'rejected', 'corrected', 'illegible')),
     reasons       TEXT    NOT NULL,
     format_ids    TEXT    NOT NULL,
     crop_ref      TEXT CHECK (crop_ref IS NULL OR (length(crop_ref) = 32
