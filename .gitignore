@@ -20,3 +20,8 @@ training/**/runs/
 training/**/weights/
 training/**/.venv/
 training/detector/sources.yaml
+
+# Instrucciones locales de los agentes (no se publican)
+CLAUDE.md
+CONTEXT.md
+docs/05-orquestacion.md

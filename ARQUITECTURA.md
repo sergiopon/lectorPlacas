@@ -118,7 +118,7 @@ El orquestador (`ProcessVideo`) y los demás casos de uso dependen solo de estos
 
 ```
 lectorPlacas/
-├── ARQUITECTURA.md  CONTEXT.md  reglas-seguridad.md  LICENSE (AGPL-3.0)
+├── ARQUITECTURA.md  reglas-seguridad.md  README.md  LICENSE (AGPL-3.0)   (CONTEXT.md: local, no se publica)
 ├── pyproject.toml  uv.lock  .python-version  .pre-commit-config.yaml  .gitignore
 ├── config/
 │   ├── lector.yaml          # configuración (perfiles, umbrales, catálogo de formatos)

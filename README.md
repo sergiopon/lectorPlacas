@@ -459,7 +459,7 @@ El proyecto se hizo con **spec-driven development asistido por IA**, en unos poc
   (`specs/000`–`054`), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
   `reglas-seguridad.md`.
 - **Implementación: agentes de código.** Cada spec la implementó un agente en su propia rama y worktree: subagentes
-  Claude Sonnet y modelos DeepSeek, según la dificultad (`docs/05-orquestacion.md`). Los agentes no podían modificar
+  Claude Sonnet y modelos DeepSeek, según la dificultad de cada spec. Los agentes no podían modificar
   specs ni documentos rectores.
 - **Dirección, datos y validación: el autor.** Decidió el alcance, procesó videos reales y revisó a mano más de 1 100
   avistamientos, entrenó y evaluó los modelos con las herramientas de `training/` y aceptó o rechazó cada resultado.
@@ -470,4 +470,6 @@ El proyecto se hizo con **spec-driven development asistido por IA**, en unos poc
   verificar está marcado `NO VERIFICADO` en el repositorio.
 
 Tamaño aproximado: ~14 000 líneas de Python en `src/`, ~10 000 de tests (663 tests) y ~3 500 en `training/`.
-`CLAUDE.md` y `CONTEXT.md` son las instrucciones que usaban los agentes; se dejan publicadas como parte del proceso.
+Las instrucciones operativas de los agentes (`CLAUDE.md`, `CONTEXT.md` y el plan de orquestación) son archivos locales
+que no se publican. Por eso algunos documentos los mencionan sin que estén en el repositorio. Las specs, ADRs, contratos
+y tests sí están completos.

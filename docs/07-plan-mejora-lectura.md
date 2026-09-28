@@ -166,7 +166,7 @@ Datos: con ~68 recortes, un `test_video` del 20 % son ~14 placas y el IC 95 % no
 recortes revisados** (procesar y revisar más videos, variando hora y cámara) antes de entrenar `colombia_v2`. La cifra está
 PENDIENTE DE VALIDAR con el ancho de IC que reporte `evaluate_ocr` para ese n.
 
-Luego, con la receta actual (CLAUDE.md, sección OCR): `synthetic_plates` (si hace falta más sintético) → `mix_dataset`
+Luego, con la receta actual (README §10): `synthetic_plates` (si hace falta más sintético) → `mix_dataset`
 con la opción nueva → `train --name colombia_v2` → `evaluate_ocr`. Aceptación según ADR-014; además, `colombia_v2` debe
 mejorar el CER de `test_video` frente a `colombia_v1`. Si se acepta, se registra el hash en `config/models.yaml` y se
 repite la Fase 2 con el modelo nuevo.
@@ -208,4 +208,4 @@ revisados (779 reales en train; 63 recortes y 50 vehículos en `test_video`). 56
 
 - No baja `confirm_threshold` ni `min_agreement`: sin nueva evidencia, eso cambia confirmaciones por errores.
 - No envía recortes, placas ni la BD a ninguna API externa: el diagnóstico y las métricas se calculan en local.
-- No cambia `docs/04-evaluacion.md`. Si alguna fase propone mover un criterio, se decide aparte (ver CLAUDE.md).
+- No cambia `docs/04-evaluacion.md`. Si alguna fase propone mover un criterio, se decide aparte.
