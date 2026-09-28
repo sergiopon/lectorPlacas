@@ -37,6 +37,7 @@ REASON_TEXTS: Final[Mapping[UnverifiedReason, str]] = MappingProxyType(
         UnverifiedReason.UNVERIFIED_FORMAT: "Formato de placa poco común",
         UnverifiedReason.VEHICLE_FORMAT_MISMATCH: "El formato no corresponde al tipo de vehículo",
         UnverifiedReason.AMBIGUOUS_FORMAT: "Encaja en más de un formato",
+        UnverifiedReason.CORRECTION_CONFLICT: "Podría ser otra placa: una letra o un número dudoso",
     }
 )
 

@@ -100,6 +100,13 @@ class VotingPlateConsolidator:
         length, length_tie = _target_length(readings)
         texts, confidences = _group_of_length(readings, length)
         selection = self._select(texts, confidences, length, vehicle_type)
+        direct_text, direct_confidence, direct_agreement = _vote(texts, confidences, length)
+        if direct_text != selection.text:
+            direct_formats = self._catalog.matching(direct_text)
+            if direct_formats:
+                selection = _conflict_selection(
+                    direct_text, direct_confidence, direct_agreement, direct_formats, vehicle_type
+                )
         reasons = _collect_reasons(selection, length_tie, len(texts), self._policy)
         status = ReviewStatus.CONFIRMED if not reasons else ReviewStatus.UNVERIFIED
         return ConsolidatedPlate(
@@ -245,6 +252,27 @@ def _compatibility_reasons(
 def _has_verified_format(outcome: _PatternOutcome, vehicle_type: VehicleType) -> bool:
     """Indica si algún formato compatible del resultado está verificado."""
     return any(fmt.verified and vehicle_type in fmt.vehicle_types for fmt in outcome.formats)
+
+
+def _conflict_selection(
+    text: str,
+    confidence: float,
+    agreement: float,
+    formats: tuple[PlateFormat, ...],
+    vehicle_type: VehicleType,
+) -> _Selection:
+    """Selección del voto directo cuando ya era una placa válida distinta de la corregida."""
+    reasons: tuple[UnverifiedReason, ...]
+    compatible_ids = tuple(fmt.format_id for fmt in formats if vehicle_type in fmt.vehicle_types)
+    if not compatible_ids:
+        format_ids = tuple(fmt.format_id for fmt in formats)
+        reasons = (UnverifiedReason.VEHICLE_FORMAT_MISMATCH, UnverifiedReason.CORRECTION_CONFLICT)
+        return _Selection(text, confidence, agreement, format_ids, reasons)
+    if any(fmt.verified for fmt in formats if vehicle_type in fmt.vehicle_types):
+        reasons = (UnverifiedReason.CORRECTION_CONFLICT,)
+    else:
+        reasons = (UnverifiedReason.UNVERIFIED_FORMAT, UnverifiedReason.CORRECTION_CONFLICT)
+    return _Selection(text, confidence, agreement, compatible_ids, reasons)
 
 
 def _collect_reasons(
