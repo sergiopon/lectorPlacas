@@ -62,6 +62,7 @@ class ReviewStatus(StrEnum):
     UNVERIFIED = "unverified"
     REJECTED = "rejected"
     CORRECTED = "corrected"
+    ILLEGIBLE = "illegible"      # spec 052: es una placa, pero no se puede leer
 
 class UnverifiedReason(StrEnum):
     INSUFFICIENT_READINGS = "insufficient_readings"
@@ -299,6 +300,7 @@ class ReviewAction(StrEnum):
     REJECT = "reject"
     SKIP = "skip"
     QUIT = "quit"
+    ILLEGIBLE = "illegible"      # spec 052: → ReviewStatus.ILLEGIBLE
 
 @dataclass(frozen=True, slots=True)
 class ReviewDecision:
@@ -348,6 +350,7 @@ class PlateRepository(Protocol):
     def get_sighting(self, sighting_id: int) -> SightingRecord: ...
     def record_review(self, sighting_id: int, status: ReviewStatus,
                       corrected_text: str | None, reviewed_at: datetime) -> None: ...
+        # status ∈ {CONFIRMED, CORRECTED, REJECTED, ILLEGIBLE}; ILLEGIBLE se trata como REJECTED (spec 052)
     def expire_crop_refs(self, cutoff: datetime) -> list[str]: ...
     def delete_records_before(self, cutoff: datetime) -> RecordPurge: ...
     def log_event(self, event: AuditEvent, occurred_at: datetime, detail: str) -> None: ...
@@ -576,6 +579,7 @@ class ReviewSummary:
     corrected: int
     rejected: int
     skipped: int
+    illegible: int = 0           # spec 052
 
 class ReviewSightings:
     def __init__(self, repository: PlateRepository, crop_store: CropStore, ui: ReviewUI,

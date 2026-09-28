@@ -57,6 +57,8 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 049 | [GUI: ventana rediseñada y flujo de procesar](049-gui-ventana-procesar.md) | 043, 045, 047, 048 | Implementada |
 | 050 | [Dominio: la corrección no reemplaza una lectura válida](050-conflicto-correccion.md) | 004 | Implementada |
 | 051 | [Aplicación: cada track conserva sus mejores lecturas](051-mejores-lecturas-track.md) | 023, 024 | Lista |
+| 052 | [Revisión: decisión "placa borrosa" (esquema v2)](052-estado-placa-borrosa.md) | 020, 027, 034, 038, 046 | Lista |
+| 053 | [GUI: botón y filtro "Placa borrosa"](053-gui-placa-borrosa.md) | 046–048, 052 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
@@ -64,6 +66,8 @@ Decisión del usuario (2026-09-26): exportar lecturas revisadas con retención p
 Decisión del usuario (2026-09-27): GUI de escritorio PySide6 (ADR-015, RF-36) → specs 040–045. Todo el código lo implementa DeepSeek; desde estas specs los tests de aceptación se describen en prosa (Claude no escribe código, tampoco en specs), así que la compuerta de "tests intactos por AST" se sustituye por la revisión de que existan los casos nombrados con el comportamiento descrito.
 Decisión del usuario (2026-09-27, tras probar la GUI): rediseño ("quiero ver los recortes de cada matrícula con su lectura; una buena UI no debería necesitar explicación") → specs 046–049 (galería de placas, revisión en panel lateral, flujo guiado para procesar); implementa DeepSeek flash, no pro.
 Decisión del usuario (2026-09-26): métricas con datasets en vez de ground truth manual → spec 036 (descarga por API REST de Roboflow; excepción de red en SEG-20/SEG-21 y ADR-012; clave solo en `ROBOFLOW_API_KEY`).
+
+Decisión del usuario (2026-09-27): opción de revisión "placa borrosa" → specs 052 (estado `illegible`, primera migración de esquema v1 → v2) y 053 (GUI). Separa "no es una placa" de "es una placa, pero no se lee" y deja las borrosas fuera del CER y del reentrenamiento.
 
 ## Correcciones de specs (hechas por el orquestador)
 

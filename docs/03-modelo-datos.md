@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS sightings (
     confidence    REAL    NOT NULL CHECK (confidence BETWEEN 0.0 AND 1.0),
     agreement     REAL    NOT NULL CHECK (agreement BETWEEN 0.0 AND 1.0),
     num_readings  INTEGER NOT NULL CHECK (num_readings >= 1),
-    status        TEXT    NOT NULL CHECK (status IN ('confirmed', 'unverified', 'rejected', 'corrected')),
+    status        TEXT    NOT NULL CHECK (status IN ('confirmed', 'unverified', 'rejected', 'corrected', 'illegible')),
     reasons       TEXT    NOT NULL,
     format_ids    TEXT    NOT NULL,
     crop_ref      TEXT CHECK (crop_ref IS NULL OR (length(crop_ref) = 32
@@ -86,8 +86,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 ```
 
-Versión de esquema: `1`. Al abrir, si `schema_version` está vacía se inserta `1`; si contiene otro
-valor → `RepositoryError("versión de esquema no soportada")`. No hay migraciones en v1.
+Versión de esquema: `2` (spec 052). Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
+(`adapters/persistence/migrations.py`: en una transacción `BEGIN IMMEDIATE` se recrea `sightings` con el `CHECK` de
+`status` que admite `'illegible'`, se copian las filas con su `sighting_id`, se recrean sus índices y se pone la versión
+a 2; si algo falla, `ROLLBACK` y la BD queda en v1); cualquier otro valor → `RepositoryError("versión de esquema no
+soportada")`. v1 = el mismo esquema sin `'illegible'`.
 
 ### Semántica de escritura
 

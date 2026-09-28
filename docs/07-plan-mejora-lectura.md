@@ -1,7 +1,7 @@
 # 07 - Plan para subir la tasa de confirmación sin perder precisión
 
 Estado: propuesto (2026-09-27). Autor: Claude (diseño). Las fases que requieren código se especifican aparte
-(specs 050, 051 y 052, por redactar) y las implementa un subagente, como el resto del proyecto.
+(specs 050, 051 y 054; la 052–053 añade la decisión de revisión "placa borrosa") y las implementa un subagente, como el resto del proyecto.
 
 ## 1. Diagnóstico (BD local, 121 avistamientos, 3 videos, 2026-09-26 a 2026-09-28)
 
@@ -95,6 +95,13 @@ revisadas (frente a CER 0,0373 en el test congelado de `mix_v1`); `precision_con
 `export-reviewed` → `training/ocr/datasets/own/reviewed-20260928T003936Z` (92 recortes). Observación del revisor: la
 mayoría de las placas están borrosas, lo que apoya el hallazgo 4.
 
+### Fase 0c - Specs 052–053: decisión de revisión "placa borrosa"
+
+Petición del usuario (2026-09-27). Separa "no es una placa" (`rejected`) de "es una placa, pero no se lee"
+(`illegible`). Da la cifra que falta para la Fase 2 (cuántas placas reales se pierden por calidad de imagen) y deja
+las borrosas fuera del CER y del reentrenamiento. La 052 incluye la primera migración de esquema (v1 → v2). Antes de
+abrir la BD real con esa versión, conviene copiar `data/lector.db`.
+
 ### Fase 1 - Ground truth de 1 o 2 videos (operador, sin código)
 
 Sin GT no se pueden medir M-01..M-03 ni comparar configuraciones: con la revisión solo se estima la precisión.
@@ -142,14 +149,14 @@ lecturas de mayor calidad (ancho de placa y nitidez, que ya vienen en `PlateRead
 `max_ocr_per_frame`, que ya existe. La spec fija el criterio de calidad, el desempate y los tests en prosa; se valida con la
 misma batería de la Fase 2.
 
-### Fase 4 - Reentrenar el OCR con datos del dominio (spec 052 + operador)
+### Fase 4 - Reentrenar el OCR con datos del dominio (spec 054 + operador)
 
 **Problema a resolver antes de entrenar:** `mix_dataset` reparte train/val/test ordenando los componentes por hash y
 tomando los primeros `round(n × 0,2)` para test. Si se añade `--real own/<carpeta>` a la mezcla original, cambian `n` y el
 orden, así que algunas muestras del `test` congelado de `mix_v1` pasan a train. Medir después sobre `mix_v1/test` daría
 un CER falso (fuga).
 
-Spec 052 (cambio acotado en `training/ocr`):
+Spec 054 (cambio acotado en `training/ocr`):
 - Opción de `mix_dataset` para heredar el reparto de una mezcla anterior: las muestras reales de `mix_v1` conservan su
   split y solo las fuentes nuevas se reparten entre ellas (por vehículo, igual que hoy).
 - Las fuentes nuevas generan además un `test` propio de video (`test_video`), para medir el dominio que importa.
