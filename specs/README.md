@@ -55,7 +55,8 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 047 | [GUI: tema, tarjeta de placa y cuadrícula](047-gui-tema-tarjetas.md) | 042, 044 | Implementada |
 | 048 | [GUI: página Lecturas (galería y revisión)](048-gui-lecturas-revision.md) | 041, 046, 047 | Implementada |
 | 049 | [GUI: ventana rediseñada y flujo de procesar](049-gui-ventana-procesar.md) | 043, 045, 047, 048 | Implementada |
-| 050 | [Dominio: la corrección no reemplaza una lectura válida](050-conflicto-correccion.md) | 004 | Lista |
+| 050 | [Dominio: la corrección no reemplaza una lectura válida](050-conflicto-correccion.md) | 004 | Implementada |
+| 051 | [Aplicación: cada track conserva sus mejores lecturas](051-mejores-lecturas-track.md) | 023, 024 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
@@ -94,3 +95,4 @@ Decisión del usuario (2026-09-26): métricas con datasets en vez de ground trut
 | 2026-09-27 | 00-requisitos (RF-28, RF-36, §7), ARQUITECTURA §2/§4/§5/§6/§7, SEG-03/04/20, SEG-27, CONTEXT, docs/02 §1/§4/§5/§7 | Capa `gui` (segundo composition root; de `cli` solo importa `composition`), puertos `ProgressReporter` y `SightingBrowser`, `ProcessingCancelledError`, reglas de la GUI; nuevas specs 040–045 | ADR-015 aprobado (opción 2) tras la prueba de convivencia PySide6 + opencv-python |
 | 2026-09-27 | 044 | Se permiten `runs_model.py`, `sightings_model.py`, `sightings_filters.py` y `sightings_detail.py` (nombres públicos reexportados desde su módulo de contrato); en el diálogo, Enter/Espacio no hacen nada en modo menú (botones sin foco ni `autoDefault`) y etiqueta "Texto actual"; nuevo test `test_enter_and_space_in_menu_do_nothing` | Revisión: `sightings_tab.py` (482 líneas) y `process_tab.py` (357) superaban ARQUITECTURA §6 (módulos ≤ 300, clases ≤ 150); Enter activaba el botón por defecto "Confirmar" del `QDialog` |
 | 2026-09-27 | ADR-007, docs/02, CONTEXT, 004 → 050 | Paso 5b de la consolidación y razón `CORRECTION_CONFLICT`; el caso moto de `test_vehicle_type_disambiguates_correction` (spec 004) cambia de expectativa | Auditoría de confirmadas: 2 de 13 erróneas por corregir un `LLLDDD` válido a `LLLDDL` en tracks marcados como moto (docs/07 §1.1) |
+| 2026-09-27 | docs/02 §6, ADR-006, 023/024 → 051 | `TrackRegistry` conserva las N lecturas de mayor (ancho de placa, nitidez) y gana `is_full`; `test_reading_limit_and_best_crop` (023) y el conteo de llamadas al lector de `test_happy_path_confirms_plate` (024) cambian de expectativa | Se votaban solo las primeras lecturas, de frames lejanos y borrosos (docs/07 §1, hallazgo 4; CER real 0,1615) |

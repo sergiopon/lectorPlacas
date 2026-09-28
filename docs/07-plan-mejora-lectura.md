@@ -134,7 +134,7 @@ de 1 o 2 placas no decide nada: se anota el tamaño de muestra junto a cada mét
 
 **Salida:** perfil por defecto ajustado, o la evidencia de que la configuración no basta.
 
-### Fase 3 - Spec 051: guardar las mejores lecturas del track, no las primeras (código)
+### Fase 3 - Spec 051: guardar las mejores lecturas del track, no las primeras (código; spec redactada)
 
 Solo si la Fase 2 confirma el hallazgo 4 (subir `min_plate_width_px` o `max_readings_per_track` mejora M-03).
 Idea: en vez de dejar de leer al llegar a `max_readings_per_track`, `TrackRegistry` sigue leyendo y conserva las N
