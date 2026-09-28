@@ -253,9 +253,14 @@ class ProcessVideo:
     def _collect_candidates(
         self, tracked: list[TrackedVehicle], frame: Frame, registry: TrackRegistry
     ) -> list[_PlateCandidate]:
-        """Elige, hasta el máximo por frame, los tracks que aún necesitan lectura."""
+        """Elige, hasta el máximo por frame, los tracks que aún necesitan lectura.
+
+        Los tracks que todavía no están llenos van primero, para no quitarle turno de OCR
+        a uno que aún necesita lecturas frente a uno que solo podría mejorar las suyas.
+        Dentro de cada grupo, por área de la caja del vehículo descendente.
+        """
         eligible = [t for t in tracked if registry.needs_reading(t.track_id)]
-        ordered = sorted(eligible, key=lambda t: t.box.area, reverse=True)
+        ordered = sorted(eligible, key=lambda t: (registry.is_full(t.track_id), -t.box.area))
         candidates: list[_PlateCandidate] = []
         for tracked_vehicle in ordered[: self._settings.max_ocr_per_frame]:
             candidate = self._plate_candidate(tracked_vehicle, frame)

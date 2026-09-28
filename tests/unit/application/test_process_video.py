@@ -95,6 +95,35 @@ class FixedPlateDetector:
         return [PlateDetection(PLATE_IN_CROP, 0.9)] if self.found else []
 
 
+class ScriptedPlateDetector:
+    """Devuelve cajas de placa de ancho creciente, una por llamada (la última se repite)."""
+
+    def __init__(self, widths: list[int]) -> None:
+        self.widths = widths
+        self.calls = 0
+
+    def detect(self, image: np.ndarray) -> list[PlateDetection]:
+        width = self.widths[min(self.calls, len(self.widths) - 1)]
+        self.calls += 1
+        box = BoundingBox(50, 100, 50 + width, 130)
+        return [PlateDetection(box, 0.9)]
+
+
+class TwoTrackTracker:
+    """Sigue siempre dos vehículos fijos: uno grande y otro pequeño (copiada de test_review_024)."""
+
+    def update(self, detections, image, timestamp_ms):  # type: ignore[no-untyped-def]
+        big = BoundingBox(100, 100, 400, 300)
+        small = BoundingBox(450, 100, 550, 200)
+        return [
+            TrackedVehicle(1, small, 0.9, VehicleType.CAR),
+            TrackedVehicle(2, big, 0.9, VehicleType.CAR),
+        ]
+
+    def reset(self) -> None:
+        return None
+
+
 class CyclingReader:
     def __init__(self, texts: list[str], conf: float = 0.95) -> None:
         self.texts = cycle(texts)
@@ -119,15 +148,18 @@ def build(
     stamps: list[int],
     *,
     detector: ScriptedVehicleDetector | None = None,
-    plates: FixedPlateDetector | None = None,
+    plates: FixedPlateDetector | ScriptedPlateDetector | None = None,
     reader: CyclingReader | None = None,
+    tracker: SingleTrackTracker | TwoTrackTracker | None = None,
     target_fps: float = 10.0,
     min_plate_width_px: int = 20,
+    max_ocr_per_frame: int = 8,
+    max_readings_per_track: int = 8,
 ):  # type: ignore[no-untyped-def]
     source = FakeSource(stamps)
     parts = {
         "source": source,
-        "tracker": SingleTrackTracker(),
+        "tracker": tracker or SingleTrackTracker(),
         "repo": InMemoryPlateRepository(),
         "crops": InMemoryCropStore(),
         "detector": detector or ScriptedVehicleDetector(),
@@ -149,7 +181,15 @@ def build(
         parts["crops"],
         FakeClock(step_ms=10),
     )
-    settings = ProcessingSettings("calle_lenta", 8, min_plate_width_px, 0.0, 0.10, 2000, 8)
+    settings = ProcessingSettings(
+        "calle_lenta",
+        max_ocr_per_frame,
+        min_plate_width_px,
+        0.0,
+        0.10,
+        2000,
+        max_readings_per_track,
+    )
     return ProcessVideo(deps, settings), parts
 
 
@@ -173,7 +213,7 @@ def test_happy_path_confirms_plate() -> None:
         8,
     )
     assert (record.first_seen_ms, record.last_seen_ms) == (0, 900)
-    assert parts["reader"].calls == 8
+    assert parts["reader"].calls == 10
     assert parts["plates"].shapes[0] == (180, 240, 3)
     assert next(iter(parts["crops"].images.values())).shape == (30, 100, 3)
     assert parts["repo"].runs[1].succeeded is True
@@ -233,3 +273,30 @@ def test_sampling_reduces_processed_frames() -> None:
     process, _ = build([round(i * 1000 / 30) for i in range(30)])
     stats = process.execute(Path("v.mp4"), SHA).stats
     assert (stats.frames_decoded, stats.frames_processed) == (30, 10)
+
+
+def test_later_wider_plates_replace_early_readings() -> None:
+    process, parts = build(
+        [i * 100 for i in range(4)],
+        plates=ScriptedPlateDetector([20, 30, 40, 50]),
+        reader=CyclingReader(["AAA111", "AAA111", "ABC123", "ABC123"]),
+        max_readings_per_track=2,
+    )
+    process.execute(Path("v.mp4"), SHA)
+    record = parts["repo"].list_sightings(None, 10, 0)[0]
+    assert record.ocr_text == "ABC123"
+    assert record.num_readings == 2
+
+
+def test_full_track_yields_ocr_turn_to_unfilled_track() -> None:
+    process, parts = build(
+        [0, 100],
+        tracker=TwoTrackTracker(),
+        max_ocr_per_frame=1,
+        max_readings_per_track=1,
+    )
+    stats = process.execute(Path("v.mp4"), SHA).stats
+    assert stats.tracks_total == 2
+    records = parts["repo"].list_sightings(None, 10, 0)
+    assert {record.track_id for record in records} == {1, 2}
+    assert all(record.num_readings == 1 for record in records)
