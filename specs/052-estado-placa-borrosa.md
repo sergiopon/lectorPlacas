@@ -39,6 +39,7 @@ etiquetas y colores de la GUI, para que no falle al encontrar el estado nuevo.
 - `tests/integration/test_sqlcipher_repository.py`
 - `tests/integration/test_schema_migration.py` (nuevo)
 - `tests/unit/application/test_decide_sighting.py`
+- `tests/unit/application/test_ports.py` (la aserción de valores de `ReviewAction` añade `"illegible"` al final)
 - `tests/unit/application/test_review_sightings.py`
 - `tests/unit/evaluation/test_review_metrics.py`
 - `tests/unit/adapters/test_opencv_review_ui.py`
@@ -89,8 +90,9 @@ Ninguna.
    7. `UPDATE schema_version SET version = 2`; `COMMIT`.
    8. `PRAGMA foreign_key_check`: si devuelve filas → `RepositoryError("migración de esquema fallida")`.
       Luego `PRAGMA foreign_keys = ON`.
-   9. Cualquier `sqlcipher.Error` entre 2 y 7 → `ROLLBACK` y `RepositoryError("migración de esquema fallida")`
-      encadenada. Si falla, la BD queda en v1 intacta (el DDL de SQLite es transaccional). El repositorio cierra la
+   9. Cualquier `sqlcipher.Error` entre 2 y 7, **incluido el propio `BEGIN IMMEDIATE`** (p. ej. BD bloqueada por otra
+      conexión) → `ROLLBACK` si la transacción llegó a abrirse (un fallo del `ROLLBACK` no oculta el error original) y
+      `RepositoryError("migración de esquema fallida")` encadenada. Si falla, la BD queda en v1 intacta (el DDL de SQLite es transaccional). El repositorio cierra la
       conexión antes de propagar el error.
    10. Log `INFO` `"esquema migrado de v1 a v2 avistamientos=<n>"` (solo el conteo, sin placas).
 
