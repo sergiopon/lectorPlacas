@@ -29,6 +29,12 @@ longitud (p. ej. `LLLDDD` carro y `LLLDDL` moto) hacen que la corrección sea am
 5. Compatibles = resultados con algún formato coincidente que incluya el tipo de vehículo del track.
    Ninguno compatible pero hay conservados → mejor por confianza, razón `VEHICLE_FORMAT_MISMATCH`.
    Ninguno conservado → voto sin corrección, razón `UNRECOGNIZED_FORMAT`.
+5b. (Enmienda 2026-09-27, spec 050.) Voto directo = voto por posición **sin** corrección sobre las
+   mismas `n` lecturas. Si su texto cumple la regex de algún formato del catálogo y es distinto del
+   texto elegido en los pasos 5–6, el resultado pasa a ser el voto directo (texto, confianza y
+   acuerdo), con `format_ids` de sus formatos compatibles con el vehículo (o de todos si no hay
+   compatibles) y razones `CORRECTION_CONFLICT`, más `VEHICLE_FORMAT_MISMATCH` si ninguno es
+   compatible o `UNVERIFIED_FORMAT` si ninguno compatible está verificado. Se evalúa tras el paso 6.
 6. Varios compatibles → el de mayor confianza; si el segundo está a menos de `ambiguity_margin`
    (0.10) → razón `AMBIGUOUS_FORMAT`.
 7. `CONFIRMED` solo si no hay razones y además: `n ≥ min_readings`, `confianza ≥ confirm_threshold`,
@@ -40,3 +46,6 @@ longitud (p. ej. `LLLDDD` carro y `LLLDDL` moto) hacen que la corrección sea am
 - (+) Determinista, explicable (razones guardadas en BD), testeable con lecturas sintéticas.
 - (+) Los formatos no verificados nunca se confirman (RF-15).
 - (−) Parámetros provisionales hasta la calibración de Fase 5.
+- (−, corregido por 5b) Sin el paso 5b, un track mal clasificado como moto con lecturas unánimes
+  `LLLDDD` se "corregía" a `LLLDDL` y se confirmaba con la confianza del dígito original: 2 de 13
+  confirmadas auditadas el 2026-09-27 eran erróneas por esta causa (docs/07 §1.1).
