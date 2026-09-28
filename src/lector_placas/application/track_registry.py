@@ -85,33 +85,60 @@ class TrackRegistry:
             )
 
     def needs_reading(self, track_id: int) -> bool:
-        """Indica si el track existe y aún admite más lecturas.
+        """Indica si el track existe y por lo tanto sigue admitiendo lecturas.
 
         Args:
             track_id: identificador del track consultado.
 
         Returns:
-            `True` si el track existe y tiene menos lecturas que el máximo permitido.
+            `True` si y solo si el track está activo en el registro, tenga o no ya el máximo
+            de lecturas: una lectura nueva puede reemplazar a la peor guardada.
+        """
+        return track_id in self._tracks
+
+    def is_full(self, track_id: int) -> bool:
+        """Indica si el track existe y ya alcanzó el máximo de lecturas guardadas.
+
+        Args:
+            track_id: identificador del track consultado.
+
+        Returns:
+            `True` si el track existe y tiene ya `max_readings_per_track` lecturas; `False`
+            si no existe o tiene menos.
         """
         state = self._tracks.get(track_id)
-        return state is not None and len(state.readings) < self._max_readings_per_track
+        return state is not None and len(state.readings) >= self._max_readings_per_track
 
     def add_reading(self, reading: PlateReading, crop: ImageBGR) -> None:
-        """Añade una lectura al track y actualiza su mejor recorte si procede.
+        """Añade una lectura al track o la descarta si es peor que las ya guardadas.
+
+        Con el track por debajo del máximo, la lectura se añade. Con el track lleno, la
+        lectura reemplaza a la peor guardada (menor ancho de placa y, a igual ancho, menor
+        nitidez; entre empates la más antigua) solo si es estrictamente mejor; si no, se
+        descarta. En cualquier caso se evalúa como candidata al mejor recorte del track.
 
         Args:
             reading: lectura OCR del track.
             crop: recorte de placa asociado a la lectura.
 
         Raises:
-            InvalidEntityError: Si el track no existe o ya alcanzó el máximo de lecturas.
+            InvalidEntityError: Si el track no existe.
         """
         state = self._tracks.get(reading.track_id)
         if state is None:
             raise InvalidEntityError(f"track inexistente: {reading.track_id}")
-        if len(state.readings) >= self._max_readings_per_track:
-            raise InvalidEntityError(f"track {reading.track_id} ya tiene el máximo de lecturas")
-        state.readings.append(reading)
+        if len(state.readings) < self._max_readings_per_track:
+            state.readings.append(reading)
+        else:
+            worst_index = min(
+                range(len(state.readings)),
+                key=lambda index: (
+                    *_reading_quality(state.readings[index]),
+                    state.readings[index].timestamp_ms,
+                ),
+            )
+            if _reading_quality(reading) > _reading_quality(state.readings[worst_index]):
+                state.readings[worst_index] = reading
         score = reading.quality_score * reading.mean_confidence
         if state.best_crop is None or score > state.best_score:
             state.best_crop = crop.copy()
@@ -153,7 +180,9 @@ class TrackRegistry:
                     first_seen_ms=state.first_seen_ms,
                     last_seen_ms=state.last_seen_ms,
                     vehicle_type=_dominant_type(state),
-                    readings=tuple(state.readings),
+                    readings=tuple(
+                        sorted(state.readings, key=lambda r: (r.timestamp_ms, r.frame_index))
+                    ),
                     best_crop=state.best_crop,
                 )
             )
@@ -171,6 +200,11 @@ def _new_state(timestamp_ms: int) -> _TrackState:
         best_crop=None,
         best_score=0.0,
     )
+
+
+def _reading_quality(reading: PlateReading) -> tuple[float, float]:
+    """Clave de calidad de una lectura: ancho de la placa y, a igual ancho, su nitidez."""
+    return (reading.plate_box.width, reading.quality_score)
 
 
 def _dominant_type(state: _TrackState) -> VehicleType:
