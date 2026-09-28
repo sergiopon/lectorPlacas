@@ -53,12 +53,70 @@ def test_vehicle_type_disambiguates_correction() -> None:
     car = consolidator().consolidate(readings, VehicleType.CAR)
     moto = consolidator().consolidate(readings, VehicleType.MOTORCYCLE)
     assert (car.text, car.status) == ("ABC125", ReviewStatus.CONFIRMED)
-    assert (moto.text, moto.status, moto.format_ids) == (
-        "ABC12S",
-        ReviewStatus.CONFIRMED,
-        ("co_moto",),
-    )
     assert car.agreement == 1.0
+    assert (moto.text, moto.status) == ("ABC125", ReviewStatus.UNVERIFIED)
+    assert moto.reasons == (R.LOW_CONFIDENCE, R.VEHICLE_FORMAT_MISMATCH, R.CORRECTION_CONFLICT)
+    assert moto.format_ids == ("co_particular_publico", "co_diplomatico_2015")
+    assert moto.confidence == pytest.approx(1.9 / 3)
+    assert moto.agreement == pytest.approx(2 / 3)
+
+
+def test_moto_track_keeps_valid_car_reading() -> None:
+    result = consolidator().consolidate([rd("KLM128", 0.99)] * 3, VehicleType.MOTORCYCLE)
+    assert result.text == "KLM128"
+    assert result.status is ReviewStatus.UNVERIFIED
+    assert result.reasons == (R.VEHICLE_FORMAT_MISMATCH, R.CORRECTION_CONFLICT)
+    assert result.format_ids == ("co_particular_publico",)
+    assert result.confidence == pytest.approx(0.99)
+    assert result.agreement == 1.0
+
+
+def test_same_reading_on_car_track_confirms() -> None:
+    result = consolidator().consolidate([rd("KLM128", 0.99)] * 3, VehicleType.CAR)
+    assert result.text == "KLM128"
+    assert result.status is ReviewStatus.CONFIRMED
+    assert result.reasons == ()
+    assert result.format_ids == ("co_particular_publico",)
+
+
+def test_majority_letter_still_corrected_and_confirmed() -> None:
+    readings = [rd("XYZ98B", 0.97), rd("XYZ98B", 0.97), rd("XYZ98B", 0.97), rd("XYZ988", 0.97)]
+    result = consolidator().consolidate(readings, VehicleType.MOTORCYCLE)
+    assert result.text == "XYZ98B"
+    assert result.status is ReviewStatus.CONFIRMED
+    assert result.format_ids == ("co_moto",)
+    assert result.agreement == 1.0
+
+
+def test_invalid_direct_reading_is_still_corrected() -> None:
+    result = consolidator().consolidate([rd("0BC123", 0.99)] * 3, VehicleType.CAR)
+    assert result.text == "OBC123"
+    assert result.status is ReviewStatus.CONFIRMED
+    assert result.format_ids == ("co_particular_publico", "co_diplomatico_2015")
+
+
+def test_correction_conflict_is_last_in_canonical_order() -> None:
+    members = list(R)
+    assert members[-1] is R.CORRECTION_CONFLICT
+    assert R.CORRECTION_CONFLICT.value == "correction_conflict"
+    assert [member.name for member in members[:-1]] == [
+        "INSUFFICIENT_READINGS",
+        "LOW_CONFIDENCE",
+        "LOW_AGREEMENT",
+        "UNRECOGNIZED_FORMAT",
+        "UNVERIFIED_FORMAT",
+        "VEHICLE_FORMAT_MISMATCH",
+        "AMBIGUOUS_FORMAT",
+    ]
+    assert [member.value for member in members[:-1]] == [
+        "insufficient_readings",
+        "low_confidence",
+        "low_agreement",
+        "unrecognized_format",
+        "unverified_format",
+        "vehicle_format_mismatch",
+        "ambiguous_format",
+    ]
 
 
 def test_vehicle_format_mismatch() -> None:

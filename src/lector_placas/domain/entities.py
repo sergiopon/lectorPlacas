@@ -70,6 +70,7 @@ class UnverifiedReason(StrEnum):
     UNVERIFIED_FORMAT = "unverified_format"
     VEHICLE_FORMAT_MISMATCH = "vehicle_format_mismatch"
     AMBIGUOUS_FORMAT = "ambiguous_format"
+    CORRECTION_CONFLICT = "correction_conflict"
 
 
 @dataclass(frozen=True, slots=True)
