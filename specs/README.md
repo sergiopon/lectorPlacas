@@ -56,7 +56,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 048 | [GUI: página Lecturas (galería y revisión)](048-gui-lecturas-revision.md) | 041, 046, 047 | Implementada |
 | 049 | [GUI: ventana rediseñada y flujo de procesar](049-gui-ventana-procesar.md) | 043, 045, 047, 048 | Implementada |
 | 050 | [Dominio: la corrección no reemplaza una lectura válida](050-conflicto-correccion.md) | 004 | Implementada |
-| 051 | [Aplicación: cada track conserva sus mejores lecturas](051-mejores-lecturas-track.md) | 023, 024 | Lista |
+| 051 | [Aplicación: cada track conserva sus mejores lecturas](051-mejores-lecturas-track.md) | 023, 024 | Implementada |
 | 052 | [Revisión: decisión "placa borrosa" (esquema v2)](052-estado-placa-borrosa.md) | 020, 027, 034, 038, 046 | Lista |
 | 053 | [GUI: botón y filtro "Placa borrosa"](053-gui-placa-borrosa.md) | 046–048, 052 | Lista |
 
