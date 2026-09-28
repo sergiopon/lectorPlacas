@@ -24,6 +24,7 @@ from ocr_training.mix_split import (
 
 MANIFEST_NAME: Final[str] = "manifest.json"
 GROUPS_NAME: Final[str] = "groups.csv"
+TEST_VIDEO_SPLIT: Final[str] = "test_video"
 
 _SOURCE_SPLITS: Final[tuple[str, ...]] = ("train", "val")
 _DIR_MODE: Final[int] = 0o700
@@ -185,13 +186,23 @@ def _build_manifest(config: _MixConfig, stats: Mapping[str, Mapping[str, int]]) 
 def build_mix(
     output_dir: Path, real_dirs: Sequence[Path], synthetic_dir: Path | None, val_fraction: float,
     test_fraction: float, synthetic_ratio: float, min_moto_fraction: float, seed: int,
+    frozen_dir: Path | None = None,
 ) -> dict[str, object]:
     """Construye el dataset mezclado de recortes reales y sintéticos.
 
     Reparte los reales por componente, selecciona los sintéticos para `train`
     según la cuota y escribe las particiones y el manifiesto. Si la escritura
-    falla, borra la salida parcial y relanza el error.
+    falla, borra la salida parcial y relanza el error. Con `frozen_dir` hereda el
+    test congelado de esa mezcla y añade `test_video` (spec 054).
     """
+    if frozen_dir is not None:
+        # Import diferido: `mix_frozen` importa de este módulo (evita el ciclo).
+        from ocr_training.mix_frozen import build_frozen_mix
+
+        return build_frozen_mix(
+            output_dir, frozen_dir, real_dirs, synthetic_dir, val_fraction, test_fraction,
+            synthetic_ratio, min_moto_fraction, seed,
+        )
     resolved = _validate_output(output_dir, real_dirs)
     real: list[Sample] = []
     for source_dir in real_dirs:
@@ -244,6 +255,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--real", type=Path, action="append", required=True)
     parser.add_argument("--synthetic", type=Path, default=None)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--frozen-from", type=Path, default=None)
     parser.add_argument("--val-fraction", type=float, default=0.10)
     parser.add_argument("--test-fraction", type=float, default=0.20)
     parser.add_argument("--synthetic-ratio", type=float, default=1.0)
@@ -256,13 +268,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Construye la mezcla desde la línea de comandos (nunca imprime placas)."""
     args = build_parser().parse_args(argv)
     synthetic = None if args.synthetic is None else DATASETS_DIR / args.synthetic
+    frozen = None if args.frozen_from is None else DATASETS_DIR / args.frozen_from
     manifest = build_mix(
         DATASETS_DIR / args.output, [DATASETS_DIR / path for path in args.real], synthetic,
         args.val_fraction, args.test_fraction, args.synthetic_ratio, args.min_moto_fraction,
-        args.seed,
+        args.seed, frozen,
     )
     splits = cast("dict[str, dict[str, int]]", manifest["splits"])
-    for split in SPLITS:
+    order = (*SPLITS, TEST_VIDEO_SPLIT) if TEST_VIDEO_SPLIT in splits else SPLITS
+    for split in order:
         stats = splits[split]
         print(
             f"{split}: real={stats['real']} synthetic={stats['synthetic']} "

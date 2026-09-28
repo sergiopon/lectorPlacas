@@ -1,7 +1,4 @@
-"""Métricas, criterio de aceptación y CLI de la evaluación del OCR (spec 039).
-
-Aplica el criterio M-04 de ADR-014 y escribe reportes sin textos de placa.
-"""
+"""Métricas, criterio de aceptación (M-04 de ADR-014) y CLI de la evaluación del OCR."""
 
 from __future__ import annotations
 
@@ -78,10 +75,10 @@ def normalize_prediction(text: str) -> str:
 
 
 def read_split(csv_path: Path) -> list[tuple[Path, str, str]]:
-    """Lee el split `test` con sus grupos; devuelve `(imagen, texto real, grupo)`."""
+    """Lee un split `test` o `test_video`; devuelve `(imagen, texto real, grupo)`."""
     split_dir = csv_path.parent
-    if split_dir.name != "test":
-        raise TrainingError("la aceptación se mide en el split test")
+    if split_dir.name not in ("test", "test_video"):
+        raise TrainingError("la evaluación se mide en test o test_video")
     validate_annotations(csv_path)
     groups_path = split_dir / "groups.csv"
     if not groups_path.is_file():
@@ -107,15 +104,12 @@ def _bootstrap_ci(
     distances: Sequence[int], truths: Sequence[str], groups: Sequence[str], seed: int, rounds: int
 ) -> tuple[float, float]:
     """Estima el IC 95 % del CER remuestreando grupos completos."""
-    order: list[str] = []
     totals: dict[str, list[int]] = {}
     for index, group in enumerate(groups):
-        if group not in totals:
-            totals[group] = [0, 0]
-            order.append(group)
+        totals.setdefault(group, [0, 0])
         totals[group][0] += distances[index]
         totals[group][1] += len(truths[index])
-    pool = [totals[group] for group in order]
+    pool = list(totals.values())
     rng = random.Random(seed)
     sample_cers: list[float] = []
     for _ in range(rounds):
@@ -143,12 +137,8 @@ def compute_metrics(
     for name in CATEGORIES:
         picked = [index for index, truth in enumerate(truths) if category(truth) == name]
         samples_by_category[name] = len(picked)
-        cer_by_category[name] = (
-            sum(distances[index] for index in picked)
-            / sum(len(truths[index]) for index in picked)
-            if picked
-            else None
-        )
+        total = sum(len(truths[index]) for index in picked)
+        cer_by_category[name] = sum(distances[index] for index in picked) / total if picked else None
     return ModelMetrics(
         samples=len(predictions),
         cer=sum(distances) / sum(len(truth) for truth in truths),
@@ -180,9 +170,7 @@ def onnx_predictor(model_path: Path, plate_config: Path) -> Predictor:
     from fast_plate_ocr import LicensePlateRecognizer
 
     recognizer = LicensePlateRecognizer(
-        onnx_model_path=model_path,
-        plate_config_path=plate_config,
-        providers=["CPUExecutionProvider"],
+        onnx_model_path=model_path, plate_config_path=plate_config, providers=["CPUExecutionProvider"]
     )
     return lambda images: [prediction.plate for prediction in recognizer.run(list(images))]
 
@@ -204,9 +192,9 @@ def _predict_metrics(
 
 def evaluate(
     crops_csv: Path, candidate_onnx: Path, baseline_onnx: Path, plate_config: Path, seed: int,
-    predictor_factory: PredictorFactory = onnx_predictor,
+    predictor_factory: PredictorFactory | None = None,
 ) -> dict[str, object]:
-    """Evalúa el candidato frente al base sobre el split `test` y decide la aceptación."""
+    """Evalúa el candidato frente al base sobre el split `test` o `test_video` y decide."""
     rows = read_split(crops_csv)
     images: list[npt.NDArray[np.uint8]] = []
     truths: list[str] = []
@@ -218,8 +206,9 @@ def evaluate(
         images.append(cast("npt.NDArray[np.uint8]", cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
         truths.append(text)
         groups.append(group)
+    factory = onnx_predictor if predictor_factory is None else predictor_factory
     candidate, baseline = [
-        _predict_metrics(predictor_factory(model, plate_config), images, truths, groups, seed)
+        _predict_metrics(factory(model, plate_config), images, truths, groups, seed)
         for model in (candidate_onnx, baseline_onnx)
     ]
     reasons = decide(candidate, baseline)
@@ -230,7 +219,7 @@ def evaluate(
     return {
         "version": 1, "samples": len(rows), "accepted": not reasons, "reasons": reasons,
         "warnings": warnings, "candidate": dataclasses.asdict(candidate),
-        "baseline": dataclasses.asdict(baseline),
+        "baseline": dataclasses.asdict(baseline), "split": crops_csv.parent.name,
     }
 
 
@@ -254,6 +243,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Evalúa la aceptación del OCR mezclado.")
     parser.add_argument("--crops", type=Path, required=True)
     parser.add_argument("--candidate", type=Path, required=True)
+    parser.add_argument("--baseline", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=0)
     return parser
 
@@ -269,11 +259,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise TrainingError(f"candidato inexistente: {args.candidate}")
     check_ocr_onnx(candidate_path)
     plate_config = require_asset("cct_xs_v2_global_plate_config.yaml")
-    if not BASELINE_ONNX.is_file() or sha256_file(BASELINE_ONNX) != BASELINE_SHA256:
+    baseline_path = BASELINE_ONNX if args.baseline is None else (TRAINING_DIR / args.baseline).resolve()
+    if args.baseline is not None:
+        if TRAINING_DIR.resolve() not in baseline_path.parents or not baseline_path.is_file():
+            raise TrainingError(f"baseline inexistente dentro de TRAINING_DIR: {args.baseline}")
+        check_ocr_onnx(baseline_path)
+    elif not BASELINE_ONNX.is_file() or sha256_file(BASELINE_ONNX) != BASELINE_SHA256:
         raise TrainingError("modelo base no verificado: ejecute lector models fetch en la raíz")
-    report = evaluate(crops, candidate_path, BASELINE_ONNX, plate_config, args.seed)
+    report = evaluate(crops, candidate_path, baseline_path, plate_config, args.seed)
     report["candidate_sha256"] = sha256_file(candidate_path)
-    report["baseline_model_id"] = BASELINE_MODEL_ID
+    report["baseline_model_id"] = "custom" if args.baseline is not None else BASELINE_MODEL_ID
+    if args.baseline is not None:
+        report["baseline_path"] = baseline_path.relative_to(TRAINING_DIR.resolve()).as_posix()
+        report["baseline_sha256"] = sha256_file(baseline_path)
     report_path = write_report(report, REPORTS_DIR, datetime.now(UTC))
     candidate = cast("dict[str, object]", report["candidate"])
     baseline = cast("dict[str, object]", report["baseline"])

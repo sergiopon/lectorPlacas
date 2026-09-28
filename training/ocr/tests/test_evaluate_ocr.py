@@ -13,7 +13,7 @@ import numpy.typing as npt
 import pytest
 
 from ocr_training import evaluate_ocr as ev
-from ocr_training.common import TrainingError
+from ocr_training.common import TrainingError, sha256_file
 
 
 def make_split(root: Path, texts: Sequence[str], split: str = "test", prefix: str = "real",
@@ -110,6 +110,39 @@ def test_read_split_errors(tmp_path: Path, kwargs: dict[str, object]) -> None:
     crops = make_split(tmp_path, ["ABC123", "ABC124"], **kwargs)  # type: ignore[arg-type]
     with pytest.raises(TrainingError):
         ev.read_split(crops)
+
+
+def test_read_split_accepts_test_video(tmp_path: Path) -> None:
+    crops = make_split(tmp_path, ["ABC123", "ABC124"], split="test_video")
+    rows = ev.read_split(crops)
+    assert [(text, group) for _, text, group in rows] == [("ABC123", "g00000"), ("ABC124", "g00000")]
+    with pytest.raises(TrainingError):
+        ev.read_split(make_split(tmp_path / "otro", ["ABC123"], split="val"))
+
+
+def test_custom_baseline_is_used_and_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    truths = [f"ABC{i:03d}" for i in range(120)]
+    make_split(tmp_path, truths, split="test_video")
+    baseline = tmp_path / "runs" / "colombia_v1" / "best.onnx"
+    baseline.parent.mkdir(parents=True)
+    baseline.write_bytes(b"onnx de prueba")
+    (tmp_path / "candidate.onnx").write_bytes(b"onnx de prueba")
+    monkeypatch.setattr(ev, "DATASETS_DIR", tmp_path)
+    monkeypatch.setattr(ev, "TRAINING_DIR", tmp_path)
+    monkeypatch.setattr(ev, "REPORTS_DIR", tmp_path / "reports")
+    monkeypatch.setattr(ev, "require_asset", lambda name: tmp_path / "cfg.yaml")
+    monkeypatch.setattr(ev, "check_ocr_onnx", lambda path: None)
+    monkeypatch.setattr(ev, "onnx_predictor", fake_factory(truths))
+    assert ev.main(["--crops", "test_video/annotations.csv", "--candidate", "candidate.onnx",
+                    "--baseline", "runs/colombia_v1/best.onnx"]) == 0
+    report = json.loads(next((tmp_path / "reports").iterdir()).read_text(encoding="utf-8"))
+    assert report["baseline_model_id"] == "custom"
+    assert report["split"] == "test_video"
+    assert report["baseline_path"] == "runs/colombia_v1/best.onnx"
+    assert report["baseline_sha256"] == sha256_file(baseline)
+    assert report["baseline"]["cer"] == pytest.approx(1 / 6)
 
 
 def test_write_report(tmp_path: Path) -> None:
