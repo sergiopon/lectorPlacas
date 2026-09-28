@@ -171,6 +171,15 @@ con la opción nueva → `train --name colombia_v2` → `evaluate_ocr`. Aceptaci
 mejorar el CER de `test_video` frente a `colombia_v1`. Si se acepta, se registra el hash en `config/models.yaml` y se
 repite la Fase 2 con el modelo nuevo.
 
+**Primer intento, `colombia_v2` (2026-09-27): no se registra.** Mezcla `mix_v2` = `mix_v1` congelado más 92 recortes
+revisados (614 reales en train, 19 recortes y 15 vehículos en `test_video`); 72 épocas, con parada temprana.
+- Test congelado (n=215): CER 0,0427 (IC 95 % 0,0185–0,0730), exacta 0,907. **Peor que `colombia_v1`** (CER 0,0373,
+  exacta 0,921), aunque mejor que el base global (0,0536).
+- `test_video` (n=19), frente a v1: CER 0,1593 (IC 0,0702–0,2772) contra 0,2212; exacta 0,579 contra 0,421. Mejora en
+  video, pero con 19 recortes el IC es tan ancho que no permite concluirla.
+- Decisión: se mantiene `colombia_v1` (se restauró su `.onnx` en `models/`; `lector models verify` da ok). `v2` queda en
+  `runs/colombia_v2/2026-09-27_20-57-16/`. Se reintentará con ≥ 300 recortes revisados.
+
 ### Fase 5 - Mejoras menores (opcionales, al final)
 
 - **Decodificación restringida por formato:** usar la distribución completa de probabilidades por posición en vez de la
