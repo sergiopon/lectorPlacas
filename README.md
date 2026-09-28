@@ -1,11 +1,41 @@
 # lectorPlacas
 
-Lector local de placas colombianas (ALPR) a partir de video. Detecta los vehículos, los sigue entre frames, lee su
-placa varias veces y vota el resultado. Lo que el sistema no puede asegurar lo deja para que una persona lo revise. Todo
-corre en tu equipo: **no se conecta a internet mientras procesa**, y la base de datos y los recortes de placa se
-guardan cifrados.
+Lector local de placas colombianas (ALPR) a partir de video, con aplicación de escritorio. Detecta los vehículos, los
+sigue entre frames, lee su placa varias veces y vota el resultado. Lo que no puede asegurar lo deja para que una
+persona lo revise en una galería. Todo corre en tu equipo: **no se conecta a internet mientras procesa**, y la base de
+datos y los recortes de placa se guardan cifrados.
 
-Licencia: AGPL-3.0 (ver `LICENSE` y `docs/adr/ADR-008-licencia-agpl.md`).
+> **English summary.** Local, privacy-first license-plate reader for Colombian plates (video → vehicle detection with
+> YOLO26n → BoT-SORT tracking → plate detection inside each vehicle → fast-plate-ocr → per-character voting against
+> the Colombian plate formats). Uncertain reads go to a human-review gallery (PySide6). ONNX Runtime only, no network
+> at runtime, SQLCipher + AES-GCM at rest. Built with spec-driven development: 55 specs written and reviewed by Claude,
+> implemented by AI coding agents (see [How it was built](#15-cómo-se-construyó)). Honest results below: it works, but on
+> real street video most errors come from image quality, not from the software.
+
+Licencia: AGPL-3.0 (ver `LICENSE` y `docs/adr/ADR-008-licencia-agpl.md`). Atribuciones de datos y modelos:
+`docs/datasets/ATRIBUCIONES.md`.
+
+---
+
+## Inicio rápido
+
+Requisitos: Linux con escritorio (probado en Fedora 44), [uv](https://docs.astral.sh/uv/getting-started/installation/)
+y un llavero del sistema (GNOME Keyring o KWallet). La GPU NVIDIA es opcional (§2).
+
+```bash
+git clone https://github.com/sergiopon/lectorPlacas.git
+cd lectorPlacas
+uv sync --locked                 # instala Python 3.13 y las dependencias (descarga grande: incluye CUDA)
+uv run lector key init           # crea la clave maestra en el llavero
+uv run lector models fetch       # descarga y verifica por SHA-256 los 6 modelos (~33 MB)
+mkdir -p videos                  # copia aquí tus videos (.mp4, .mov, .mkv…)
+uv run lector-gui                # abre la aplicación
+```
+
+En la aplicación: **Procesar** → elige un video de `videos/` y el escenario → al terminar, **Lecturas** para revisar.
+Por terminal: `uv run lector process videos/<video>.mp4` y `uv run lector review`.
+
+> El repositorio no incluye videos de ejemplo: las placas son datos personales. Usa un video tuyo.
 
 ---
 
@@ -23,7 +53,8 @@ Licencia: AGPL-3.0 (ver `LICENSE` y `docs/adr/ADR-008-licencia-agpl.md`).
 11. [Seguridad y privacidad](#11-seguridad-y-privacidad)
 12. [Desarrollo](#12-desarrollo)
 13. [Problemas frecuentes](#13-problemas-frecuentes)
-14. [Estado actual y próximos pasos](#14-estado-actual-y-próximos-pasos)
+14. [Resultados y limitaciones (honestos)](#14-resultados-y-limitaciones-honestos)
+15. [Cómo se construyó](#15-cómo-se-construyó)
 
 ---
 
@@ -57,8 +88,11 @@ equivocada.
 ## 2. Requisitos
 
 - **Linux** (probado en Fedora 44).
-- **GPU NVIDIA con CUDA 13** (probado con una RTX 5050). Sin GPU funciona en CPU, mucho más lento
-  (`inference.execution_provider: cpu` en `config/lector.yaml`).
+- **GPU NVIDIA** opcional (probado con una RTX 5050). No hace falta instalar CUDA: las bibliotecas vienen en los paquetes
+  `nvidia-*` que instala `uv sync`; basta el driver de NVIDIA.
+- **Sin GPU también funciona**, en CPU y bastante más lento. ONNX Runtime imprime un bloque `EP Error ... no
+  CUDA-capable device is detected ... Falling back to ['CPUExecutionProvider']` por cada modelo: es un aviso, no un
+  fallo. Para quitarlo, pon `inference.execution_provider: cpu` en `config/lector.yaml`.
 - **[uv](https://docs.astral.sh/uv/)** en `~/.local/bin/uv`. uv instala Python 3.13 y todas las dependencias; no
   hace falta instalar Python a mano.
 - Un **llavero del sistema** (GNOME Keyring o KWallet) para guardar la clave maestra.
@@ -72,21 +106,23 @@ equivocada.
 ## 3. Instalación y primer uso
 
 ```bash
-cd ~/Documents/projects/lectorPlacas
-export PATH=~/.local/bin:$PATH        # conviene añadirlo a ~/.bashrc
+cd lectorPlacas
+export PATH=~/.local/bin:$PATH        # si uv está en ~/.local/bin; conviene añadirlo a ~/.bashrc
 
 uv sync --locked                      # crea .venv con Python 3.13 y todo lo necesario
 uv run python scripts/verify_gpu.py   # opcional: comprueba que ONNX Runtime ve la GPU
 
-uv run lector key init                # crea la clave maestra en el llavero (una sola vez)
-uv run lector models fetch            # descarga los modelos públicos (única orden con red)
+uv run lector key init                # crea la clave maestra en el llavero (una sola vez; no pisa una existente)
+uv run lector models fetch            # descarga los modelos (única orden con red, además de los datasets)
 uv run lector models verify           # comprueba el hash SHA-256 de todos los modelos
 ```
 
-Los modelos entrenados en este proyecto (`yolo26n-coco`, `yolo26n-plates`, `fpo-cct-xs-v2-colombia`) no se
-descargan: se generan con las herramientas de `training/` y ya están en `models/`.
+`models fetch` descarga tres modelos de sus autores (open-image-models y fast-plate-ocr) y tres de este proyecto,
+publicados en el Release [`models-v1`](https://github.com/sergiopon/lectorPlacas/releases/tag/models-v1):
+`yolo26n-coco` (exportado a ONNX), `yolo26n-plates` y `fpo-cct-xs-v2-colombia` (entrenados con `training/`). Si un
+archivo no coincide con el hash de `config/models.yaml`, no se carga.
 
-Pon tus videos en **`videos/`**. Por seguridad solo se aceptan videos dentro de esa carpeta, con extensión `.mp4`,
+Crea la carpeta **`videos/`** (`mkdir -p videos`) y pon ahí tus videos. Por seguridad solo se aceptan videos dentro de esa carpeta, con extensión `.mp4`,
 `.mov`, `.mkv`, `.avi`, `.m4v` o `.webm` y hasta 4 GB.
 
 ---
@@ -364,6 +400,8 @@ una rama `feature/NNN-*` con merge `--no-ff`. El estado de cada spec y el regist
 |---|---|
 | `ModuleNotFoundError: No module named 'imghdr'` al ejecutar `lector` | Se ejecutó el lector de ebooks del sistema. Usa `uv run lector` |
 | "manifiesto de modelos inválido" con `--config` | La config alternativa debe estar dentro de `config/` |
+| Bloque `EP Error ... no CUDA-capable device ... Falling back to CPUExecutionProvider` | No hay GPU NVIDIA usable. Funciona en CPU; para quitar el aviso, `inference.execution_provider: cpu` |
+| `lector models fetch` falla | Revisa la conexión y que el Release `models-v1` exista. Los archivos a medias se borran solos |
 | Va muy lento / "cae a CPU" | Revisa `scripts/verify_gpu.py` y que `inference.execution_provider` sea `cuda` |
 | Error de clave o del llavero | Ejecuta `lector key init` en una sesión de escritorio con llavero desbloqueado. Sin la clave original, los datos cifrados no se recuperan |
 | Un modelo "no verificado" tras entrenar | `train.py` sobrescribió el `.onnx`. Restaura tu copia o registra el hash nuevo en `config/models.yaml` |
@@ -372,14 +410,64 @@ una rama `feature/NNN-*` con merge `--no-ff`. El estado de cada spec y el regist
 
 ---
 
-## 14. Estado actual y próximos pasos
+## 14. Resultados y limitaciones (honestos)
 
-- Specs 000–054 implementadas. Detalle en `specs/README.md`.
-- OCR en uso: `colombia_v1`, nivel **provisional** (CER 3,7 % en el test congelado). En video real, el CER medido con
-  tus revisiones es 16 %.
-- Plan de mejora en **`docs/07-plan-mejora-lectura.md`**:
-  - Fases 0 y 0b–0c (hechas): auditoría, conflicto de corrección (050), mejores lecturas por track (051) y "placa
-    borrosa" (052–053).
-  - Fase 1: anotar la verdad de 1 o 2 videos.
-  - Fase 2: calibrar los perfiles.
-  - Fase 4: reentrenar el OCR con más recortes revisados.
+Cifras medidas en este proyecto, con su tamaño de muestra. Ninguna está redondeada a favor.
+
+**OCR** (`fpo-cct-xs-v2-colombia`, CER = errores por carácter):
+
+| Dónde | CER | Placas leídas completas | n |
+|---|---|---|---|
+| Test congelado (recortes de Roboflow) | 3,7 % (IC 95 % hasta 6,7 %) | 92,1 % | 215 |
+| Video real revisado a mano (calle, 720p) | 12–14 % | ~70 % | 63–170 |
+
+La meta del proyecto (M-04) era CER ≤ 3 %, así que el modelo está registrado como **provisional**. Dos reentrenamientos
+con recortes reales revisados (92 y 329 recortes) empataron con él, sin mejora demostrable, y no se adoptaron.
+
+**Sistema completo** en un video de calle de 17 min (720p, 872 avistamientos revisados a mano):
+- El **45 %** de las placas eran **ilegibles incluso para una persona** (borrosas o pequeñas) y el 30 % de las
+  detecciones no eran placas. Solo el 25 % era legible: el techo lo pone la imagen, no el modelo.
+- El sistema **confirmó solo el 5,5 %** de los avistamientos; el resto quedó para revisión. Es deliberado (precisión
+  primero), pero muestra que hoy es un **asistente de revisión**, no un lector autónomo.
+- De las confirmaciones automáticas auditadas, el **93 %** eran correctas (57 de 61). La meta M-01 es 98 %. Dos de los
+  errores se debían a una corrección 8→B forzada por el tipo de vehículo, que la spec 050 ya corrige.
+- **Velocidad:** 0,85× tiempo real en una RTX 5050 con el perfil de 30 fps (17 min de video en 20 min); la meta es ≥ 1×.
+
+**Detector de placas propio** (`yolo26n-plates`): F1 0,94 frente a 0,88 del modelo por defecto, medido sobre la
+validación del mismo dataset con que se entrenó (sesgado a su favor). Por eso no es el predeterminado.
+
+**No medido todavía:** precisión y recall del sistema completo contra una anotación manual de video (M-01, M-02, M-03
+de `docs/04-evaluacion.md`). `data/eval/` está vacío. Las cifras de arriba vienen de la revisión humana, no de ground
+truth.
+
+**Limitaciones conocidas:**
+- Solo placas colombianas; formatos en `config/lector.yaml`.
+- Probado solo en Linux (Fedora 44) con una GPU. Sin GPU funciona, pero no se midió la velocidad.
+- Requiere un llavero del sistema: no funciona tal cual en un servidor sin sesión gráfica.
+- El detector de vehículos a veces confunde carros con motos, y eso genera dudas de formato.
+- Sin video de ejemplo en el repositorio, por privacidad.
+
+Plan de mejora y diagnóstico completo: **`docs/07-plan-mejora-lectura.md`**.
+
+---
+
+## 15. Cómo se construyó
+
+El proyecto se hizo con **spec-driven development asistido por IA**, en unos pocos días de septiembre de 2026:
+
+- **Diseño y revisión: Claude (Anthropic).** Escribió los requisitos, la arquitectura, los 15 ADRs y las **55 specs**
+  (`specs/000`–`054`), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
+  `reglas-seguridad.md`.
+- **Implementación: agentes de código.** Cada spec la implementó un agente en su propia rama y worktree: subagentes
+  Claude Sonnet y modelos DeepSeek, según la dificultad (`docs/05-orquestacion.md`). Los agentes no podían modificar
+  specs ni documentos rectores.
+- **Dirección, datos y validación: el autor.** Decidió el alcance, procesó videos reales y revisó a mano más de 1 100
+  avistamientos, entrenó y evaluó los modelos con las herramientas de `training/` y aceptó o rechazó cada resultado.
+- **Ciclo por spec:** spec → implementación en rama `feature/NNN-*` → compuertas (ruff, mypy strict, pytest,
+  tests de revisión ocultos en `tests/review/`) → revisión → merge `--no-ff`. Estado de cada spec y registro de
+  correcciones: `specs/README.md`. Cuando una spec estaba mal, se corregía la spec, no el código a mano.
+- **Regla de trabajo:** no inventar datos técnicos (versiones, formatos de placa, hashes). Lo que no se pudo
+  verificar está marcado `NO VERIFICADO` en el repositorio.
+
+Tamaño aproximado: ~14 000 líneas de Python en `src/`, ~10 000 de tests (663 tests) y ~3 500 en `training/`.
+`CLAUDE.md` y `CONTEXT.md` son las instrucciones que usaban los agentes; se dejan publicadas como parte del proceso.
