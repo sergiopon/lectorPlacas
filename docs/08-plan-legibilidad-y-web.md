@@ -162,18 +162,19 @@ recursos de demo, o portar a `src/` un generador mínimo. Sirve para:
 
 ### 4.5 Flujo con Figma Make
 
-1. **Contrato y datos de muestra:** la spec de la API genera `openapi.json` y un paquete de JSON de ejemplo con sus
-   recortes sintéticos (modo demo).
-2. **Diseño en Figma Make:** se le describen las pantallas (§4.6) y se le dan los JSON de muestra. Qué acepta como
-   entrada y cómo exporta el código está **NO VERIFICADO**. Hay que comprobarlo antes de empezar: si permite
-   descargar el proyecto o enviarlo a GitHub, qué versión de React usa y qué librerías de componentes mete. También
-   verificar la licencia o los términos de uso del código generado, para publicarlo bajo AGPL-3.0.
-3. **Importación:** el código exportado entra en `frontend/` en una rama `feature/NNN-frontend-*`. Una spec lista qué
-   se conserva (componentes, estilos) y qué se sustituye (datos de muestra por el cliente tipado).
-4. **Cliente tipado:** tipos generados del OpenAPI (p. ej. `openapi-typescript`; versión a verificar en npm). Nada de
-   `fetch` a mano repartido por los componentes.
-5. **Revisión:** accesibilidad (contraste AA, todo usable con teclado, atajos C/E/R/B/S), sin dependencias de CDN, sin
-   telemetría (revisar el `package.json` que genere Figma Make), `npm audit` limpio.
+Reparto (decisión del usuario, 2026-09-27): **Figma Make solo diseña**, a partir del prompt del **Anexo A**. Todo lo
+demás es trabajo del proyecto, con el ciclo de specs.
+
+1. **Diseño (usuario):** pegar el prompt del Anexo A en Figma Make, iterar hasta que guste y exportar el código. Figma
+   Make trabaja solo con los datos ficticios que trae el propio prompt; nunca con recortes, placas ni capturas reales.
+2. **Comprobaciones antes de integrar (Claude):** formato de la exportación, versión de React y librerías que añade,
+   y términos de uso del código generado, para poder publicarlo bajo AGPL-3.0. Todo esto está **NO VERIFICADO** hasta
+   ver la exportación real.
+3. **Integración (spec 066):** el código entra en `frontend/` en su rama. Se conservan componentes y estilos; los datos
+   de muestra se sustituyen por un cliente tipado, generado a partir del OpenAPI de la API (§4.3; herramienta a
+   verificar en npm, p. ej. `openapi-typescript`). Nada de `fetch` repartido por los componentes.
+4. **Revisión:** accesibilidad (contraste AA, todo usable con teclado, atajos C/E/R/B/S); sin CDN ni fuentes remotas;
+   sin telemetría (revisar el `package.json` exportado); `npm audit` limpio.
 
 ### 4.6 Pantallas
 
@@ -250,7 +251,7 @@ Objetivo: `docker compose up` y abrir el navegador, sin instalar uv, Python ni N
 | 3 | Calibrar perfiles (docs/07 Fase 2) y **060** parada temprana | — |
 | 4 | **056** → **057** → **058** → **059**: filtro de legibilidad | web (galería "solo legibles") |
 | 5 | ADR-016, SEG-28, **062**, **063**, **064**, **065** (backend y demo) | 066 |
-| 6 | Verificar Figma Make (§4.5 paso 2), diseñar y **066**, **067** | 068 |
+| 6 | Diseño en Figma Make con el Anexo A (usuario); integración **066** y **067** | 068 |
 | 7 | **068** publicación y **061** tipo de vehículo | — |
 | 8 | **069** retirar la GUI PySide6 (cuando la web la iguale) | — |
 | 9 | **070** clave desde archivo y **071** Docker | — |
@@ -281,3 +282,96 @@ Los pasos 4 y 5 pueden ir en paralelo: no comparten archivos.
 - Velocidad ≥ 1× en 1080p con el perfil calibrado.
 - M-01 a M-03 medidos con al menos un tramo anotado; el README publica las cifras, cumplan o no la meta.
 - Suite completa (Python y frontend), `ruff`, `mypy --strict`, `npm run lint`/`tsc` y nivel F en verde.
+
+---
+
+## Anexo A - Prompt para Figma Make
+
+Copiar tal cual. Todos los datos son ficticios. Si Figma Make pide cambios, se ajustan aquí y no se le envía nada real.
+
+```text
+Diseña una aplicación web de escritorio (React + TypeScript, Vite) llamada "lectorPlacas": un lector de placas de
+vehículos colombianos que procesa videos localmente y ayuda a una persona a revisar las lecturas dudosas. Funciona
+en localhost; es una herramienta de trabajo, no una página de marketing. Idioma de la interfaz: español.
+
+ESTILO
+- Sobrio y profesional, tipo panel de análisis: mucho espacio, jerarquía clara, esquinas suaves, sombras sutiles.
+- Modo claro y modo oscuro (seguir la preferencia del sistema, con selector manual).
+- Color de acento azul. Colores de estado fijos: "Por revisar" ámbar, "Confirmada" verde, "Corregida" azul,
+  "Descartada" rojo, "Borrosa" gris. El color nunca es la única señal: siempre acompaña un texto o un icono.
+- La placa se muestra como en la vida real: fondo amarillo, texto negro grueso, formato "ABC 123" (motos: "ABC 12D").
+- Tipografía del sistema (sin fuentes remotas). Contraste WCAG AA. Todo usable con teclado y foco visible.
+- Pensado para pantallas de 1280 px o más; en ventanas estrechas el panel lateral pasa a ser un cajón.
+
+ESTRUCTURA
+Barra superior con el nombre, navegación (Procesar, Lecturas, Métricas, Historial, Ajustes), un contador
+"N por revisar" y el selector de tema.
+
+PANTALLA 1 - PROCESAR
+- Lista de videos disponibles (nombre, duración, tamaño) con una zona para elegir uno.
+- Selector de escenario con tres tarjetas: "Parqueadero o entrada" (vehículos lentos o detenidos, cerca de la
+  cámara), "Calle con tráfico lento" (tráfico urbano normal), "Vía rápida" (vehículos a mayor velocidad).
+- Botón principal "Procesar".
+- Durante el proceso: barra de progreso, tiempo del video procesado / duración, contadores en vivo (vehículos,
+  placas leídas, velocidad "1,2x tiempo real") y botón "Cancelar".
+- Al terminar: resumen con tarjetas (legibles, por revisar, ocultas por baja calidad, confirmadas automáticamente,
+  duración) y botón "Revisar N placas".
+
+PANTALLA 2 - LECTURAS (la más importante)
+- Arriba: filtros como pestañas con contador: "Por revisar", "Confirmadas", "Corregidas", "Descartadas",
+  "Borrosas", "Todas", y una pestaña separada y discreta "Ocultas por baja calidad (N)". Buscador por placa y
+  selector de video.
+- Centro: cuadrícula de tarjetas. Cada tarjeta muestra el recorte de la placa (imagen apaisada, relación 3:1), la
+  placa leída en formato de placa colombiana, el tipo de vehículo (carro, moto, bus, camión), una barra pequeña de
+  seguridad del lector (porcentaje) y la etiqueta de estado. La tarjeta seleccionada queda resaltada.
+- Derecha: panel de revisión fijo con el recorte ampliado, la placa en grande, "El sistema leyó: ABC 128" cuando
+  difiere, la barra de seguridad, una lista "Por qué revisarla" con los motivos, y "Carro · aparece en 0:42–0:45 ·
+  video 3". Acciones grandes con su atajo visible:
+    ✓ Es correcta (C)   ✎ Corregir (E)   ✗ No es una placa (R)   ◐ Placa borrosa (B)   Saltar (S)
+  "Corregir" convierte la placa en un campo de texto en mayúsculas (Enter guarda, Esc cancela). Tras decidir, se
+  selecciona sola la siguiente tarjeta pendiente, con una transición suave.
+- Estados vacíos amables ("No hay placas por revisar. ¡Todo al día!") y un estado de carga con esqueletos.
+
+PANTALLA 3 - MÉTRICAS
+- Tarjetas: precisión de las confirmadas auditadas, placas leídas completas, error por carácter del lector, tasa
+  de confirmación automática. Cada cifra con su tamaño de muestra ("57 de 61").
+- Gráfico de barras apiladas por video: legibles / borrosas / no es placa.
+- Gráfico de línea de la precisión y el error a lo largo de los videos.
+- Nota discreta: "Estimación a partir de la revisión humana".
+
+PANTALLA 4 - HISTORIAL
+- Tabla de videos procesados: fecha, video, escenario, duración, velocidad, vehículos, confirmadas, por revisar y
+  estado (completado, cancelado, fallido), con un botón "Ver lecturas" por fila.
+
+PANTALLA 5 - AJUSTES
+- Retención (recortes 90 días, registros 90 días) con explicación breve, botón "Exportar CSV" (con filtro de
+  estado) y botón "Purgar datos vencidos" con diálogo de confirmación.
+
+REQUISITOS TÉCNICOS DEL CÓDIGO
+- React + TypeScript estricto, componentes funcionales y pequeños, sin librerías de CDN ni scripts externos, sin
+  analítica ni telemetría.
+- Todos los datos salen de un único módulo `src/api/` con funciones asíncronas tipadas (por ejemplo
+  `listSightings(filters)`, `getSighting(id)`, `decide(id, decision)`, `startRun(video, profile)`,
+  `subscribeRunProgress(runId, onEvent)`, `getMetrics()`, `listRuns()`) que de momento devuelven datos de muestra.
+  Ningún componente debe tener datos escritos dentro: así después se sustituye ese módulo por la API real.
+- Tipos de datos (usar exactamente estos nombres de campo):
+  Sighting { id: number; runId: number; vehicleType: "car" | "motorcycle" | "bus" | "truck";
+    plateText: string; ocrText: string; confidence: number; agreement: number; numReadings: number;
+    status: "unverified" | "confirmed" | "corrected" | "rejected" | "illegible";
+    reasons: string[]; hiddenLowQuality: boolean; firstSeenMs: number; lastSeenMs: number;
+    cropUrl: string; reviewedAt: string | null }
+  Run { id: number; video: string; profile: "parqueadero" | "calle_lenta" | "calle_rapida";
+    startedAt: string; durationMs: number; speedFactor: number; vehicles: number; confirmed: number;
+    unverified: number; status: "running" | "completed" | "failed" }
+  Decision { action: "confirm" | "correct" | "reject" | "illegible"; correctedText?: string }
+  Los motivos (`reasons`) se muestran con estos textos: insufficient_readings "Se leyó pocas veces";
+  low_confidence "El lector no estaba seguro"; low_agreement "Las lecturas no coinciden entre sí";
+  unrecognized_format "No parece una placa colombiana"; unverified_format "Formato de placa poco común";
+  vehicle_format_mismatch "El formato no corresponde al tipo de vehículo"; ambiguous_format "Encaja en más de
+  un formato"; correction_conflict "Podría ser otra placa: una letra o un número dudoso".
+- Datos de muestra: unas 40 lecturas ficticias con placas inventadas de formato colombiano (carros "ABC123",
+  motos "XYZ98K"), mezcla de estados y motivos, y 5 videos ficticios. Para los recortes usa rectángulos
+  generados (placa amarilla con el texto), nunca fotos de placas reales.
+- Atajos de teclado C, E, R, B, S y flechas para moverse por la cuadrícula; no deben dispararse mientras se
+  escribe en un campo de texto.
+```
