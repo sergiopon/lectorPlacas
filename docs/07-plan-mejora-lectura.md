@@ -180,6 +180,16 @@ revisados (614 reales en train, 19 recortes y 15 vehículos en `test_video`); 72
 - Decisión: se mantiene `colombia_v1` (se restauró su `.onnx` en `models/`; `lector models verify` da ok). `v2` queda en
   `runs/colombia_v2/2026-09-27_20-57-16/`. Se reintentará con ≥ 300 recortes revisados.
 
+**Segundo intento, `colombia_v3` (2026-09-27): no se registra.** Mezcla `mix_v3`: `mix_v1` congelado más 329 recortes
+revisados (779 reales en train; 63 recortes y 50 vehículos en `test_video`). 56 épocas, con parada temprana.
+- Test congelado (n=215): CER 0,0396 (IC 0,0163–0,0703), exacta 0,921. `colombia_v1` da CER 0,0373 y exacta 0,921:
+  **empate**.
+- `test_video` (n=63), frente a v1: CER 0,1032 (IC 0,0515–0,1723) contra 0,1217; exacta 0,698 contra 0,683 (una placa
+  más). La mejora es pequeña y queda dentro del IC.
+- Decisión: sin diferencia demostrable, se mantiene `colombia_v1` (se restauró su `.onnx`). Lectura del resultado: con
+  un 45 % de placas ilegibles para el revisor en el video de 17 min (corrida 23, 720p), el cuello de botella es la
+  imagen, no el OCR. La prioridad pasa a las Fases 1–2 (GT y calibración) y a la calidad de la captura.
+
 ### Fase 5 - Mejoras menores (opcionales, al final)
 
 - **Decodificación restringida por formato:** usar la distribución completa de probabilidades por posición en vez de la
