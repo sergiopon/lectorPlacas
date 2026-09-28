@@ -240,7 +240,7 @@ Archivo principal: **`config/lector.yaml`** (esquema en `docs/03-modelo-datos.md
   Estos valores son **provisionales**: se calibran en la Fase 2 de `docs/07-plan-mejora-lectura.md`.
 - `plate_formats`: catálogo de formatos con su fuente normativa. Los que tienen `verified: false` nunca se confirman
   solos.
-- `retention`: recortes 30 días, registros 90 días y exportaciones de entrenamiento 180 días.
+- `retention`: recortes 90 días (temporalmente; el valor normal es 30, ver `docs/08-plan-legibilidad-y-web.md` §2.2), registros 90 días y exportaciones de entrenamiento 180 días.
 
 **`config/models.yaml`** es el manifiesto de modelos: archivo, URL y hash SHA-256. Si un `.onnx` no coincide con su
 hash, no se carga.

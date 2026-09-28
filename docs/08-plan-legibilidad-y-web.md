@@ -1,6 +1,6 @@
 # 08 - Plan: solo placas legibles, más desempeño e interfaz web
 
-Estado: propuesto (2026-09-27). Continúa `docs/07-plan-mejora-lectura.md`. Cada bloque de código se especifica en su
+Estado: aprobado con decisiones del usuario (2026-09-27, §6). Continúa `docs/07-plan-mejora-lectura.md`. Cada bloque de código se especifica en su
 spec (055 en adelante) y se implementa con el ciclo habitual: spec, rama `feature/NNN-*`, compuertas, revisión y merge.
 
 Objetivos pedidos por el usuario:
@@ -44,12 +44,13 @@ por error.
 
 ### 2.2 Los datos ya existen, pero caducan
 
-Las 1 113 etiquetas humanas son justo el dataset que hace falta. Pero los **recortes cifrados se purgan a los 30 días**
-(`retention.crops_days`): los primeros caducan el **2026-10-26**, y `export-reviewed` solo exporta las legibles.
+Las 1 113 etiquetas humanas son justo el dataset que hace falta, pero los recortes cifrados se purgan por retención y
+`export-reviewed` solo exporta las legibles.
 
-**Acción inmediata (sin código, decisión del usuario):** subir temporalmente `retention.crops_days` a 90 en
-`config/lector.yaml` mientras se construye el filtro. Es un compromiso de privacidad (más tiempo con recortes guardados,
-siempre cifrados), por eso lo decide el usuario. La alternativa es implementar la spec 055 antes del 26 de octubre.
+**Hecho (2026-09-27, decisión del usuario):** `retention.crops_days` sube de 30 a **90 días** en `config/lector.yaml`,
+como excepción temporal anotada en SEG-03. Los primeros recortes (2026-09-26) caducan ahora el **2026-12-25**, que es
+también la fecha en que `records_days` = 90 borra sus avistamientos. La spec 055 debe estar exportada antes de esa
+fecha. Cuando exista el dataset, se vuelve a 30 días.
 
 ### 2.3 Specs
 
@@ -95,7 +96,8 @@ Ordenado por impacto esperado. Cada punto se mide antes y después con los mismo
 ### 4.1 Arquitectura
 
 ADR-015 ya evaluó esta opción ("Opción 1: web local") y fijó sus condiciones de seguridad. Se redacta un **ADR-016**
-que la adopta **junto a** la GUI PySide6. La GUI no se elimina hasta que la web la iguale.
+que la adopta y **sustituye a la GUI PySide6** (decisión del usuario): la app de escritorio se retira (spec 069) en cuanto
+la web cubra sus funciones. Así el proyecto queda con una sola interfaz gráfica, la web, más la CLI.
 
 ```
 navegador (http://127.0.0.1:PUERTO)
@@ -199,9 +201,42 @@ recursos de demo, o portar a `src/` un generador mínimo. Sirve para:
 | **067** Pantallas conectadas y pruebas E2E | Pruebas de componentes (Vitest) y E2E (Playwright) contra el modo demo |
 | **068** Publicación | README (inicio rápido con `lector web`, capturas del modo demo), nivel F con `bind` loopback |
 
-Herramientas nuevas que pide la web: **Node.js LTS** para compilar el frontend. Para que "clonar y ejecutar" siga
-siendo simple, hay dos opciones (decisión pendiente, §6): exigir Node y `npm ci && npm run build` en el inicio rápido,
-o publicar el `dist/` compilado en un Release, como los modelos.
+Herramientas nuevas que pide la web: **Node.js LTS** (decisión del usuario: se exige). El inicio rápido añade
+`npm ci && npm run build` en `frontend/`; la versión de Node se fija en `frontend/.nvmrc` y en `engines` de
+`package.json`. La alternativa sin Node ni uv en el equipo es **Docker** (§4.8).
+
+| Spec | Contenido |
+|---|---|
+| **069** Retirar la GUI PySide6 | Solo cuando la web cubra las funciones de la GUI (§4.6): se eliminan la capa `gui`, el script `lector-gui`, la dependencia PySide6 y sus tests; ADR-015 queda sustituido por ADR-016; `ARQUITECTURA.md`, SEG-27 y README se actualizan. La ventana OpenCV de revisión de la CLI (`lector review`) se mantiene. |
+
+### 4.8 Docker (alternativa de despliegue)
+
+Objetivo: `docker compose up` y abrir el navegador, sin instalar uv, Python ni Node en el equipo.
+
+- **Imagen multi-etapa:** una etapa `node` compila `frontend/`; otra etapa Python con uv instala el proyecto con
+  `uv sync --locked` y copia el `dist/`. Imágenes base con versión y digest fijados, a verificar al redactar la spec.
+- **Modelos:** `lector models fetch` al construir la imagen, porque es la única etapa con red, o en el primer arranque
+  sobre un volumen. Siempre verificados por SHA-256.
+- **Volúmenes:** `videos/` en solo lectura, `data/` y `logs/` persistentes y `config/` montado. Nada sensible dentro de
+  la imagen.
+- **Red:** el puerto se publica **solo en el loopback del equipo** (`127.0.0.1:PUERTO:PUERTO`). Dentro del contenedor
+  el servidor tiene que escuchar en `0.0.0.0` para que Docker lo alcance; es una **excepción acotada a SEG-28** que solo
+  se permite con la variable `LECTOR_IN_CONTAINER=1`. El token y la comprobación de `Host` se mantienen. La guardia de
+  red sigue activa en el proceso.
+- **Problema a resolver: la clave maestra.** Hoy vive en el llavero del sistema (Secret Service por D-Bus), que no
+  existe dentro de un contenedor. Opción recomendada: un `KeyProvider` nuevo que lea la clave de un **Docker secret**
+  (archivo montado en `/run/secrets/`, solo lectura, 0400), generado una vez por `lector key init --to-file`. Así la
+  clave nunca queda en la imagen, en variables de entorno ni en los logs. Requiere actualizar SEG-02/ADR-005 (dónde
+  puede vivir la clave) y lo decide la spec, con revisión de seguridad.
+- **GPU:** imagen por defecto en CPU; perfil `gpu` de compose con `--gpus all`, que necesita el NVIDIA Container
+  Toolkit en el equipo anfitrión. **NO VERIFICADO** que las ruedas `nvidia-*` de ONNX Runtime funcionen dentro del
+  contenedor solo con el driver del anfitrión: se comprueba en la spec.
+
+| Spec | Contenido |
+|---|---|
+| **070** `KeyProvider` de archivo (Docker secret) | `lector key init --to-file <ruta>` y lectura desde `/run/secrets/…` cuando se configura; tests de permisos y de que la clave nunca se registra |
+| **071** Imagen y compose | `Dockerfile` multi-etapa, `compose.yaml` (perfiles `cpu`/`gpu`), volúmenes, publicación en loopback, `HEALTHCHECK`, `.dockerignore` que excluye `data/`, `videos/`, `models/`, `CLAUDE.md`, `CONTEXT.md` |
+
 
 ---
 
@@ -209,33 +244,37 @@ o publicar el `dist/` compilado en un Release, como los modelos.
 
 | Paso | Qué | Bloquea a |
 |---|---|---|
-| 0 | Decidir la retención de recortes (§2.2) | 055 |
-| 1 | **055** exportar dataset de legibilidad (antes del 2026-10-26) | 057 |
+| 0 | ~~Decidir la retención de recortes~~: hecho, 90 días (§2.2) | — |
+| 1 | **055** exportar dataset de legibilidad (antes del 2026-12-25) | 057 |
 | 2 | Anotar un tramo con verdad (docs/07 Fase 1) + guía de captura | 3 |
 | 3 | Calibrar perfiles (docs/07 Fase 2) y **060** parada temprana | — |
 | 4 | **056** → **057** → **058** → **059**: filtro de legibilidad | web (galería "solo legibles") |
 | 5 | ADR-016, SEG-28, **062**, **063**, **064**, **065** (backend y demo) | 066 |
 | 6 | Verificar Figma Make (§4.5 paso 2), diseñar y **066**, **067** | 068 |
 | 7 | **068** publicación y **061** tipo de vehículo | — |
+| 8 | **069** retirar la GUI PySide6 (cuando la web la iguale) | — |
+| 9 | **070** clave desde archivo y **071** Docker | — |
 
 Los pasos 4 y 5 pueden ir en paralelo: no comparten archivos.
 
 ---
 
-## 6. Decisiones pendientes del usuario
+## 6. Decisiones del usuario (2026-09-27)
 
-1. **Retención de recortes:** ¿subir `crops_days` a 90 mientras se construye el filtro, o priorizar la spec 055 antes
-   del 2026-10-26?
-2. **GUI de escritorio:** ¿mantener PySide6 junto a la web, o retirarla cuando la web la iguale?
-3. **Frontend compilado:** ¿exigir Node.js a quien clone, o publicar el `dist/` en un Release?
-4. **Figma Make:** confirmar que tu plan permite exportar el código (§4.5).
-5. **Filtro de legibilidad:** ¿mostrar las ocultas en una pestaña aparte (recomendado) o no mostrarlas nunca?
-
----
+1. **Retención de recortes:** 90 días de forma temporal (aplicado; §2.2).
+2. **Interfaz:** se lleva todo a la **web** y se **retira la app de escritorio** PySide6 (spec 069, cuando la web la
+   iguale).
+3. **Frontend:** se **exige Node.js** para compilarlo. Además, **Docker** como alternativa de despliegue (§4.8).
+4. **Figma Make:** el plan del usuario **permite exportar el código**. Falta comprobar el formato exacto de la
+   exportación y los términos de uso del código generado (§4.5 paso 2).
+5. **Placas ocultas por baja calidad:** se muestran **en una pestaña aparte** ("Ocultas por baja calidad (N)"), nunca en
+   la vista principal.
 
 ## 7. Criterios de "proyecto terminado"
 
-- El inicio rápido del README lleva a la web en ≤ 6 comandos, probado desde un clon limpio (como el 2026-09-27).
+- El inicio rápido del README lleva a la web en ≤ 6 comandos (uv + Node), o con `docker compose up`, probado desde un
+  clon limpio (como el 2026-09-27).
+- La app PySide6 está retirada y el proyecto tiene una sola interfaz gráfica: la web.
 - `lector web --demo` enseña la app completa con datos sintéticos; las capturas del README salen de ahí.
 - En la vista por defecto, **≥ 60 % menos avistamientos inservibles** que hoy, con **≤ 5 % de legibles escondidas**
   (medido, §2.4).
