@@ -60,6 +60,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 052 | [Revisión: decisión "placa borrosa" (esquema v2)](052-estado-placa-borrosa.md) | 020, 027, 034, 038, 046 | Implementada |
 | 053 | [GUI: botón y filtro "Placa borrosa"](053-gui-placa-borrosa.md) | 046–048, 052 | Implementada |
 | 054 | [Entrenamiento OCR: mezcla con reparto congelado y `test_video`](054-mezcla-congelada-test-video.md) | 035, 039 | Implementada |
+| 055 | [Exportar el dataset de legibilidad](055-exportar-dataset-legibilidad.md) | 035, 052 | Lista |
 
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 

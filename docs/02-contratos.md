@@ -354,6 +354,7 @@ class PlateRepository(Protocol):
     def expire_crop_refs(self, cutoff: datetime) -> list[str]: ...
     def delete_records_before(self, cutoff: datetime) -> RecordPurge: ...
     def log_event(self, event: AuditEvent, occurred_at: datetime, detail: str) -> None: ...
+    def run_video_hashes(self) -> dict[int, str]: ...   # spec 055: run_id → video_sha256 de todas las corridas
     def close(self) -> None: ...
 
 class CropStore(Protocol):
@@ -368,6 +369,31 @@ class ExportStore(Protocol):
 
 class TrainingExportStore(Protocol):
     def write_samples(self, samples: Sequence[tuple[str, ImageBGR]], created_at: datetime) -> Path: ...
+    def delete_older_than(self, cutoff: datetime) -> int: ...
+
+# spec 055
+class LegibilityLabel(StrEnum):
+    LEGIBLE = "legible"
+    BLURRY = "borrosa"
+    NOT_PLATE = "no_placa"
+
+@dataclass(frozen=True, slots=True)
+class LegibilitySample:            # sin texto de placa (SEG-07)
+    image: ImageBGR
+    label: LegibilityLabel
+    status: ReviewStatus
+    human_reviewed: bool           # reviewed_at is not None
+    video_group: int               # >= 1; corridas del mismo video comparten grupo
+    run_id: int
+    track_id: int
+    vehicle_type: VehicleType
+    confidence: float
+    agreement: float
+    num_readings: int
+    reasons: tuple[UnverifiedReason, ...]
+
+class LegibilityExportStore(Protocol):
+    def write_samples(self, samples: Sequence[LegibilitySample], created_at: datetime) -> Path: ...
     def delete_older_than(self, cutoff: datetime) -> int: ...
 
 class KeyProvider(Protocol):
@@ -602,6 +628,25 @@ class ExportReviewedCrops:
 ```
 Cambios de la spec 035 en `application/purge_expired.py`: `RetentionPolicy.training_days: int = 180`,
 `PurgeResult.training_deleted: int = 0` y `PurgeExpiredData(..., policy, training_store: TrainingExportStore | None = None)`.
+
+`application/export_legibility.py` (spec 055)
+```python
+LABELS: Final[dict[ReviewStatus, LegibilityLabel]]   # CONFIRMED/CORRECTED→LEGIBLE, ILLEGIBLE→BLURRY, REJECTED→NOT_PLATE
+
+@dataclass(frozen=True, slots=True)
+class ExportLegibilityResult:
+    path: Path
+    exported: int
+    skipped: int
+    per_label: dict[LegibilityLabel, int]
+
+class ExportLegibilityDataset:
+    def __init__(self, repository: PlateRepository, crop_store: CropStore,
+                 legibility_store: LegibilityExportStore, clock: Clock) -> None: ...
+    def execute(self) -> ExportLegibilityResult: ...
+```
+Cambio de la spec 055 en la purga: `PurgeExpiredData(..., training_store=None, legibility_store: LegibilityExportStore | None = None)`;
+lo que borra se suma a `training_deleted` (mismo corte `training_days`).
 
 ## 6. Infraestructura (firmas públicas)
 

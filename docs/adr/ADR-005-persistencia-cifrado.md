@@ -38,3 +38,9 @@ SO, un solo operador local y retención 30 días (recortes) / 90 días (registro
 Por decisión del usuario, las lecturas revisadas (`confirmed`/`corrected`) pueden exportarse descifradas para reentrenar
 el OCR (`lector dataset export-reviewed`, spec 035): excepción controlada a SEG-07, con retención propia
 `retention.training_days` (180 días) aplicada por la purga, permisos 0600/0700 y registro en `audit_log`.
+
+## Actualización 2026-10-03
+La excepción a SEG-07 se amplía a `lector dataset export-legibility` (spec 055): exporta los recortes de los
+avistamientos con estado final (`confirmed`, `corrected`, `illegible`, `rejected`) con su clase de legibilidad y las
+métricas del consolidador, **sin texto de placa ni hash de video**, a `training/legibility/datasets/own/`. Misma
+retención (`training_days`), permisos y auditoría. Sirve para entrenar el filtro de legibilidad (docs/08 §2).
