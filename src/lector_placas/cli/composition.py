@@ -31,6 +31,7 @@ from lector_placas.adapters.security.file_key_provider import KEY_FILE_ENV, File
 from lector_placas.adapters.security.keyring_key_provider import KeyringKeyProvider
 from lector_placas.adapters.storage.encrypted_crop_store import EncryptedFileCropStore
 from lector_placas.adapters.tracking.botsort_tracker import BotSortTracker, TrackerSettings
+from lector_placas.adapters.video.pyav_frame_grabber import PyAVFrameGrabber
 from lector_placas.adapters.video.pyav_source import PyAVVideoSourceFactory
 from lector_placas.application.frame_sampler import TimeBasedFrameSampler
 from lector_placas.application.legibility import LegibilityModel
@@ -38,6 +39,7 @@ from lector_placas.application.ports import (
     Clock,
     CropStore,
     ExportStore,
+    FrameGrabber,
     KeyProvider,
     ModelRegistry,
     PlateDetector,
@@ -45,6 +47,7 @@ from lector_placas.application.ports import (
     PlateRepository,
     Tracker,
     VehicleDetector,
+    VideoSourceFactory,
 )
 from lector_placas.application.process_video import (
     PipelineDependencies,
@@ -256,6 +259,16 @@ def build_legibility_model(config: AppConfig) -> LegibilityModel | None:
     return LegibilityModel(mean, std, weights, bias, threshold)
 
 
+def build_video_source_factory() -> VideoSourceFactory:
+    """Construye la fábrica de fuentes de video."""
+    return PyAVVideoSourceFactory()
+
+
+def build_frame_grabber() -> FrameGrabber:
+    """Construye el extractor de fotogramas completos."""
+    return PyAVFrameGrabber()
+
+
 def build_process_video(
     config: AppConfig,
     profile_name: str,
@@ -267,7 +280,7 @@ def build_process_video(
     name, profile = config.profile(profile_name)
     registry = build_registry(config)
     deps = PipelineDependencies(
-        PyAVVideoSourceFactory(),
+        build_video_source_factory(),
         TimeBasedFrameSampler(profile.target_fps),
         build_vehicle_detector(config, registry),
         build_plate_detector(config, registry),

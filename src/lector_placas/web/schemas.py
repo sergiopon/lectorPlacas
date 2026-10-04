@@ -21,6 +21,7 @@ class VideoOut(ApiModel):
     name: str
     path: str
     size_bytes: int
+    duration_ms: int | None
 
 
 class ProfileOut(ApiModel):
@@ -180,3 +181,34 @@ class MetricsOut(ApiModel):
     hidden_legible: int
     hidden_unusable: int
     hidden_pending: int
+
+
+class SightingCountsOut(ApiModel):
+    """Conteos de avistamientos por pestaña."""
+
+    unverified: int
+    confirmed: int
+    corrected: int
+    rejected: int
+    illegible: int
+    all: int
+    hidden: int
+
+
+class RunMetricsOut(ApiModel):
+    """Métricas de una corrida."""
+
+    run_id: int
+    legible: int
+    illegible: int
+    rejected: int
+    precision: float | None
+    cer: float | None
+
+
+class SettingsOut(ApiModel):
+    """Ajustes de retención."""
+
+    crops_days: int
+    records_days: int
+    training_days: int
