@@ -3,6 +3,12 @@
 Estado: aprobado con decisiones del usuario (2026-09-27, §6). Continúa `docs/07-plan-mejora-lectura.md`. Cada bloque de código se especifica en su
 spec (055 en adelante) y se implementa con el ciclo habitual: spec, rama `feature/NNN-*`, compuertas, revisión y merge.
 
+> **Renumeración (2026-10-03).** El nuevo enfoque (solo placas cercanas y legibles; modos de cámara estática y móvil,
+> `docs/09-enfoque-versatil.md`, ADR-017) añade las specs 056 (modos de cámara), 057 (filtro de cercanía), 058 (evaluación
+> con cercanía) y 061 (duplicados) y desplaza las demás. Los números de este documento ya están actualizados. Equivalencia
+> con la numeración anterior: 056→059, 057→062, 058→063, 059→064, 061→065, 062–069→066–073, 070–071→074–075; la 060 se
+> mantiene y se redefine. Donde este plan diga "legibles", ahora significa "legibles y cercanas" (docs/09 §4.2).
+
 Objetivos pedidos por el usuario:
 1. **No mostrar placas borrosas**: que la revisión muestre solo placas que se pueden leer.
 2. **Mejorar el desempeño** del programa.
@@ -57,10 +63,10 @@ fecha. Cuando exista el dataset, se vuelve a 30 días.
 | Spec | Qué hace | Detalle |
 |---|---|---|
 | **055** Exportar dataset de legibilidad | `lector dataset export-legibility` | Como `export-reviewed` (spec 035), pero exporta **todos** los revisados con su clase (`legible` / `borrosa` / `no_placa`) y sus métricas (confianza, acuerdo, nº de lecturas, tipo de vehículo, tamaño del recorte). Misma retención propia de 180 días y mismas reglas SEG-07. **Urgente.** |
-| **056** Características de calidad | Guardar por avistamiento el ancho y alto de la placa en píxeles, la nitidez y el contraste del mejor recorte | Hoy la nitidez se calcula pero no se guarda (docs/07 §2). Columnas nuevas: migración de esquema v2 → v3, con la misma receta que la spec 052. |
-| **057** Modelo de legibilidad (entrenamiento) | En `training/legibility` (proyecto uv nuevo): primero una **regresión logística** sobre las características de 055/056 y, si no basta, una **CNN pequeña** sobre el recorte, exportada a ONNX | Reparto por vehículo y por video (como `mix_dataset`) para no filtrar datos entre splits. Se elige un umbral con el criterio del §2.4. La regresión logística se exporta como coeficientes a `config/lector.yaml`; la CNN, como ONNX verificado por hash en `config/models.yaml`. |
-| **058** Filtro de legibilidad en el pipeline | Tras consolidar, calcular la puntuación; por debajo del umbral, razón nueva `PREDICTED_ILLEGIBLE` o `PREDICTED_NOT_PLATE` | Nunca confirma ni borra: solo añade una razón. Sin migración, porque `reasons` es texto (como en la 050). |
-| **059** Vista "solo legibles" | En la GUI (y en la web, §4) el filtro "Por revisar" excluye por defecto las razones `PREDICTED_*`; pestaña "Ocultas por baja calidad" para auditarlas; `evaluate-review` informa cuántas ocultas eran legibles | Afecta a `readings_filters.py`, `review_metrics.py` y a la API web. |
+| **059** Características de calidad | Guardar por avistamiento el ancho y alto de la placa en píxeles, la nitidez y el contraste del mejor recorte | Hoy la nitidez se calcula pero no se guarda (docs/07 §2). Columnas nuevas: migración de esquema v2 → v3, con la misma receta que la spec 052. |
+| **062** Modelo de legibilidad (entrenamiento) | En `training/legibility` (proyecto uv nuevo): primero una **regresión logística** sobre las características de 055/059 y, si no basta, una **CNN pequeña** sobre el recorte, exportada a ONNX | Reparto por vehículo y por video (como `mix_dataset`) para no filtrar datos entre splits. Se elige un umbral con el criterio del §2.4. La regresión logística se exporta como coeficientes a `config/lector.yaml`; la CNN, como ONNX verificado por hash en `config/models.yaml`. |
+| **063** Filtro de legibilidad en el pipeline | Tras consolidar, calcular la puntuación; por debajo del umbral, razón nueva `PREDICTED_ILLEGIBLE` o `PREDICTED_NOT_PLATE` | Nunca confirma ni borra: solo añade una razón. Sin migración, porque `reasons` es texto (como en la 050). |
+| **064** Vista "solo legibles" | En la GUI (y en la web, §4) el filtro "Por revisar" excluye por defecto las razones `PREDICTED_*`; pestaña "Ocultas por baja calidad" para auditarlas; `evaluate-review` informa cuántas ocultas eran legibles | Afecta a `readings_filters.py`, `review_metrics.py` y a la API web. |
 
 ### 2.4 Criterio de aceptación del filtro
 
@@ -86,7 +92,7 @@ Ordenado por impacto esperado. Cada punto se mide antes y después con los mismo
 | 2 | **Anotar la verdad de un tramo** (docs/07 Fase 1) | Operación | Sin ground truth, M-01 a M-03 nunca se han medido. Basta un tramo de 3–5 min en 1080p. |
 | 3 | **Calibrar perfiles** (docs/07 Fase 2) | Configuración | Probar `target_fps` 15 frente a 30 (velocidad 0,85× → ≥ 1×), `min_readings` 2 (elimina gran parte de las no-placas de una sola lectura), `min_plate_width_px` 40/60 y el detector `yolo26n-plates`. |
 | 4 | **Spec 060: parada temprana por track** | Código | La spec 051 lee cada vehículo en todos los frames, lo que es caro. Se deja de leer un track cuando sus N mejores lecturas ya coinciden con alta confianza. Recupera velocidad sin perder las lecturas cercanas. |
-| 5 | **Spec 061: tipo de vehículo por la forma de la placa** | Código | El detector COCO confunde carros y motos, y eso genera dudas de formato (docs/07 §1.1). La proporción de la caja de la placa distingue la placa de moto de la de carro; las dimensiones oficiales están **PENDIENTES DE VALIDAR** en la normativa (Res. 4923/1994 y la ficha técnica MT 001). |
+| 5 | **Spec 065: tipo de vehículo por la forma de la placa** | Código | El detector COCO confunde carros y motos, y eso genera dudas de formato (docs/07 §1.1). La proporción de la caja de la placa distingue la placa de moto de la de carro; las dimensiones oficiales están **PENDIENTES DE VALIDAR** en la normativa (Res. 4923/1994 y la ficha técnica MT 001). |
 | 6 | **Reentrenar el OCR** | Operación | Solo cuando `test_video` tenga ≥ 100 recortes (unos 500 revisados). Hasta entonces no hay forma de demostrar la mejora (docs/07). |
 
 ---
@@ -96,7 +102,7 @@ Ordenado por impacto esperado. Cada punto se mide antes y después con los mismo
 ### 4.1 Arquitectura
 
 ADR-015 ya evaluó esta opción ("Opción 1: web local") y fijó sus condiciones de seguridad. Se redacta un **ADR-016**
-que la adopta y **sustituye a la GUI PySide6** (decisión del usuario): la app de escritorio se retira (spec 069) en cuanto
+que la adopta y **sustituye a la GUI PySide6** (decisión del usuario): la app de escritorio se retira (spec 073) en cuanto
 la web cubra sus funciones. Así el proyecto queda con una sola interfaz gráfica, la web, más la CLI.
 
 ```
@@ -152,7 +158,7 @@ forma real y el cliente TypeScript se genera solo.
 
 ### 4.4 Modo demo sintético (para diseñar, probar y enseñar)
 
-Spec **065**: `lector web --demo` arranca con una BD temporal llena de avistamientos **sintéticos**: placas falsas con
+Spec **069**: `lector web --demo` arranca con una BD temporal llena de avistamientos **sintéticos**: placas falsas con
 formato colombiano. `src/` no puede importar `training/` (son proyectos separados), así que la spec decide entre dos
 opciones: generar los recortes una vez con `training/ocr/ocr_training/synthetic_plates.py` y versionarlos como
 recursos de demo, o portar a `src/` un generador mínimo. Sirve para:
@@ -170,7 +176,7 @@ demás es trabajo del proyecto, con el ciclo de specs.
 2. **Comprobaciones antes de integrar (Claude):** formato de la exportación, versión de React y librerías que añade,
    y términos de uso del código generado, para poder publicarlo bajo AGPL-3.0. Todo esto está **NO VERIFICADO** hasta
    ver la exportación real.
-3. **Integración (spec 066):** el código entra en `frontend/` en su rama. Se conservan componentes y estilos; los datos
+3. **Integración (spec 070):** el código entra en `frontend/` en su rama. Se conservan componentes y estilos; los datos
    de muestra se sustituyen por un cliente tipado, generado a partir del OpenAPI de la API (§4.3; herramienta a
    verificar en npm, p. ej. `openapi-typescript`). Nada de `fetch` repartido por los componentes.
 4. **Revisión:** accesibilidad (contraste AA, todo usable con teclado, atajos C/E/R/B/S); sin CDN ni fuentes remotas;
@@ -194,13 +200,13 @@ demás es trabajo del proyecto, con el ciclo de specs.
 | Spec | Contenido |
 |---|---|
 | ADR-016 + SEG-28 | Decisión web local y reglas de seguridad (las redacta Claude) |
-| **062** API de lectura | App factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop`; tests con `TestClient` |
-| **063** API de acciones | Procesar en un hilo + SSE + cancelación, decisiones, export, purga, métricas |
-| **064** Comando `lector web` | Arranque en 127.0.0.1, puerto libre, abrir el navegador con el token, servir `dist/` |
-| **065** Modo demo sintético | BD temporal y recortes sintéticos; genera los JSON de muestra para Figma Make |
-| **066** Importar el frontend de Figma Make | `frontend/` compilable, cliente tipado, sin datos de muestra en producción |
-| **067** Pantallas conectadas y pruebas E2E | Pruebas de componentes (Vitest) y E2E (Playwright) contra el modo demo |
-| **068** Publicación | README (inicio rápido con `lector web`, capturas del modo demo), nivel F con `bind` loopback |
+| **066** API de lectura | App factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop`; tests con `TestClient` |
+| **067** API de acciones | Procesar en un hilo + SSE + cancelación, decisiones, export, purga, métricas |
+| **068** Comando `lector web` | Arranque en 127.0.0.1, puerto libre, abrir el navegador con el token, servir `dist/` |
+| **069** Modo demo sintético | BD temporal y recortes sintéticos; genera los JSON de muestra para Figma Make |
+| **070** Importar el frontend de Figma Make | `frontend/` compilable, cliente tipado, sin datos de muestra en producción |
+| **071** Pantallas conectadas y pruebas E2E | Pruebas de componentes (Vitest) y E2E (Playwright) contra el modo demo |
+| **072** Publicación | README (inicio rápido con `lector web`, capturas del modo demo), nivel F con `bind` loopback |
 
 Herramientas nuevas que pide la web: **Node.js LTS** (decisión del usuario: se exige). El inicio rápido añade
 `npm ci && npm run build` en `frontend/`; la versión de Node se fija en `frontend/.nvmrc` y en `engines` de
@@ -208,7 +214,7 @@ Herramientas nuevas que pide la web: **Node.js LTS** (decisión del usuario: se 
 
 | Spec | Contenido |
 |---|---|
-| **069** Retirar la GUI PySide6 | Solo cuando la web cubra las funciones de la GUI (§4.6): se eliminan la capa `gui`, el script `lector-gui`, la dependencia PySide6 y sus tests; ADR-015 queda sustituido por ADR-016; `ARQUITECTURA.md`, SEG-27 y README se actualizan. La ventana OpenCV de revisión de la CLI (`lector review`) se mantiene. |
+| **073** Retirar la GUI PySide6 | Solo cuando la web cubra las funciones de la GUI (§4.6): se eliminan la capa `gui`, el script `lector-gui`, la dependencia PySide6 y sus tests; ADR-015 queda sustituido por ADR-016; `ARQUITECTURA.md`, SEG-27 y README se actualizan. La ventana OpenCV de revisión de la CLI (`lector review`) se mantiene. |
 
 ### 4.8 Docker (alternativa de despliegue)
 
@@ -235,8 +241,8 @@ Objetivo: `docker compose up` y abrir el navegador, sin instalar uv, Python ni N
 
 | Spec | Contenido |
 |---|---|
-| **070** `KeyProvider` de archivo (Docker secret) | `lector key init --to-file <ruta>` y lectura desde `/run/secrets/…` cuando se configura; tests de permisos y de que la clave nunca se registra |
-| **071** Imagen y compose | `Dockerfile` multi-etapa, `compose.yaml` (perfiles `cpu`/`gpu`), volúmenes, publicación en loopback, `HEALTHCHECK`, `.dockerignore` que excluye `data/`, `videos/`, `models/`, `CLAUDE.md`, `CONTEXT.md` |
+| **074** `KeyProvider` de archivo (Docker secret) | `lector key init --to-file <ruta>` y lectura desde `/run/secrets/…` cuando se configura; tests de permisos y de que la clave nunca se registra |
+| **075** Imagen y compose | `Dockerfile` multi-etapa, `compose.yaml` (perfiles `cpu`/`gpu`), volúmenes, publicación en loopback, `HEALTHCHECK`, `.dockerignore` que excluye `data/`, `videos/`, `models/`, `CLAUDE.md`, `CONTEXT.md` |
 
 
 ---
@@ -246,15 +252,15 @@ Objetivo: `docker compose up` y abrir el navegador, sin instalar uv, Python ni N
 | Paso | Qué | Bloquea a |
 |---|---|---|
 | 0 | ~~Decidir la retención de recortes~~: hecho, 90 días (§2.2) | — |
-| 1 | **055** exportar dataset de legibilidad (antes del 2026-12-25) | 057 |
+| 1 | **055** exportar dataset de legibilidad (antes del 2026-12-25) | 062 |
 | 2 | Anotar un tramo con verdad (docs/07 Fase 1) + guía de captura | 3 |
 | 3 | Calibrar perfiles (docs/07 Fase 2) y **060** parada temprana | — |
-| 4 | **056** → **057** → **058** → **059**: filtro de legibilidad | web (galería "solo legibles") |
-| 5 | ADR-016, SEG-28, **062**, **063**, **064**, **065** (backend y demo) | 066 |
-| 6 | Diseño en Figma Make con el Anexo A (usuario); integración **066** y **067** | 068 |
-| 7 | **068** publicación y **061** tipo de vehículo | — |
-| 8 | **069** retirar la GUI PySide6 (cuando la web la iguale) | — |
-| 9 | **070** clave desde archivo y **071** Docker | — |
+| 4 | **059** → **062** → **063** → **064**: filtro de legibilidad | web (galería "solo legibles") |
+| 5 | ADR-016, SEG-28, **066**, **067**, **068**, **069** (backend y demo) | 070 |
+| 6 | Diseño en Figma Make con el Anexo A (usuario); integración **070** y **071** | 072 |
+| 7 | **072** publicación y **065** tipo de vehículo | — |
+| 8 | **073** retirar la GUI PySide6 (cuando la web la iguale) | — |
+| 9 | **074** clave desde archivo y **075** Docker | — |
 
 Los pasos 4 y 5 pueden ir en paralelo: no comparten archivos.
 
@@ -263,7 +269,7 @@ Los pasos 4 y 5 pueden ir en paralelo: no comparten archivos.
 ## 6. Decisiones del usuario (2026-09-27)
 
 1. **Retención de recortes:** 90 días de forma temporal (aplicado; §2.2).
-2. **Interfaz:** se lleva todo a la **web** y se **retira la app de escritorio** PySide6 (spec 069, cuando la web la
+2. **Interfaz:** se lleva todo a la **web** y se **retira la app de escritorio** PySide6 (spec 073, cuando la web la
    iguale).
 3. **Frontend:** se **exige Node.js** para compilarlo. Además, **Docker** como alternativa de despliegue (§4.8).
 4. **Figma Make:** el plan del usuario **permite exportar el código**. Falta comprobar el formato exacto de la
@@ -309,8 +315,9 @@ Barra superior con el nombre, navegación (Procesar, Lecturas, Métricas, Histor
 
 PANTALLA 1 - PROCESAR
 - Lista de videos disponibles (nombre, duración, tamaño) con una zona para elegir uno.
-- Selector de escenario con tres tarjetas: "Parqueadero o entrada" (vehículos lentos o detenidos, cerca de la
-  cámara), "Calle con tráfico lento" (tráfico urbano normal), "Vía rápida" (vehículos a mayor velocidad).
+- Selector de escenario con cuatro tarjetas agrupadas por modo de cámara. Cámara fija: "Parqueadero o entrada"
+  (vehículos lentos o detenidos, cerca de la cámara), "Calle con tráfico lento" (tráfico urbano normal), "Vía rápida"
+  (vehículos a mayor velocidad). Cámara en vehículo: "Patrulla" (la cámara se mueve con el vehículo).
 - Botón principal "Procesar".
 - Durante el proceso: barra de progreso, tiempo del video procesado / duración, contadores en vivo (vehículos,
   placas leídas, velocidad "1,2x tiempo real") y botón "Cancelar".
@@ -358,9 +365,9 @@ REQUISITOS TÉCNICOS DEL CÓDIGO
   Sighting { id: number; runId: number; vehicleType: "car" | "motorcycle" | "bus" | "truck";
     plateText: string; ocrText: string; confidence: number; agreement: number; numReadings: number;
     status: "unverified" | "confirmed" | "corrected" | "rejected" | "illegible";
-    reasons: string[]; hiddenLowQuality: boolean; firstSeenMs: number; lastSeenMs: number;
+    reasons: string[]; hiddenLowQuality: boolean; duplicates: number; firstSeenMs: number; lastSeenMs: number;
     cropUrl: string; reviewedAt: string | null }
-  Run { id: number; video: string; profile: "parqueadero" | "calle_lenta" | "calle_rapida";
+  Run { id: number; video: string; profile: string; mode: "estatico" | "movil";
     startedAt: string; durationMs: number; speedFactor: number; vehicles: number; confirmed: number;
     unverified: number; status: "running" | "completed" | "failed" }
   Decision { action: "confirm" | "correct" | "reject" | "illegible"; correctedText?: string }

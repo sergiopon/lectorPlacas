@@ -61,6 +61,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 053 | [GUI: botón y filtro "Placa borrosa"](053-gui-placa-borrosa.md) | 046–048, 052 | Implementada |
 | 054 | [Entrenamiento OCR: mezcla con reparto congelado y `test_video`](054-mezcla-congelada-test-video.md) | 035, 039 | Implementada |
 | 055 | [Exportar el dataset de legibilidad](055-exportar-dataset-legibilidad.md) | 035, 052 | Implementada |
+| 056 | [Modos de cámara en la configuración](056-modos-de-camara.md) | 006, 016, 028 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 
@@ -128,4 +129,5 @@ Decisión del usuario (2026-09-27): opción de revisión "placa borrosa" → spe
 | 2026-09-27 | ADR-007, docs/02, CONTEXT, 004 → 050 | Paso 5b de la consolidación y razón `CORRECTION_CONFLICT`; el caso moto de `test_vehicle_type_disambiguates_correction` (spec 004) cambia de expectativa | Auditoría de confirmadas: 2 de 13 erróneas por corregir un `LLLDDD` válido a `LLLDDL` en tracks marcados como moto (docs/07 §1.1) |
 | 2026-09-27 | docs/02 §6, ADR-006, 023/024 → 051 | `TrackRegistry` conserva las N lecturas de mayor (ancho de placa, nitidez) y gana `is_full`; `test_reading_limit_and_best_crop` (023) y el conteo de llamadas al lector de `test_happy_path_confirms_plate` (024) cambian de expectativa | Se votaban solo las primeras lecturas, de frames lejanos y borrosos (docs/07 §1, hallazgo 4; CER real 0,1615) |
 | 2026-09-27 | 052 | Añade `tests/unit/application/test_ports.py` a los archivos (su aserción de `ReviewAction` debe incluir `illegible`); el fallo de `BEGIN IMMEDIATE` también se convierte en `RepositoryError` y un fallo de `ROLLBACK` no oculta el original | Omisión de la spec detectada por el implementador; hallazgo de la revisión (BD bloqueada por la conexión del hilo de la GUI) |
+| 2026-10-03 | docs/00 (RF-03, RF-04, RF-37), SEG-29, ADR-017, ADR-004, docs/03, ARQUITECTURA §8–§9, CONTEXT, docs/08 (renumerado), docs/09 | Enfoque nuevo (placas cercanas y legibles; modos estático y móvil, solo archivos de video); las specs 056–071 del plan 08 pasan a 056–075; `min_plate_width_px` 32 se aplica en la spec 057, no en la 056 | Decisión del usuario 2026-10-03 y diseño Opus (docs/09) |
 | 2026-09-27 | config/models.yaml, docs/03 §5, ATRIBUCIONES | Los 3 modelos propios pasan de `url: null` a los assets del Release `models-v1` de GitHub; atribuciones completas (versiones y fechas verificadas en los datos descargados) | Publicación del repositorio: quien lo clone debe poder ejecutar `lector models fetch` |
