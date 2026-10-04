@@ -32,6 +32,7 @@ INPUT_SIZE_STEP: Final[int] = 32
 EXTENSION_MIN_LENGTH: Final[int] = 2
 EXTENSION_MAX_LENGTH: Final[int] = 10
 TARGET_FPS_MAX: Final[float] = 120.0
+DEDUP_WINDOW_MS_MAX: Final[int] = 600_000
 RETENTION_MAX_DAYS: Final[int] = 3650
 
 
@@ -275,6 +276,7 @@ class ProfileConfig(StrictModel):
     max_plate_vehicle_ratio: float
     roi: tuple[float, float, float, float]
     early_stop: bool
+    dedup_window_ms: int
 
     @field_validator("target_fps")
     @classmethod
@@ -301,6 +303,14 @@ class ProfileConfig(StrictModel):
     def _validate_thresholds(cls, value: float, info: ValidationInfo) -> float:
         """Exige umbrales en [0, 1]."""
         return _unit_interval(value, _field_name(info))
+
+    @field_validator("dedup_window_ms")
+    @classmethod
+    def _validate_dedup_window_ms(cls, value: int) -> int:
+        """Exige una ventana de duplicados en [0, 600000] ms."""
+        if not 0 <= value <= DEDUP_WINDOW_MS_MAX:
+            raise ValueError(f"dedup_window_ms debe estar en [0, 600000]: {value}")
+        return value
 
     @field_validator("min_sharpness")
     @classmethod

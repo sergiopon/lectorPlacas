@@ -223,6 +223,7 @@ def build_processing_settings(name: str, profile: ProfileConfig) -> ProcessingSe
         max_plate_vehicle_ratio=profile.max_plate_vehicle_ratio,
         roi=profile.roi,
         early_stop=profile.early_stop,
+        dedup_window_ms=profile.dedup_window_ms,
     )
 
 

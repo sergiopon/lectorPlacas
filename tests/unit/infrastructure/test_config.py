@@ -227,3 +227,15 @@ def test_real_config_early_stop(tmp_path: Path) -> None:
     del data["profiles"]["calle_lenta"]["early_stop"]
     with pytest.raises(ConfigurationError):
         load_config(write(tmp_path, data))
+
+
+def test_real_config_dedup_window(tmp_path: Path) -> None:
+    config = load_config(REAL)
+    for profile_name in ["parqueadero", "calle_lenta", "calle_rapida", "patrulla"]:
+        assert config.profiles[profile_name].dedup_window_ms == 30000
+    for value in (600001, -1):
+        data = base_data()
+        data["profiles"]["calle_lenta"]["dedup_window_ms"] = value
+        with pytest.raises(ConfigurationError) as info:
+            load_config(write(tmp_path, data))
+        assert f"dedup_window_ms debe estar en [0, 600000]: {value}" in str(info.value)

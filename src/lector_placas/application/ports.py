@@ -578,6 +578,20 @@ class PlateRepository(Protocol):
         """
         ...
 
+    def mark_duplicates(self, pairs: Sequence[tuple[int, int]]) -> None:
+        """Marca avistamientos como duplicados de otro de la misma corrida.
+
+        Precondiciones:
+            BD abierta; cada par es `(sighting_id del duplicado, sighting_id del conservado)`.
+
+        Postcondiciones:
+            `duplicate_of` del duplicado queda igual al conservado, en una sola transacción.
+
+        Raises:
+            RepositoryError: si falla la escritura (no queda ningún cambio).
+        """
+        ...
+
     def close(self) -> None:
         """Cierra la base de datos.
 
@@ -911,6 +925,7 @@ class SightingQuery:
     run_id: int | None = None
     created_from: datetime | None = None
     created_to: datetime | None = None
+    include_duplicates: bool = False
 
     def __post_init__(self) -> None:
         """Valida el prefijo, el identificador de corrida y el rango de fechas.

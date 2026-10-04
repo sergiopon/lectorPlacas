@@ -29,6 +29,7 @@ from lector_placas.domain.errors import EncryptionError, RepositoryError, Sighti
 from lector_placas.infrastructure.crypto import KeyPurpose, derive_key
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from lector_placas.application.ports import KeyProvider
@@ -554,6 +555,27 @@ class SqlCipherPlateRepository:
         except sqlcipher.Error as e:
             raise RepositoryError("run_frame_sizes falló") from e
         return {int(run_id): (int(width), int(height)) for run_id, width, height in rows}
+
+    def mark_duplicates(self, pairs: Sequence[tuple[int, int]]) -> None:
+        """Marca avistamientos como duplicados de otro, en una sola transacción.
+
+        Args:
+            pairs: pares `(sighting_id del duplicado, sighting_id del conservado)`.
+
+        Raises:
+            RepositoryError: si la escritura falla; no queda ningún cambio.
+        """
+        if not pairs:
+            return
+        try:
+            with self._connection:
+                for duplicate, kept in pairs:
+                    self._connection.execute(
+                        "UPDATE sightings SET duplicate_of = ? WHERE sighting_id = ?",
+                        (kept, duplicate),
+                    )
+        except sqlcipher.Error as e:
+            raise RepositoryError("mark_duplicates falló") from e
 
     def close(self) -> None:
         """Cierra la conexión a la base de datos, de forma idempotente."""
