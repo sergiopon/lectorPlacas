@@ -15,8 +15,8 @@ Verificado en el JSON de PyPI el 2026-10-03:
 |---|---|---|---|
 | fastapi | **0.141.1** (2026-07-29) | MIT | Desde **0.142.0** (2026-09-29) exige `opentelemetry-api>=1.44.0` como dependencia obligatoria. Se fija 0.141.1 para no meter una API de telemetría en el runtime. |
 | uvicorn | 0.54.0 | BSD-3-Clause | Dependencias: `click`, `h11`. Sin extras `standard`. |
-| starlette | 1.7.0 (transitiva) | BSD-3-Clause | FastAPI 0.141.1 pide `starlette>=0.46.0`; la compatibilidad con 1.7.0 se comprueba con la suite de la spec 066 (NO VERIFICADO hasta entonces). |
-| httpx | 0.28.1 (solo dev) | BSD-3-Clause | Lo necesita `fastapi.testclient.TestClient`. |
+| starlette | 1.7.0 (transitiva) | BSD-3-Clause | FastAPI 0.141.1 pide `starlette>=0.46.0`. Probado el 2026-10-03 con las ruedas oficiales: rutas `async`, middleware HTTP, `lifespan` (en el mismo hilo que las peticiones) y `StreamingResponse` funcionan. |
+| httpx2 | 2.13.1 (solo dev) | BSD-3-Clause | Lo usa `fastapi.testclient.TestClient`; con `httpx` 0.28.1 Starlette 1.7 emite `StarletteDeprecationWarning`. Arrastra `httpcore2` 2.13.1 (BSD-3-Clause) y `truststore` 0.10.4 (MIT). |
 
 ## Decisión
 1. **Capa `web`** (`src/lector_placas/web/`): tercer composition root. Nadie la importa; de `cli` solo importa

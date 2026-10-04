@@ -35,9 +35,11 @@ perfiles, corridas, avistamientos, recorte y resumen. No hay todavía acciones (
 
 ## Dependencias externas (verificadas en el JSON de PyPI el 2026-10-03, ADR-016)
 - `[project] dependencies`: añadir `"fastapi==0.141.1"` y `"uvicorn==0.54.0"`.
-- `[dependency-groups] dev`: añadir `"httpx==0.28.1"`.
-- Ejecutar `uv lock` y después `uv sync --locked`. No fijar `starlette` directamente: la resuelve `uv lock`. Si la suite
-  falla por una incompatibilidad de FastAPI 0.141.1 con la `starlette` resuelta, **detente y reporta** la salida.
+- `[dependency-groups] dev`: añadir `"httpx2==2.13.1"` (cliente que usa `fastapi.testclient.TestClient` con Starlette
+  1.7; con `httpx` Starlette 1.7 emite una advertencia de obsolescencia).
+- Ejecutar `uv lock` y después `uv sync --locked`. No fijar `starlette` directamente: la resuelve `uv lock` (esperado: 1.7.0;
+  el orquestador comprobó el 2026-10-03 que FastAPI 0.141.1 importa y sirve rutas, middleware, lifespan y SSE con
+  Starlette 1.7.0 y `httpx2` 2.13.1). Si la suite falla por una incompatibilidad, **detente y reporta** la salida.
 
 ## Interfaces y tipos involucrados
 
