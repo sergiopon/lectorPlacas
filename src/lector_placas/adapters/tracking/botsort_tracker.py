@@ -51,6 +51,7 @@ class TrackerSettings:
         high_conf_det_threshold: umbral que separa detecciones de alta y baja confianza.
         cmc_method: método de compensación de movimiento de cámara.
         cmc_downscale: factor de reducción de la imagen para el cálculo de CMC.
+        enable_cmc: activa la compensación de movimiento de cámara.
     """
 
     lost_track_buffer: int
@@ -63,6 +64,7 @@ class TrackerSettings:
     high_conf_det_threshold: float
     cmc_method: str
     cmc_downscale: int
+    enable_cmc: bool = True
 
 
 def to_supervision(detections: Sequence[VehicleDetection]) -> sv.Detections:
@@ -119,7 +121,7 @@ def from_supervision(tracked: sv.Detections) -> list[TrackedVehicle]:
 
 
 class BotSortTracker:
-    """Tracker BoT-SORT con CMC siempre activo, detrás del puerto `Tracker`."""
+    """Tracker BoT-SORT, con la CMC según `TrackerSettings.enable_cmc`, detrás del puerto `Tracker`."""  # noqa: E501
 
     def __init__(self, settings: TrackerSettings) -> None:
         """Inicializa el tracker subyacente con los parámetros recibidos.
@@ -136,7 +138,7 @@ class BotSortTracker:
             minimum_iou_threshold_second_assoc=settings.minimum_iou_threshold_second_assoc,
             minimum_iou_threshold_unconfirmed_assoc=settings.minimum_iou_threshold_unconfirmed_assoc,
             high_conf_det_threshold=settings.high_conf_det_threshold,
-            enable_cmc=True,
+            enable_cmc=settings.enable_cmc,
             cmc_method=cast("CmcMethod", settings.cmc_method),
             cmc_downscale=settings.cmc_downscale,
             instant_first_frame_activation=True,

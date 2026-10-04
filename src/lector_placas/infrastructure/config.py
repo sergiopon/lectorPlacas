@@ -258,6 +258,8 @@ class TrackerConfig(StrictModel):
 class ProfileConfig(StrictModel):
     """Parámetros de proceso de un perfil de escenario (ADR-006)."""
 
+    mode: Literal["estatico", "movil"]
+    camera_motion_compensation: bool
     target_fps: float
     max_readings_per_track: int
     track_finalize_after_ms: int
@@ -376,6 +378,11 @@ class AppConfig(StrictModel):
         """Comprueba el perfil por defecto, la retención y los objetos de dominio."""
         if self.default_profile not in self.profiles:
             raise ValueError(f"default_profile desconocido: {self.default_profile}")
+        for profile_name, profile_config in self.profiles.items():
+            if profile_config.mode == "movil" and not profile_config.camera_motion_compensation:
+                raise ValueError(
+                    f"el perfil {profile_name} es movil y exige camera_motion_compensation: true"
+                )
         if not 1 <= self.retention.crops_days <= self.retention.records_days <= RETENTION_MAX_DAYS:
             raise ValueError(
                 "retención inválida: se espera 1 <= crops_days <= records_days <= 3650"

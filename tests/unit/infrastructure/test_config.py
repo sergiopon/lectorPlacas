@@ -89,3 +89,77 @@ def test_invalid_yaml_and_missing_file(tmp_path: Path) -> None:
 
 def test_root_dir_is_parent_of_config_dir(tmp_path: Path) -> None:
     assert load_config(write(tmp_path, base_data())).root_dir == tmp_path.resolve()
+
+
+def test_real_config_has_four_profiles_with_modes() -> None:
+    config = load_config(REAL)
+    profile_names = list(config.profiles)
+    assert profile_names == ["parqueadero", "calle_lenta", "calle_rapida", "patrulla"]
+    for name in ["parqueadero", "calle_lenta", "calle_rapida"]:
+        assert config.profiles[name].mode == "estatico"
+    assert config.profiles["patrulla"].mode == "movil"
+    for name in profile_names:
+        assert config.profiles[name].camera_motion_compensation is True
+
+
+def test_patrulla_profile_values() -> None:
+    config = load_config(REAL)
+    profile = config.profiles["patrulla"]
+    assert profile.target_fps == 30
+    assert profile.max_readings_per_track == 6
+    assert profile.track_finalize_after_ms == 1000
+    assert profile.min_readings == 2
+    assert profile.confirm_threshold == 0.90
+    assert profile.min_agreement == 0.60
+    assert profile.min_plate_width_px == 20
+    assert profile.min_sharpness == 0.0
+    assert profile.max_ocr_per_frame == 8
+    assert profile.vehicle_crop_margin == 0.10
+
+
+def test_mobile_profile_requires_cmc(tmp_path: Path) -> None:
+    data = base_data()
+    data["profiles"]["patrulla"]["camera_motion_compensation"] = False
+    with pytest.raises(ConfigurationError) as exc_info:
+        load_config(write(tmp_path, data))
+    assert "el perfil patrulla es movil y exige camera_motion_compensation: true" in str(
+        exc_info.value
+    )
+
+
+def test_static_profile_may_disable_cmc(tmp_path: Path) -> None:
+    data = base_data()
+    data["profiles"]["calle_lenta"]["camera_motion_compensation"] = False
+    config = load_config(write(tmp_path, data))
+    assert config.profiles["calle_lenta"].camera_motion_compensation is False
+
+
+def test_invalid_mode_raises(tmp_path: Path) -> None:
+    data = base_data()
+    data["profiles"]["calle_lenta"]["mode"] = "otro"
+    with pytest.raises(ConfigurationError):
+        load_config(write(tmp_path, data))
+
+
+def test_missing_mode_or_cmc_raises(tmp_path: Path) -> None:
+    data = base_data()
+    del data["profiles"]["calle_lenta"]["mode"]
+    with pytest.raises(ConfigurationError):
+        load_config(write(tmp_path, data))
+
+    data = base_data()
+    del data["profiles"]["calle_lenta"]["camera_motion_compensation"]
+    with pytest.raises(ConfigurationError):
+        load_config(write(tmp_path, data))
+
+
+def test_first_offending_profile_is_named(tmp_path: Path) -> None:
+    data = base_data()
+    data["profiles"]["patrulla"]["camera_motion_compensation"] = False
+    data["profiles"]["patrulla_extra"] = copy.deepcopy(data["profiles"]["patrulla"])
+    data["profiles"]["patrulla_extra"]["camera_motion_compensation"] = False
+    with pytest.raises(ConfigurationError) as exc_info:
+        load_config(write(tmp_path, data))
+    error_str = str(exc_info.value)
+    assert "el perfil patrulla es movil" in error_str
+    assert "patrulla_extra" not in error_str

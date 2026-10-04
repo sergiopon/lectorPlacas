@@ -42,6 +42,8 @@ tracker:
 default_profile: calle_lenta
 profiles:
   parqueadero:
+    mode: estatico
+    camera_motion_compensation: true
     target_fps: 10
     max_readings_per_track: 8
     track_finalize_after_ms: 3000
@@ -53,6 +55,8 @@ profiles:
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
   calle_lenta:
+    mode: estatico
+    camera_motion_compensation: true
     target_fps: 15
     max_readings_per_track: 8
     track_finalize_after_ms: 2000
@@ -64,6 +68,21 @@ profiles:
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
   calle_rapida:
+    mode: estatico
+    camera_motion_compensation: true
+    target_fps: 30
+    max_readings_per_track: 6
+    track_finalize_after_ms: 1000
+    min_readings: 2
+    confirm_threshold: 0.90
+    min_agreement: 0.60
+    min_plate_width_px: 20
+    min_sharpness: 0.0
+    max_ocr_per_frame: 8
+    vehicle_crop_margin: 0.10
+  patrulla:
+    mode: movil
+    camera_motion_compensation: true
     target_fps: 30
     max_readings_per_track: 6
     track_finalize_after_ms: 1000
