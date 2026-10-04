@@ -20,7 +20,7 @@ test('capturas del modo demo', async ({ page }) => {
   await page.screenshot({ path: '../docs/img/web-lecturas.png', animations: 'disabled' })
 
   await page.getByRole('navigation').getByRole('button', { name: 'Procesar' }).click()
-  await page.getByRole('radio', { name: /demo_entrada\.mp4/ }).click()
+  await page.getByRole('radio', { name: /demo_parqueadero\.webm/ }).click()
   await settle(page)
   await page.screenshot({ path: '../docs/img/web-procesar.png', animations: 'disabled' })
 

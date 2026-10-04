@@ -43,19 +43,28 @@ test('corregir una placa', async ({ page }) => {
   await expect(page.getByRole('tab', { name: /Corregidas/ })).toContainText('6')
 })
 
-test('ir al video sin archivo', async ({ page }) => {
+test('ir al video', async ({ page }) => {
   await openReadings(page)
   await page.locator('button[data-id]').first().click()
   await page.keyboard.press('v')
-  await expect(page.getByText('El video original no está disponible')).toBeVisible()
-  await page.keyboard.press('Escape')
+  const video = page.locator('dialog video')
+  await expect(video).toBeVisible()
+  await expect
+    .poll(async () => video.evaluate((el) => (el as HTMLVideoElement).readyState), { timeout: 10_000 })
+    .toBeGreaterThanOrEqual(1)
   await expect(page.getByText('El video original no está disponible')).toBeHidden()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('dialog')).toHaveCount(0)
+  await page.keyboard.press('f')
+  const img = page.locator('dialog img')
+  await expect.poll(async () => img.evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await page.keyboard.press('Escape')
 })
 
 test('procesar un video de demo', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Procesar', exact: true }).first().click()
-  await page.getByRole('radio', { name: /demo_entrada\.mp4/ }).click()
+  await page.getByRole('radio', { name: /demo_parqueadero\.webm/ }).click()
   await page.getByRole('radio', { name: /Parqueadero o entrada/ }).click()
   await page.getByRole('button', { name: 'Procesar', exact: true }).last().click()
   await expect(page.getByRole('heading', { name: 'Resultado' })).toBeVisible({ timeout: 20_000 })
