@@ -366,6 +366,7 @@ class PlateRepository(Protocol):
     def log_event(self, event: AuditEvent, occurred_at: datetime, detail: str) -> None: ...
     def run_video_hashes(self) -> dict[int, str]: ...   # spec 055: run_id → video_sha256 de todas las corridas
     def run_frame_sizes(self) -> dict[int, tuple[int, int]]: ...   # spec 059: run_id → (width, height) ya rotados
+    def mark_duplicates(self, pairs: Sequence[tuple[int, int]]) -> None: ...   # spec 061: (duplicado, conservado), una transacción
     def close(self) -> None: ...
 
 class CropStore(Protocol):
@@ -467,6 +468,7 @@ class SightingQuery:                    # validación en __post_init__ → Inval
     run_id: int | None = None           # >= 1
     created_from: datetime | None = None   # con tzinfo; inclusivo
     created_to: datetime | None = None     # con tzinfo; exclusivo; > created_from si ambos
+    include_duplicates: bool = False       # spec 061: por defecto excluye duplicate_of no nulo
 
 class SightingBrowser(Protocol):
     def search_sightings(self, query: SightingQuery, limit: int, offset: int) -> list[SightingRecord]: ...
@@ -539,7 +541,10 @@ class TrackRegistry:
     @property
     def active_count(self) -> int: ...
     def observe(self, tracked: Sequence[TrackedVehicle], timestamp_ms: int) -> None: ...
-    def needs_reading(self, track_id: int) -> bool: ...   # spec 051: True <=> el track está activo
+    def needs_reading(self, track_id: int) -> bool: ...   # spec 051: True <=> el track está activo; spec 060: y no resuelto
+    def readings(self, track_id: int) -> tuple[PlateReading, ...]: ...   # spec 060, orden (timestamp_ms, frame_index)
+    def vehicle_type(self, track_id: int) -> VehicleType: ...            # spec 060, tipo dominante actual
+    def mark_resolved(self, track_id: int) -> None: ...                  # spec 060
     def is_full(self, track_id: int) -> bool: ...         # spec 051: activo y con max_readings_per_track lecturas
     def add_reading(self, reading: PlateReading, crop: ImageBGR) -> None: ...
         # spec 051: lleno → reemplaza a la peor si (ancho de placa, nitidez) es estrictamente mayor;
@@ -562,6 +567,12 @@ class ProcessingSettings:
     near_min_width_frac: float = 0.0                    # [0, 0.2]; spec 057
     max_plate_vehicle_ratio: float = 1.0                # (0, 1]; spec 057
     roi: tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)   # 0 <= x1 < x2 <= 1, 0 <= y1 < y2 <= 1
+    early_stop: bool = False                            # spec 060
+    dedup_window_ms: int = 0                            # spec 061: [0, 600000]; 0 desactiva
+
+# application/duplicates.py (spec 061): DuplicateCandidate(sighting_id, plate_text, status, confidence,
+#   first_seen_ms, last_seen_ms); find_duplicates(candidates, window_ms) -> list[(duplicado, conservado)]
+#   conservado = min por (no CONFIRMED, -confidence, sighting_id); grupo por texto exacto y hueco <= window_ms
 
 # application/proximity.py (spec 057): FRAME_EDGE_MARGIN_PX = 2; effective_min_width(w, h, min_px, frac) -> int
 #   = ceil(round(max(min_px, frac * max(w, h)), 6)); center_in_roi(box, roi, w, h) -> bool;

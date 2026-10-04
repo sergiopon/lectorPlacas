@@ -64,6 +64,8 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 056 | [Modos de cámara en la configuración](056-modos-de-camara.md) | 006, 016, 028 | Lista |
 | 057 | [Filtro de cercanía antes de leer](057-filtro-cercania.md) | 051, 056 | Lista |
 | 059 | [Calidad del mejor recorte, `duplicate_of` y esquema v3](059-calidad-y-esquema-v3.md) | 052, 055, 057 | Lista |
+| 060 | [Parada temprana por track](060-parada-temprana.md) | 051, 056, 057 | Lista |
+| 061 | [Duplicados de la misma placa en una corrida](061-duplicados-en-corrida.md) | 041, 059, 060 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 
