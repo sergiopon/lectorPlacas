@@ -66,7 +66,10 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 059 | [Calidad del mejor recorte, `duplicate_of` y esquema v3](059-calidad-y-esquema-v3.md) | 052, 055, 057 | Lista |
 | 060 | [Parada temprana por track](060-parada-temprana.md) | 051, 056, 057 | Lista |
 | 061 | [Duplicados de la misma placa en una corrida](061-duplicados-en-corrida.md) | 041, 059, 060 | Lista |
-| 066 | [Web: app FastAPI, seguridad local y API de lectura](066-web-api-lectura.md) | 041, 046, 056, 059, 061 | Lista |
+| 062 | [Entrenamiento del filtro de legibilidad](062-entrenar-filtro-legibilidad.md) | 055, 059 | Lista |
+| 063 | [Filtro de legibilidad en el pipeline](063-filtro-legibilidad-pipeline.md) | 057, 059, 062 | Lista |
+| 064 | [Vista "solo legibles" y métricas de lo oculto](064-vista-solo-legibles.md) | 038, 041, 061, 063 | Lista |
+| 066 | [Web: app FastAPI, seguridad local y API de lectura](066-web-api-lectura.md) | 041, 046, 056, 059, 061, 064 | Lista |
 | 067 | [Web: API de acciones](067-web-api-acciones.md) | 025, 026, 038, 040, 046, 066 | Lista |
 | 068 | [Web: comando `lector-web` y frontend compilado](068-web-comando-arranque.md) | 066, 067 | Lista |
 | 069 | [Web: modo demo sintético](069-web-modo-demo.md) | 059, 061, 066, 067, 068 | Lista |

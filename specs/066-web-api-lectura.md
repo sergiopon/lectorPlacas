@@ -7,7 +7,7 @@ perfiles, corridas, avistamientos, recorte y resumen. No hay todavía acciones (
 (spec 068).
 
 ## Depende de
-041, 046, 056, 059, 061.
+041, 046, 056, 059, 061, 064.
 
 ## Archivos rectores aplicables
 - ADR-016, reglas-seguridad.md SEG-28 (todas sus cláusulas), SEG-05, SEG-06, SEG-07, SEG-15, SEG-23, SEG-26.
@@ -81,7 +81,7 @@ frozen=True)` (`to_camel` de `pydantic.alias_generators`). Modelos (campos Pytho
   `hidden_low_quality: bool`, `duplicates: int`, `duplicate_of: int | None`, `first_seen_ms: int`, `last_seen_ms: int`,
   `crop_url: str | None`, `created_at: datetime`, `reviewed_at: datetime | None`.
 - `SightingPage`: `items: list[SightingOut]`, `total: int`, `page: int`, `page_size: int`.
-- `SummaryOut`: `pending: int`.
+- `SummaryOut`: `pending: int`, `hidden: int`.
 - `ErrorOut`: `detail: str`.
 
 ### `web/labels.py`
@@ -135,10 +135,10 @@ si no (o falta `token`) → JSON 403 `{"detail": "token inválido"}`.
 | `/api/videos` | `list[VideoOut]` (comportamiento 4) |
 | `/api/profiles` | `list[ProfileOut]` en el orden de `config.profiles`; `default` es `True` solo para `config.default_profile` |
 | `/api/runs?page=<n>` | `RunPage` con `page_size` 50: `browser.list_runs(50, (page - 1) * 50)`; `page` entero ≥ 1, por defecto 1 |
-| `/api/sightings?status=&q=&run=&duplicates=&page=` | `SightingPage` con `page_size` 48 (comportamiento 5) |
+| `/api/sightings?status=&q=&run=&duplicates=&hidden=&page=` | `SightingPage` con `page_size` 48 (comportamiento 5) |
 | `/api/sightings/{id}` | `SightingOut`, o 404 `{"detail": "avistamiento no encontrado"}` si `SightingNotFoundError` |
 | `/api/sightings/{id}/crop` | PNG (comportamiento 6) |
-| `/api/summary` | `SummaryOut(pending=browser.count_sightings(SightingQuery(status=ReviewStatus.UNVERIFIED)))` |
+| `/api/summary` | `SummaryOut(pending=count(SightingQuery(status=UNVERIFIED, low_quality="exclude")), hidden=count(SightingQuery(status=UNVERIFIED, low_quality="only")))` con `count = browser.count_sightings` |
 
 Parámetros inválidos (`page` < 1, no entero, `status` desconocido, `q` inválido, `run` < 1) → 422 `{"detail": "parámetro inválido"}`.
 Para ello se registra en la app un manejador de `RequestValidationError` que responde exactamente eso, y los endpoints
@@ -154,6 +154,7 @@ path=archivo.relative_to(config.root_dir).as_posix(), size_bytes=archivo.stat().
 - `status`: uno de `unverified`, `confirmed`, `corrected`, `rejected`, `illegible`, o ausente.
 - `q`: se convierte con `.upper()`; debe cumplir `^[A-Z0-9]{1,10}$`; se usa como `plate_prefix`.
 - `run`: entero ≥ 1 → `run_id`. `duplicates`: `true`/`false` (por defecto `false`) → `include_duplicates`.
+- `hidden`: `false` (por defecto) → `low_quality="exclude"`; `true` → `"only"`; `all` → `"include"`; otro valor → 422.
 - `items = browser.search_sightings(query, 48, (page - 1) * 48)`; `total = browser.count_sightings(query)`;
   `dups = browser.count_duplicates([r.sighting_id for r in items])`.
 - `SightingOut` desde un `SightingRecord`: `id = sighting_id`; `vehicle_type`, `status` y cada razón por `.value`;
@@ -241,8 +242,11 @@ Fixtures sintéticos. `tests/unit/web/conftest.py` define:
   `{"detail": "recorte no disponible"}`.
 - `test_runs_and_summary`: con una corrida de perfil `calle_lenta` iniciada con `VideoInfo(640, 480, 0, 10000, 10.0,
   "h264")` y terminada con `RunStats(10, 10, 4, 2, 1, 1, 5000, 10000)`, `GET /api/runs` da un item con `video: "Video 1"`, `speedFactor: 2.0`, `vehicles: 4`,
-  `mode` según el perfil de la corrida (`"estatico"` si es `calle_lenta`); `GET /api/summary` da `{"pending": n}` con el
-  número de `unverified` no duplicados.
+  `mode` según el perfil de la corrida (`"estatico"` si es `calle_lenta`); `GET /api/summary` da `{"pending": n, "hidden": m}` con
+  el número de `unverified` no duplicados sin y con razón `predicted_*`.
+- `test_hidden_filter`: con un avistamiento `unverified` con razón `predicted_illegible` y otro con `low_confidence`,
+  la lista por defecto trae solo el segundo; `hidden=true`, solo el primero (con `hiddenLowQuality: true`); `hidden=all`,
+  los dos; `hidden=x` da 422.
 
 `tests/integration/test_count_duplicates.py` (SQLCipher real):
 - `test_count_duplicates`: tres avistamientos; `mark_duplicates([(2, 1), (3, 1)])`; `count_duplicates([1, 2, 3])` es
@@ -252,7 +256,6 @@ Además, los tests de arquitectura modificados (comportamiento 9) pasan.
 
 ## Fuera de alcance
 - Acciones (procesar, decidir, exportar, purgar, métricas): spec 067. Arranque `lector-web` y estáticos: spec 068.
-- Filtro `hidden` de "ocultas por baja calidad": spec 064.
 
 ## Definition of Done
 - [ ] `uv lock` y `uv sync --locked` sin errores; `uv.lock` incluido en el cambio.
