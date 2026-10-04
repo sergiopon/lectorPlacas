@@ -1,7 +1,7 @@
 # Índice de specs
 
 Orden de implementación = orden numérico. Cada spec se envía a DeepSeek junto con `CONTEXT.md`.
-Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · **Implementada** · **Aprobada**.
+Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · **Implementada** · **Aprobada** · **Bloqueada** (con su motivo).
 
 | # | Spec | Depende de | Estado |
 |---|---|---|---|
@@ -70,12 +70,17 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 062 | [Entrenamiento del filtro de legibilidad](062-entrenar-filtro-legibilidad.md) | 055, 059 | Lista |
 | 063 | [Filtro de legibilidad en el pipeline](063-filtro-legibilidad-pipeline.md) | 057, 059, 062 | Lista |
 | 064 | [Vista "solo legibles" y métricas de lo oculto](064-vista-solo-legibles.md) | 038, 041, 061, 063 | Lista |
+| 065 | Tipo de vehículo por la forma de la placa | 013, 015, 057 | Por redactar (bloqueada: dimensiones oficiales sin verificar) |
 | 066 | [Web: app FastAPI, seguridad local y API de lectura](066-web-api-lectura.md) | 041, 046, 056, 059, 061, 064 | Lista |
 | 067 | [Web: API de acciones](067-web-api-acciones.md) | 025, 026, 038, 040, 046, 066 | Lista |
 | 068 | [Web: comando `lector-web` y frontend compilado](068-web-comando-arranque.md) | 066, 067 | Lista |
 | 069 | [Web: modo demo sintético](069-web-modo-demo.md) | 059, 061, 066, 067, 068 | Lista |
+| 070 | Importar el frontend de Figma Make | 066, 069 | Por redactar (bloqueada: falta la exportación) |
+| 071 | Pantallas conectadas y pruebas E2E | 070, 064 | Por redactar (bloqueada por 070) |
+| 072 | Publicación de la web | 068, 071 | Por redactar (bloqueada por 071) |
 | 073 | [Retirar la GUI PySide6](073-retirar-gui-pyside6.md) | 071 | Lista (solo cuando la web cubra la GUI) |
 | 074 | [Clave maestra desde un archivo (Docker secrets)](074-clave-desde-archivo.md) | 008, 028 | Lista |
+| 075 | Imagen Docker y compose | 068, 070, 074 | Por redactar (bloqueada: frontend e imágenes base sin verificar) |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 

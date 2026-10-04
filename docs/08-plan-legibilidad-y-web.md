@@ -3,6 +3,9 @@
 Estado: aprobado con decisiones del usuario (2026-09-27, §6). Continúa `docs/07-plan-mejora-lectura.md`. Cada bloque de código se especifica en su
 spec (055 en adelante) y se implementa con el ciclo habitual: spec, rama `feature/NNN-*`, compuertas, revisión y merge.
 
+> **Contrato vigente de la API:** specs 066 y 067 (rutas y campos exactos); esta tabla es el plan original.
+> El comando es el script `lector-web` (spec 068), no un subcomando de `lector`.
+>
 > **Renumeración (2026-10-03).** El nuevo enfoque (solo placas cercanas y legibles; modos de cámara estática y móvil,
 > `docs/09-enfoque-versatil.md`, ADR-017) añade las specs 056 (modos de cámara), 057 (filtro de cercanía), 058 (evaluación
 > con cercanía) y 061 (duplicados) y desplaza las demás. Los números de este documento ya están actualizados. Equivalencia
@@ -109,7 +112,7 @@ la web cubra sus funciones. Así el proyecto queda con una sola interfaz gráfic
 navegador (http://127.0.0.1:PUERTO)
    │  React + TypeScript (UI generada con Figma Make, compilada con Vite)
    ▼
-lector web  ──  FastAPI + Uvicorn, ligado SOLO a 127.0.0.1
+lector-web  ──  FastAPI + Uvicorn, ligado SOLO a 127.0.0.1
    │  capa nueva `web`: tercer composition root, nadie la importa
    │  (como `gui`, solo importa `lector_placas.cli.composition`)
    ▼
@@ -121,7 +124,7 @@ SQLCipher + recortes AES-GCM (sin cambios)
 - **Backend:** FastAPI + Uvicorn. En ADR-015 se consultaron en PyPI FastAPI 0.141.1 y Uvicorn 0.54.0 (2026-09-27); la
   spec vuelve a verificar las versiones antes de fijarlas.
 - **Procesamiento:** en un hilo con **su propia** conexión SQLCipher, igual que la GUI. El progreso se envía con
-  **Server-Sent Events** (`/api/runs/{id}/events`) y la cancelación con un `POST`.
+  **Server-Sent Events** (`/api/jobs/{jobId}/events`) y la cancelación con un `POST` (spec 067: el procesamiento es un *trabajo*; su `runId` se conoce al terminar).
 - **Guardia de red:** `block_network()` solo reemplaza `connect`/`create_connection`. Un servidor que escucha en
   loopback usa `bind`/`accept`, así que la guardia **no se relaja**. Hay que verificarlo con `strace` en el nivel F: el
   proceso no debe hacer ningún `connect` saliente. Uvicorn se arranca sin `--reload` ni workers extra.
@@ -131,7 +134,7 @@ SQLCipher + recortes AES-GCM (sin cambios)
 ### 4.2 Seguridad (regla nueva SEG-28, basada en ADR-015)
 
 - Bind **solo** a `127.0.0.1`; nunca `0.0.0.0`. Se comprueba `Host` contra DNS rebinding.
-- **Token aleatorio por sesión**: `lector web` lo genera, abre el navegador con él y la API lo exige en cada petición
+- **Token aleatorio por sesión**: `lector-web` lo genera, abre el navegador con él y la API lo exige en cada petición
   (cookie `HttpOnly`, `SameSite=Strict`). Protege frente a otros procesos o usuarios del equipo y frente a CSRF.
 - Cabeceras: CSP estricta (sin scripts externos), `Cache-Control: no-store` en los recortes y en las respuestas con
   placas, `Referrer-Policy: no-referrer`.
@@ -149,8 +152,8 @@ forma real y el cliente TypeScript se genera solo.
 |---|---|
 | `GET /api/videos` | Videos disponibles en `input.allowed_dirs` |
 | `GET /api/profiles` | Perfiles con su etiqueta legible |
-| `POST /api/runs` · `GET /api/runs` · `GET /api/runs/{id}` | Procesar un video · historial · detalle |
-| `GET /api/runs/{id}/events` (SSE) · `POST /api/runs/{id}/cancel` | Progreso en vivo y cancelación |
+| `POST /api/jobs` · `GET /api/jobs/{jobId}` · `GET /api/runs` | Procesar un video · estado del trabajo · historial |
+| `GET /api/jobs/{jobId}/events` (SSE) · `POST /api/jobs/{jobId}/cancel` | Progreso en vivo y cancelación |
 | `GET /api/sightings?status=&q=&run=&hidden=&page=` | Galería con filtros; `hidden=false` por defecto (solo legibles, §2) |
 | `GET /api/sightings/{id}` · `GET /api/sightings/{id}/crop` | Detalle y recorte (PNG en memoria, `no-store`) |
 | `POST /api/sightings/{id}/decision` | Confirmar / corregir / descartar / borrosa (`DecideSighting`) |
@@ -202,11 +205,11 @@ demás es trabajo del proyecto, con el ciclo de specs.
 | ADR-016 + SEG-28 | Decisión web local y reglas de seguridad (las redacta Claude) |
 | **066** API de lectura | App factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop`; tests con `TestClient` |
 | **067** API de acciones | Procesar en un hilo + SSE + cancelación, decisiones, export, purga, métricas |
-| **068** Comando `lector web` | Arranque en 127.0.0.1, puerto libre, abrir el navegador con el token, servir `dist/` |
+| **068** Comando `lector-web` | Arranque en 127.0.0.1, puerto libre, abrir el navegador con el token, servir `dist/` |
 | **069** Modo demo sintético | BD temporal y recortes sintéticos; genera los JSON de muestra para Figma Make |
 | **070** Importar el frontend de Figma Make | `frontend/` compilable, cliente tipado, sin datos de muestra en producción |
 | **071** Pantallas conectadas y pruebas E2E | Pruebas de componentes (Vitest) y E2E (Playwright) contra el modo demo |
-| **072** Publicación | README (inicio rápido con `lector web`, capturas del modo demo), nivel F con `bind` loopback |
+| **072** Publicación | README (inicio rápido con `lector-web`, capturas del modo demo), nivel F con `bind` loopback |
 
 Herramientas nuevas que pide la web: **Node.js LTS** (decisión del usuario: se exige). El inicio rápido añade
 `npm ci && npm run build` en `frontend/`; la versión de Node se fija en `frontend/.nvmrc` y en `engines` de

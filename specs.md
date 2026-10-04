@@ -1,8 +1,8 @@
 # Specs de lectorPlacas
 
 Resumen de todas las specs: qué hace cada una, de cuáles depende y en qué estado está. Fecha: 2026-10-03.
-Fuente de verdad del estado: `specs/README.md`. La spec 056 está redactada; las 057–075 **aún no**: su alcance y su orden salen de `docs/09-enfoque-versatil.md` §5
-(enfoque nuevo del 2026-10-03: placas cercanas y legibles; modos estático y móvil) y de `docs/08`, ya renumerado.
+Fuente de verdad del estado: `specs/README.md`. Las specs 056–064, 066–069, 073 y 074 están redactadas (2026-10-03); la 058 espera la aprobación del cambio de docs/04.
+Las 065, 070–072 y 075 están bloqueadas: dependen de datos o artefactos que aún no existen. Diseño en `docs/09`.
 
 Estados: **Implementada** (integrada en `main`) · **En implementación** (rama y worktree activos) · **Redactada**
 (spec lista, sin implementar) · **Por redactar** (solo existe en el plan).
@@ -12,8 +12,9 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 | Estado | Specs |
 |---|---|
 | Implementada | 000–055 (56 specs; 055 el 2026-10-03) |
-| Redactada (lista para implementar) | 056 |
-| Por redactar | 057–075 (19 specs, `docs/09` y `docs/08`) |
+| Redactada (lista para implementar) | 056, 057, 059–064, 066–069, 073, 074 (14) |
+| Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
+| Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
 Cada spec se implementa en su rama `feature/NNN-*` y se integra con `merge --no-ff`. El orden numérico es el orden de
 implementación; una spec no se empieza hasta que sus dependencias están integradas.
@@ -100,16 +101,16 @@ Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta e
 | 053 | GUI: botón y filtro "Placa borrosa" | 046–048, 052 | Implementada |
 | 054 | Entrenamiento OCR: mezcla con test congelado y split `test_video` | 035, 039 | Implementada |
 | 055 | `dataset export-legibility`: dataset de legibilidad (clase, métricas, sin texto de placa). Ejecutado el 2026-10-03: 1 141 filas (354 legibles, 424 borrosas, 363 no-placa) | 035, 052 | Implementada |
-| **056** | Modos de cámara en la configuración: `mode` (`estatico`/`movil`) y `camera_motion_compensation` por perfil, validación "móvil exige CMC", perfil `patrulla`, `TrackerSettings.enable_cmc` | 006, 016, 028 | **Redactada** |
-| 057 | Filtro de cercanía antes de leer: `near_min_width_frac` 0,025, `max_plate_vehicle_ratio` 0,5, `roi`, placa en borde, `min_plate_width_px` 32 | 051, 056 | Por redactar |
-| 058 | Evaluación con cercanía: ground truth versión 2 (`max_plate_width_px`, cámara `vehicle_mounted`); requiere aprobar el cambio de M-02/M-03 en docs/04 | 029, 057 | Por redactar |
-| 059 | Características de calidad por avistamiento (ancho/alto de placa, nitidez, contraste), `duplicate_of` y migración v2 → v3 | 052, 055, 057 | Por redactar |
-| 060 | Parada temprana por track (`early_stop`): un track lleno que ya se confirmaría deja de leerse | 051, 056 | Por redactar |
-| 061 | Duplicados de la misma placa en la corrida (`dedup_window_ms` 30 000 ms): marca `duplicate_of`, oculta por defecto | 041, 059 | Por redactar |
-| 062 | Entrena el filtro de legibilidad (`training/legibility`) solo con la población cercana; línea base `num_readings` ≤ 1 | 055, 059 | Por redactar |
-| 063 | Filtro de legibilidad en el pipeline: razones `PREDICTED_ILLEGIBLE` / `PREDICTED_NOT_PLATE`; nunca confirma ni borra | 062 | Por redactar |
-| 064 | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad" | 061, 063, 048 | Por redactar |
-| 065 | Tipo de vehículo por la forma de la placa (bloqueada: dimensiones oficiales PENDIENTES DE VALIDAR) | 013, 015, 057 | Por redactar |
+| **056** | Modos de cámara en la configuración: `mode` (`estatico`/`movil`) y `camera_motion_compensation` por perfil, validación "móvil exige CMC", perfil `patrulla`, `TrackerSettings.enable_cmc` | 006, 016, 028 | Redactada |
+| 057 | Filtro de cercanía antes de leer: `near_min_width_frac` 0,025, `max_plate_vehicle_ratio` 0,5, `roi`, placa en borde, `min_plate_width_px` 32 | 051, 056 | Redactada |
+| 058 | Evaluación con cercanía: ground truth versión 2 (`max_plate_width_px`, cámara `vehicle_mounted`); requiere aprobar el cambio de M-02/M-03 en docs/04 | 029, 057 | Redactada, bloqueada (aprobación de docs/04) |
+| 059 | Características de calidad por avistamiento (ancho/alto de placa, nitidez, contraste), `duplicate_of` y migración v2 → v3 | 052, 055, 057 | Redactada |
+| 060 | Parada temprana por track (`early_stop`): un track lleno que ya se confirmaría deja de leerse | 051, 056 | Redactada |
+| 061 | Duplicados de la misma placa en la corrida (`dedup_window_ms` 30 000 ms): marca `duplicate_of`, oculta por defecto | 041, 059 | Redactada |
+| 062 | Entrena el filtro de legibilidad (`training/legibility`) solo con la población cercana; línea base `num_readings` ≤ 1 | 055, 059 | Redactada |
+| 063 | Filtro de legibilidad en el pipeline: razones `PREDICTED_ILLEGIBLE` / `PREDICTED_NOT_PLATE`; nunca confirma ni borra | 062 | Redactada |
+| 064 | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad" | 061, 063, 048 | Redactada |
+| 065 | Tipo de vehículo por la forma de la placa (bloqueada: dimensiones oficiales PENDIENTES DE VALIDAR) | 013, 015, 057 | Bloqueada: dimensiones oficiales de placa sin verificar |
 
 Criterio de aceptación del filtro de legibilidad (docs/09 §4.2): se mide solo sobre la población cercana; legibles
 escondidas por error ≤ 5 %; con ese umbral, ≥ 60 % de borrosas y no-placas ocultadas; mínimo 100 ejemplos por clase en
@@ -123,21 +124,21 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 
 | # | Qué hace | Depende de | Estado |
 |---|---|---|---|
-| 066 | API de lectura: app factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop` | ADR-016/SEG-28, 041, 046, 056 | Por redactar |
-| 067 | API de acciones: procesar en hilo + SSE + cancelación, decisiones, export, purga, métricas | 066, 040, 046 | Por redactar |
-| 068 | Comando `lector web`: 127.0.0.1, puerto libre, abre el navegador con el token, sirve `dist/` | 066, 067 | Por redactar |
-| 069 | Modo demo sintético (`lector web --demo`) | 067 | Por redactar |
-| 070 | Importar el frontend de Figma Make a `frontend/` con cliente tipado desde OpenAPI | 066, 069 y el diseño del usuario | Por redactar |
-| 071 | Pantallas conectadas y pruebas (Vitest, Playwright contra el demo) | 070, 064 | Por redactar |
-| 072 | Publicación: README con inicio rápido, capturas del demo, nivel F con `bind` en loopback | 068, 071 | Por redactar |
-| 073 | Retirar la GUI PySide6 (solo cuando la web cubra sus funciones) | 071 | Por redactar |
+| 066 | API de lectura: app factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop`, `summary` | ADR-016/SEG-28, 041, 046, 056, 059, 061, 064 | Redactada |
+| 067 | API de acciones: trabajos de procesamiento en hilo + SSE + cancelación, decisiones, export, purga, métricas | 025, 026, 038, 040, 046, 066 | Redactada |
+| 068 | Script `lector-web`: 127.0.0.1, puerto libre, abre el navegador con el token, sirve `frontend/dist/` | 066, 067 | Redactada |
+| 069 | Modo demo sintético (`lector-web --demo`) | 059, 061, 066, 067, 068 | Redactada |
+| 070 | Importar el frontend de Figma Make a `frontend/` con cliente tipado desde OpenAPI | 066, 069 y el diseño del usuario | Bloqueada: falta la exportación de Figma Make |
+| 071 | Pantallas conectadas y pruebas (Vitest, Playwright contra el demo) | 070, 064 | Bloqueada: falta la exportación de Figma Make |
+| 072 | Publicación: README con inicio rápido, capturas del demo, nivel F con `bind` en loopback | 068, 071 | Bloqueada: falta la exportación de Figma Make |
+| 073 | Retirar la GUI PySide6 (solo cuando la web cubra sus funciones) | 071 | Redactada |
 
 ## 6. Docker (074–075)
 
 | # | Qué hace | Depende de | Estado |
 |---|---|---|---|
-| 074 | `KeyProvider` de archivo (Docker secret): `lector key init --to-file`; actualiza SEG-02/ADR-005 | 008 | Por redactar |
-| 075 | `Dockerfile` multi-etapa y `compose.yaml` (perfiles cpu/gpu), puerto solo en loopback | 068, 074 | Por redactar |
+| 074 | Clave maestra desde archivo (`LECTOR_KEY_FILE`, `lector key export-file`/`init-file`) | 008, 028 | Redactada |
+| 075 | `Dockerfile` multi-etapa y `compose.yaml` (perfiles cpu/gpu), puerto solo en loopback | 068, 074 | Bloqueada: frontend (070) e imágenes base sin verificar |
 
 ---
 
