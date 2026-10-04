@@ -67,6 +67,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 060 | [Parada temprana por track](060-parada-temprana.md) | 051, 056, 057 | Lista |
 | 061 | [Duplicados de la misma placa en una corrida](061-duplicados-en-corrida.md) | 041, 059, 060 | Lista |
 | 066 | [Web: app FastAPI, seguridad local y API de lectura](066-web-api-lectura.md) | 041, 046, 056, 059, 061 | Lista |
+| 067 | [Web: API de acciones](067-web-api-acciones.md) | 025, 026, 038, 040, 046, 066 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 
