@@ -25,7 +25,9 @@ Ninguna nueva.
 
 ## Interfaces y tipos involucrados (`web/demo.py`)
 - Constantes: `DEMO_SEED: Final[int] = 2026`;
-  `DEMO_START: Final[datetime] = datetime(2026, 1, 15, 9, 0, tzinfo=UTC)`;
+  `def demo_start(now: datetime) -> datetime` → `now.astimezone(UTC).replace(minute=0, second=0, microsecond=0) - timedelta(days=2)`
+  (sustituye a la antigua constante `DEMO_START`: con una fecha fija, la purga por retención de `open_web_session` borraba
+  la demo en cuanto la fecha quedaba a más de 90 días);
   `DEMO_PROFILES: Final[tuple[str, ...]] = ("parqueadero", "calle_lenta", "calle_rapida", "patrulla", "calle_lenta")`;
   `DEMO_VIDEOS: Final[tuple[str, ...]] = ("demo_entrada.mp4", "demo_calle.mp4", "demo_patrulla.mp4")`;
   `LETTERS: Final[str] = "ABCDEFGHJKLMNPRSTUVWXYZ"`; `DIGITS: Final[str] = "0123456789"`;
@@ -55,10 +57,10 @@ Carro, bus y camión: 3 letras de `LETTERS` y 3 dígitos de `DIGITS`, cada cará
 Moto: 3 letras, 2 dígitos y 1 letra. Ningún texto se compara con placas reales: son inventados (SEG-10).
 
 ### 3. `seed_demo(config, keys)`
-Con `rng = random.Random(DEMO_SEED)` (única excepción permitida: `# noqa: S311 — datos de demo deterministas, no criptográficos (spec 069)` en esa línea), `repository = composition.build_repository(config, keys)` y
+Con `start = demo_start(datetime.now(UTC))`, `rng = random.Random(DEMO_SEED)` (única excepción permitida: `# noqa: S311 — datos de demo deterministas, no criptográficos (spec 069)` en esa línea), `repository = composition.build_repository(config, keys)` y
 `crop_store = composition.build_crop_store(config, keys)`; el repositorio se cierra al final (`try/finally`).
 1. **Corridas.** Para `n` de 1 a 5: `start_run(RunStart(hashlib.sha256(f"demo-{n}".encode()).hexdigest(),
-   DEMO_PROFILES[n - 1], VideoInfo(1920, 1080, 0, 60_000 * n, 30.0, "h264"), DEMO_START + timedelta(hours=n)))`.
+   DEMO_PROFILES[n - 1], VideoInfo(1920, 1080, 0, 60_000 * n, 30.0, "h264"), start + timedelta(hours=n)))`.
 2. **Avistamientos.** Para `i` de 0 a 39, en orden: `run_id = i // 8 + 1`; `k = i % 8`;
    `vehicle_type = MOTORCYCLE if i % 5 == 4 else CAR`; `texto = plate_text(rng, vehicle_type)`;
    `first = k * 7000`; `last = first + rng.randint(500, 4000)`; `num = rng.randint(2, 8)`;
@@ -71,14 +73,14 @@ Con `rng = random.Random(DEMO_SEED)` (única excepción permitida: `# noqa: S311
      primero).
    - Recorte: `crop_ref = crop_store.save(render_plate(guardado o texto))`; calidad
      `CropQuality(300, 100, round(rng.uniform(20.0, 200.0), 1), round(rng.uniform(20.0, 80.0), 1))`.
-   - `save_sighting(Sighting(run_id, i, first, last, vehicle_type, plate, crop_ref, DEMO_START + timedelta(hours=run_id), quality))`.
-   - Revisión, con `reviewed_at = DEMO_START + timedelta(days=1)`: `k == 5` → `record_review(id, CORRECTED, texto, …)`;
+   - `save_sighting(Sighting(run_id, i, first, last, vehicle_type, plate, crop_ref, start + timedelta(hours=run_id), quality))`.
+   - Revisión, con `reviewed_at = start + timedelta(days=1)`: `k == 5` → `record_review(id, CORRECTED, texto, …)`;
      `k == 6` → `REJECTED`; `k == 7` → `ILLEGIBLE`.
 3. **Duplicados.** Dos avistamientos más, `i = 40` y `i = 41`, sin confirmar, que copian texto, vehículo, corrida,
    razón y recorte del avistamiento `i = 1` y del `i = 9`, con `track_id` 40 y 41, `first = 60_000`,
    `last = 61_000`, confianza 0.6, acuerdo 0.6 y 2 lecturas; después `mark_duplicates([(id40, id1), (id41, id9)])`.
 4. **Cierre de corridas.** Para cada corrida `n`: `finish_run(n, RunStats(1800 * n, 900 * n, total + 2, confirmados,
-   sin_confirmar, 2, 50_000 * n, 60_000 * n), DEMO_START + timedelta(hours=n, minutes=1), True)`, donde `confirmados`
+   sin_confirmar, 2, 50_000 * n, 60_000 * n), start + timedelta(hours=n, minutes=1), True)`, donde `confirmados`
    y `sin_confirmar` cuentan lo guardado en esa corrida (incluidos los dos duplicados del paso 3, que son `UNVERIFIED` y van a las corridas 1 y 2) con estado `CONFIRMED` y `UNVERIFIED` al guardarse, y
    `total = confirmados + sin_confirmar`.
 
@@ -117,6 +119,9 @@ Devuelve un `JobRunner` que, al llamarse con `(video, profile, reporter)`:
   `duplicate_of` no nulo, los conteos por estado son `unverified` 17, `confirmed` 10, `corrected` 5, `rejected` 5,
   `illegible` 5, todos con `crop_ref` cargable y `quality` no nula; ejecutarlo dos veces con dos carpetas distintas da
   los mismos textos de placa en el mismo orden (determinista).
+- `test_demo_survives_purge` (integración): tras `seed_demo` en la carpeta de demo, `open_web_session(config_demo, keys)`
+  (que purga por retención) deja los 42 avistamientos y las 5 corridas; se cierra la sesión al final.
+- `test_demo_start`: `demo_start(datetime(2026, 10, 4, 16, 45, 9, tzinfo=UTC)) == datetime(2026, 10, 2, 16, 0, tzinfo=UTC)`.
 - `test_demo_runner_progress_and_cancel`: con un reporter que registra los `ProgressUpdate` y `time.sleep` parcheado a no
   hacer nada, el runner sobre la carpeta de demo reporta 20 actualizaciones y devuelve un `run_id` 6 tras sembrar; con un
   reporter que pide cancelar desde el inicio lanza `ProcessingCancelledError` sin reportar nada.
