@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import math
 from dataclasses import dataclass, field
@@ -9,6 +10,11 @@ from typing import TYPE_CHECKING, Final
 
 from lector_placas.application.duplicates import DuplicateCandidate, find_duplicates
 from lector_placas.application.image_ops import crop_image, rms_contrast
+from lector_placas.application.legibility import (
+    LegibilityModel,
+    feature_vector,
+    legibility_reason,
+)
 from lector_placas.application.ports import (
     Clock,
     CropStore,
@@ -41,6 +47,7 @@ from lector_placas.application.proximity import (
 from lector_placas.application.track_registry import FinalizedTrack, TrackRegistry
 from lector_placas.domain.entities import (
     BoundingBox,
+    ConsolidatedPlate,
     CropQuality,
     PlateDetection,
     PlateReading,
@@ -81,6 +88,7 @@ class ProcessingSettings:
     roi: tuple[float, float, float, float] = FULL_FRAME_ROI
     early_stop: bool = False
     dedup_window_ms: int = 0
+    legibility: LegibilityModel | None = None
 
     def __post_init__(self) -> None:
         """Valida los umbrales y límites del perfil.
@@ -166,6 +174,8 @@ class _Counters:
     sightings_confirmed: int = 0
     sightings_unverified: int = 0
     tracks_without_reading: int = 0
+    frame_width: int = 0
+    frame_height: int = 0
     proximity: ProximityCounters = field(default_factory=ProximityCounters)
     saved: list[DuplicateCandidate] = field(default_factory=list)
 
@@ -231,7 +241,7 @@ class ProcessVideo:
         deps.tracker.reset()
         deps.sampler.reset()
         registry = TrackRegistry(self._settings.max_readings_per_track)
-        counters = _Counters()
+        counters = _Counters(frame_width=info.width, frame_height=info.height)
         try:
             self._process_all_frames(source, registry, counters, run_id, progress, info.duration_ms)
             self._finalize(registry.pop_all(), run_id, counters)
@@ -434,6 +444,7 @@ class ProcessVideo:
                 deps.quality.sharpness(track.best_crop),
                 rms_contrast(track.best_crop),
             )
+        plate = self._apply_legibility(plate, quality, track, counters)
         sighting = Sighting(
             run_id,
             track.track_id,
@@ -466,6 +477,27 @@ class ProcessVideo:
             track.track_id,
             plate.status,
             mask_plate(plate.text),
+        )
+
+    def _apply_legibility(
+        self,
+        plate: ConsolidatedPlate,
+        quality: CropQuality | None,
+        track: FinalizedTrack,
+        counters: _Counters,
+    ) -> ConsolidatedPlate:
+        """Marca el consolidado como sin confirmar si el filtro de legibilidad lo rechaza."""
+        model = self._settings.legibility
+        if model is None or quality is None:
+            return plate
+        features = feature_vector(
+            plate, quality, counters.frame_width, counters.frame_height, track.vehicle_type
+        )
+        reason = legibility_reason(model, features)
+        if reason is None:
+            return plate
+        return dataclasses.replace(
+            plate, status=ReviewStatus.UNVERIFIED, reasons=(*plate.reasons, reason)
         )
 
     def _fail_run(

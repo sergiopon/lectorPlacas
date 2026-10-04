@@ -8,6 +8,8 @@ from typing import Any
 import pytest
 import yaml
 
+from lector_placas.application.legibility import LegibilityModel
+from lector_placas.cli import composition
 from lector_placas.domain.consolidation import ConsolidationPolicy
 from lector_placas.domain.errors import ConfigurationError
 from lector_placas.infrastructure.config import load_config
@@ -239,3 +241,54 @@ def test_real_config_dedup_window(tmp_path: Path) -> None:
         with pytest.raises(ConfigurationError) as info:
             load_config(write(tmp_path, data))
         assert f"dedup_window_ms debe estar en [0, 600000]: {value}" in str(info.value)
+
+
+def test_legibility_disabled_by_default() -> None:
+    config = load_config(REAL)
+    assert config.legibility.enabled is False
+    assert composition.build_legibility_model(config) is None
+
+
+def _valid_legibility() -> dict[str, Any]:
+    return {
+        "enabled": True,
+        "threshold": 0.4,
+        "mean": [0.0] * 16,
+        "std": [1.0] * 16,
+        "weights": [[0.0] * 16] * 3,
+        "bias": [0.0] * 3,
+    }
+
+
+def _legibility_with(**changes: Any) -> dict[str, Any]:
+    data = _valid_legibility()
+    data.update(changes)
+    return data
+
+
+@pytest.mark.parametrize(
+    "legibility,error_substring",
+    [
+        ({"enabled": True}, "legibility.enabled exige threshold, mean, std, weights y bias"),
+        (_legibility_with(mean=[0.0] * 15), "dimensiones inválidas"),
+        (_legibility_with(std=[0.0] + [1.0] * 15), "std debe ser > 0"),
+        (_legibility_with(threshold=1.0), "threshold debe estar en [0, 1)"),
+    ],
+)
+def test_legibility_validation(
+    tmp_path: Path, legibility: dict[str, Any], error_substring: str
+) -> None:
+    data = base_data()
+    data["legibility"] = legibility
+    with pytest.raises(ConfigurationError) as info:
+        load_config(write(tmp_path, data))
+    assert error_substring in str(info.value)
+
+
+def test_legibility_valid_config_builds_model(tmp_path: Path) -> None:
+    data = base_data()
+    data["legibility"] = _valid_legibility()
+    config = load_config(write(tmp_path, data))
+    model = composition.build_legibility_model(config)
+    assert isinstance(model, LegibilityModel)
+    assert model.threshold == 0.4

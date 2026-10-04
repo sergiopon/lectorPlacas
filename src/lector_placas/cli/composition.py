@@ -7,6 +7,7 @@ para que los tests de integración puedan sustituir cualquiera de estas funcione
 
 from __future__ import annotations
 
+import dataclasses
 import os
 from pathlib import Path
 from typing import Final
@@ -32,6 +33,7 @@ from lector_placas.adapters.storage.encrypted_crop_store import EncryptedFileCro
 from lector_placas.adapters.tracking.botsort_tracker import BotSortTracker, TrackerSettings
 from lector_placas.adapters.video.pyav_source import PyAVVideoSourceFactory
 from lector_placas.application.frame_sampler import TimeBasedFrameSampler
+from lector_placas.application.legibility import LegibilityModel
 from lector_placas.application.ports import (
     Clock,
     CropStore,
@@ -242,6 +244,18 @@ def build_processing_settings(name: str, profile: ProfileConfig) -> ProcessingSe
     )
 
 
+def build_legibility_model(config: AppConfig) -> LegibilityModel | None:
+    """Construye el modelo de legibilidad, o `None` si el filtro está desactivado."""
+    legibility = config.legibility
+    mean, std, weights = legibility.mean, legibility.std, legibility.weights
+    bias, threshold = legibility.bias, legibility.threshold
+    if not legibility.enabled or mean is None or std is None or weights is None:
+        return None
+    if bias is None or threshold is None:
+        return None
+    return LegibilityModel(mean, std, weights, bias, threshold)
+
+
 def build_process_video(
     config: AppConfig,
     profile_name: str,
@@ -267,5 +281,7 @@ def build_process_video(
         crop_store,
         clock,
     )
-    settings = build_processing_settings(name, profile)
+    settings = dataclasses.replace(
+        build_processing_settings(name, profile), legibility=build_legibility_model(config)
+    )
     return ProcessVideo(deps, settings)
