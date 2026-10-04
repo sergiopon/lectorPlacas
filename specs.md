@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057, 059–064, 066–069, 074, 076 (71 specs; 059–064, 066–069, 074 y 076 el 2026-10-04) |
-| Redactada (lista para implementar) | 070, 073 (2) |
+| Implementada | 000–057, 059–064, 066–070, 074, 076 (72 specs; 059–064, 066–070, 074 y 076 el 2026-10-04) |
+| Redactada (lista para implementar) | 073 (1, tras la 071) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -128,7 +128,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 | 067 | API de acciones: trabajos de procesamiento en hilo + SSE + cancelación, decisiones, export, purga, métricas | 025, 026, 038, 040, 046, 066 | Implementada |
 | 068 | Script `lector-web`: 127.0.0.1, puerto libre, abre el navegador con el token, sirve `frontend/dist/` | 066, 067 | Implementada |
 | 069 | Modo demo sintético (`lector-web --demo`) | 059, 061, 066, 067, 068 | Implementada |
-| 070 | Frontend de Figma Make en `frontend/` conectado a la API real (sin plugins de Figma ni analítica; npm, versiones exactas) | 066–069, 076 | Redactada |
+| 070 | Frontend de Figma Make en `frontend/` conectado a la API real (sin plugins de Figma ni analítica; npm, versiones exactas) | 066–069, 076 | Implementada |
 | 071 | Pantallas conectadas y pruebas (Vitest, Playwright contra el demo) | 070, 064 | Por redactar |
 | 072 | Publicación: README con inicio rápido, capturas del demo, nivel F con `bind` en loopback | 068, 071 | Por redactar |
 | 073 | Retirar la GUI PySide6 (solo cuando la web cubra sus funciones) | 071 | Redactada |
