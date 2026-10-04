@@ -75,4 +75,10 @@ def _write_summary(metrics: ReviewMetrics, report_name: str) -> None:
         f"cer={_format_metric(metrics.cer)} "
         f"exact_match_rate={_format_metric(metrics.exact_match_rate)}\n"
     )
+    sys.stdout.write(
+        f"ocultas={metrics.hidden_total} "
+        f"ocultas_legibles={metrics.hidden_legible} "
+        f"ocultas_inservibles={metrics.hidden_unusable} "
+        f"ocultas_pendientes={metrics.hidden_pending}\n"
+    )
     sys.stdout.write(f"reporte={report_name}\n")
