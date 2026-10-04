@@ -23,6 +23,7 @@ from lector_placas.domain.entities import (
     Sighting,
     SightingRecord,
     TrackedVehicle,
+    UnverifiedReason,
     VehicleDetection,
     VehicleType,
 )
@@ -549,6 +550,20 @@ class PlateRepository(Protocol):
         """
         ...
 
+    def run_video_hashes(self) -> dict[int, str]:
+        """Devuelve el hash del video de cada corrida registrada.
+
+        Precondiciones:
+            BD abierta.
+
+        Postcondiciones:
+            `run_id` → `video_sha256` de todas las corridas existentes.
+
+        Raises:
+            RepositoryError: si falla la lectura.
+        """
+        ...
+
     def close(self) -> None:
         """Cierra la base de datos.
 
@@ -675,6 +690,80 @@ class TrainingExportStore(Protocol):
 
     def delete_older_than(self, cutoff: datetime) -> int:
         """Borra las exportaciones de entrenamiento anteriores al corte.
+
+        Precondiciones:
+            `cutoff` en UTC.
+
+        Postcondiciones:
+            Exportaciones anteriores a `cutoff` borradas; devuelve cuántas.
+
+        Raises:
+            ExportError: si falla el borrado.
+        """
+        ...
+
+
+class LegibilityLabel(StrEnum):
+    """Clase de legibilidad de un recorte para el filtro de la spec 057."""
+
+    LEGIBLE = "legible"
+    BLURRY = "borrosa"
+    NOT_PLATE = "no_placa"
+
+
+@dataclass(frozen=True, slots=True)
+class LegibilitySample:
+    """Recorte etiquetado por legibilidad, sin texto de placa (SEG-07, spec 055)."""
+
+    image: ImageBGR
+    label: LegibilityLabel
+    status: ReviewStatus
+    human_reviewed: bool
+    video_group: int
+    run_id: int
+    track_id: int
+    vehicle_type: VehicleType
+    confidence: float
+    agreement: float
+    num_readings: int
+    reasons: tuple[UnverifiedReason, ...]
+
+    def __post_init__(self) -> None:
+        """Valida los identificadores, el grupo de video y el número de lecturas.
+
+        Raises:
+            InvalidEntityError: si `video_group` o `run_id` son `< 1`, o si `track_id`
+                o `num_readings` son negativos.
+        """
+        if self.video_group < 1:
+            raise InvalidEntityError(f"video_group debe ser >= 1: {self.video_group}")
+        if self.run_id < 1:
+            raise InvalidEntityError(f"run_id debe ser >= 1: {self.run_id}")
+        if self.track_id < 0:
+            raise InvalidEntityError(f"track_id debe ser >= 0: {self.track_id}")
+        if self.num_readings < 0:
+            raise InvalidEntityError(f"num_readings debe ser >= 0: {self.num_readings}")
+
+
+class LegibilityExportStore(Protocol):
+    """Escribe el dataset de legibilidad y limpia las exportaciones vencidas."""
+
+    def write_samples(self, samples: Sequence[LegibilitySample], created_at: datetime) -> Path:
+        """Escribe un conjunto de recortes etiquetados por legibilidad.
+
+        Precondiciones:
+            `created_at` en UTC.
+
+        Postcondiciones:
+            Directorio nuevo con los PNG y su `annotations.csv`, en modo 0600/0700.
+
+        Raises:
+            ExportError: si ya existe el directorio o falla la escritura.
+        """
+        ...
+
+    def delete_older_than(self, cutoff: datetime) -> int:
+        """Borra las exportaciones de legibilidad anteriores al corte.
 
         Precondiciones:
             `cutoff` en UTC.

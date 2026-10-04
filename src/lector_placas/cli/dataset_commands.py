@@ -7,7 +7,9 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
+from lector_placas.application.export_legibility import ExportLegibilityDataset
 from lector_placas.application.export_reviewed import ExportReviewedCrops
+from lector_placas.application.ports import LegibilityLabel
 from lector_placas.cli import commands, composition, dataset_download_commands
 from lector_placas.datasets.chars_to_ocr import chars_to_ocr
 from lector_placas.datasets.merge_detection import merge_detection
@@ -43,6 +45,8 @@ def register_dataset_commands(
     chars_parser.set_defaults(handler=cmd_chars_to_ocr, network=False)
     reviewed_parser = dataset_sub.add_parser("export-reviewed")
     reviewed_parser.set_defaults(handler=cmd_export_reviewed, network=False, key="load")
+    legibility_parser = dataset_sub.add_parser("export-legibility")
+    legibility_parser.set_defaults(handler=cmd_export_legibility, network=False, key="load")
     dataset_download_commands.register_download_commands(dataset_sub)
 
 
@@ -117,6 +121,41 @@ def cmd_export_reviewed(args: argparse.Namespace, config: AppConfig) -> int:
         result = use_case.execute()
         sys.stdout.write(
             f"exportados={result.exported} omitidos={result.skipped} carpeta={result.path.name}\n"
+        )
+        return 0
+
+    return commands._run_with_repository(config, commands.require_keys(args), action)
+
+
+def cmd_export_legibility(args: argparse.Namespace, config: AppConfig) -> int:
+    """Exporta el dataset de legibilidad de los avistamientos con estado final.
+
+    Args:
+        args: argumentos del subcomando (ninguno propio).
+        config: configuración de la aplicación.
+
+    Returns:
+        El código de salida 0.
+    """
+
+    def action(
+        repository: PlateRepository,
+        crop_store: CropStore,
+        export_store: ExportStore,
+        clock: Clock,
+        purge: PurgeResult,
+    ) -> int:
+        del export_store, purge
+        use_case = ExportLegibilityDataset(
+            repository, crop_store, composition.build_legibility_store(config), clock
+        )
+        result = use_case.execute()
+        per_label = result.per_label
+        sys.stdout.write(
+            f"exportados={result.exported} omitidos={result.skipped} "
+            f"legibles={per_label[LegibilityLabel.LEGIBLE]} "
+            f"borrosas={per_label[LegibilityLabel.BLURRY]} "
+            f"no_placa={per_label[LegibilityLabel.NOT_PLATE]} carpeta={result.path.name}\n"
         )
         return 0
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Final
 
 from lector_placas.adapters.export.csv_export_store import CsvExportStore
+from lector_placas.adapters.export.legibility_export_store import FilesystemLegibilityExportStore
 from lector_placas.adapters.export.training_export_store import FilesystemTrainingExportStore
 from lector_placas.adapters.imaging.quality import LaplacianQualityScorer
 from lector_placas.adapters.inference.onnx_session import (
@@ -57,6 +58,7 @@ DB_FILENAME: Final[Path] = Path("lector.db")
 CROPS_DIRNAME: Final[Path] = Path("crops")
 EXPORTS_DIRNAME: Final[Path] = Path("exports")
 TRAINING_EXPORT_DIR: Final[Path] = Path("training/ocr/datasets/own")
+LEGIBILITY_EXPORT_DIR: Final[Path] = Path("training/legibility/datasets/own")
 
 
 def data_dir(config: AppConfig) -> Path:
@@ -112,6 +114,11 @@ def build_training_store(config: AppConfig) -> FilesystemTrainingExportStore:
     return FilesystemTrainingExportStore(resolve_within(config.root_dir, TRAINING_EXPORT_DIR))
 
 
+def build_legibility_store(config: AppConfig) -> FilesystemLegibilityExportStore:
+    """Construye el almacén del dataset de legibilidad (SEG-07, spec 055)."""
+    return FilesystemLegibilityExportStore(resolve_within(config.root_dir, LEGIBILITY_EXPORT_DIR))
+
+
 def build_registry(config: AppConfig) -> ManifestModelRegistry:
     """Construye el registro de modelos a partir del manifiesto configurado."""
     return ManifestModelRegistry(
@@ -137,6 +144,7 @@ def build_purge(
         clock,
         policy,
         training_store=build_training_store(config),
+        legibility_store=build_legibility_store(config),
     )
 
 
