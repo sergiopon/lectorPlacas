@@ -76,7 +76,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 068 | [Web: comando `lector-web` y frontend compilado](068-web-comando-arranque.md) | 066, 067 | Implementada |
 | 069 | [Web: modo demo sintético](069-web-modo-demo.md) | 059, 061, 066, 067, 068 | Implementada |
 | 070 | [Frontend: importar Figma Make y conectar la API](070-frontend-figma-make.md) | 066–069, 076 | Implementada |
-| 071 | Pantallas conectadas y pruebas E2E | 070, 064 | Por redactar |
+| 071 | [Frontend: pruebas Vitest y Playwright contra el demo](071-frontend-pruebas.md) | 064, 069, 070, 076 | Lista |
 | 072 | Publicación de la web | 068, 071 | Por redactar (bloqueada por 071) |
 | 073 | [Retirar la GUI PySide6](073-retirar-gui-pyside6.md) | 071 | Lista (solo cuando la web cubra la GUI) |
 | 074 | [Clave maestra desde un archivo (Docker secrets)](074-clave-desde-archivo.md) | 008, 028 | Implementada |
