@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-import hashlib
 import random
 import secrets
 import tempfile
 import time
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final
 
+import av
 import cv2
 import numpy as np
 
@@ -54,11 +56,21 @@ DEMO_PROFILES: Final[tuple[str, ...]] = (
     "patrulla",
     "calle_lenta",
 )
-DEMO_VIDEOS: Final[tuple[str, ...]] = ("demo_entrada.mp4", "demo_calle.mp4", "demo_patrulla.mp4")
+DEMO_VIDEOS: Final[tuple[str, ...]] = (
+    "demo_parqueadero.webm",
+    "demo_calle_1.webm",
+    "demo_via_rapida.webm",
+    "demo_patrulla.webm",
+    "demo_calle_2.webm",
+)
+VIDEO_SIZE: Final[tuple[int, int]] = (640, 360)
+VIDEO_FPS: Final[int] = 10
+VIDEO_MS: Final[int] = 62_000
 LETTERS: Final[str] = "ABCDEFGHJKLMNPRSTUVWXYZ"
 DIGITS: Final[str] = "0123456789"
 PLATE_SIZE: Final[tuple[int, int]] = (300, 100)
 PLATE_BGR: Final[tuple[int, int, int]] = (0, 204, 255)
+_LANE_Y: Final[int] = 300
 _K_CORRECTED: Final[int] = 5
 _K_REJECTED: Final[int] = 6
 _K_ILLEGIBLE: Final[int] = 7
@@ -123,7 +135,7 @@ def plate_text(rng: random.Random, vehicle_type: VehicleType) -> str:
 
 
 def create_demo_root() -> Path:
-    """Crea la carpeta temporal de demo con tres videos de relleno.
+    """Crea la carpeta temporal de demo con la carpeta `videos/` vacía.
 
     Returns:
         Ruta de la carpeta temporal.
@@ -133,10 +145,6 @@ def create_demo_root() -> Path:
     videos = root / "videos"
     videos.mkdir()
     videos.chmod(0o700)
-    for name in DEMO_VIDEOS:
-        video = videos / name
-        video.write_bytes(b"lectorPlacas demo\n")
-        video.chmod(0o600)
     return root
 
 
@@ -158,13 +166,28 @@ def _shifted(text: str) -> str:
     return LETTERS[(LETTERS.index(text[0]) + 1) % len(LETTERS)] + text[1:]
 
 
-def _start_runs(repository: PlateRepository, start: datetime) -> None:
+@dataclass(frozen=True, slots=True)
+class _SightingPlan:
+    """Plan inmutable de un avistamiento sintético de la demo."""
+
+    run_id: int
+    track_id: int
+    vehicle_type: VehicleType
+    texto: str
+    guardado: str
+    first: int
+    last: int
+    plate: ConsolidatedPlate
+    quality: CropQuality
+
+
+def _start_runs(repository: PlateRepository, start: datetime, shas: dict[int, str]) -> None:
     for n in range(1, _DEMO_RUNS + 1):
         repository.start_run(
             RunStart(
-                hashlib.sha256(f"demo-{n}".encode()).hexdigest(),
+                shas[n],
                 DEMO_PROFILES[n - 1],
-                VideoInfo(1920, 1080, 0, 60_000 * n, 30.0, "h264"),
+                VideoInfo(VIDEO_SIZE[0], VIDEO_SIZE[1], 0, VIDEO_MS, 10.0, "vp8"),
                 start + timedelta(hours=n),
             )
         )
@@ -197,65 +220,51 @@ def _review(
         repository.record_review(sighting_id, ReviewStatus.ILLEGIBLE, None, reviewed_at)
 
 
-def _seed_sighting(
-    repository: PlateRepository,
-    crop_store: CropStore,
-    rng: random.Random,
-    i: int,
-    start: datetime,
-) -> tuple[int, Sighting]:
-    """Guarda el avistamiento `i` y su revisión; devuelve su id y la entidad guardada."""
+def _plan_sighting(rng: random.Random, i: int, start: datetime) -> _SightingPlan:
+    """Planifica el avistamiento `i` sin tocar la BD ni el almacén de recortes.
+
+    Args:
+        rng: generador pseudoaleatorio.
+        i: índice del avistamiento.
+        start: instante base de la demo.
+
+    Returns:
+        El plan inmutable del avistamiento.
+    """
     run_id = i // 8 + 1
     vehicle_type = VehicleType.MOTORCYCLE if i % 5 == _MOTORCYCLE_REMAINDER else VehicleType.CAR
     texto = plate_text(rng, vehicle_type)
     first = i % 8 * 7000
     last = first + rng.randint(500, 4000)
     plate = _build_plate(rng, i, texto)
-    crop_ref = crop_store.save(render_plate(plate.text))
     quality = CropQuality(
         300, 100, round(rng.uniform(20.0, 200.0), 1), round(rng.uniform(20.0, 80.0), 1)
     )
+    return _SightingPlan(run_id, i, vehicle_type, texto, plate.text, first, last, plate, quality)
+
+
+def _store_sighting(
+    repository: PlateRepository,
+    crop_store: CropStore,
+    plan: _SightingPlan,
+    start: datetime,
+) -> tuple[int, Sighting]:
+    """Guarda el recorte, el avistamiento y su revisión; devuelve id y entidad."""
+    crop_ref = crop_store.save(render_plate(plan.guardado))
     sighting = Sighting(
-        run_id,
-        i,
-        first,
-        last,
-        vehicle_type,
-        plate,
+        plan.run_id,
+        plan.track_id,
+        plan.first,
+        plan.last,
+        plan.vehicle_type,
+        plan.plate,
         crop_ref,
-        start + timedelta(hours=run_id),
-        quality,
+        start + timedelta(hours=plan.run_id),
+        plan.quality,
     )
     sighting_id = repository.save_sighting(sighting)
-    _review(repository, sighting_id, i % 8, texto, start)
+    _review(repository, sighting_id, plan.track_id % 8, plan.texto, start)
     return sighting_id, sighting
-
-
-def _seed_duplicate(
-    repository: PlateRepository, track_id: int, original: Sighting
-) -> tuple[int, Sighting]:
-    """Guarda un duplicado sin confirmar de `original` y devuelve su id y la entidad."""
-    plate = ConsolidatedPlate(
-        original.plate.text,
-        0.6,
-        0.6,
-        2,
-        ReviewStatus.UNVERIFIED,
-        original.plate.reasons,
-        (),
-    )
-    duplicate = Sighting(
-        original.run_id,
-        track_id,
-        60_000,
-        61_000,
-        original.vehicle_type,
-        plate,
-        original.crop_ref,
-        original.created_at,
-        original.quality,
-    )
-    return repository.save_sighting(duplicate), duplicate
 
 
 def _finish_runs(repository: PlateRepository, saved: list[Sighting], start: datetime) -> None:
@@ -265,7 +274,7 @@ def _finish_runs(repository: PlateRepository, saved: list[Sighting], start: date
         unconfirmed = sum(1 for s in of_run if s.plate.status is ReviewStatus.UNVERIFIED)
         total = confirmed + unconfirmed
         stats = RunStats(
-            1800 * n, 900 * n, total + 2, confirmed, unconfirmed, 2, 50_000 * n, 60_000 * n
+            1800 * n, 900 * n, total + 2, confirmed, unconfirmed, 2, 50_000 * n, VIDEO_MS
         )
         repository.finish_run(n, stats, start + timedelta(hours=n, minutes=1), True)
 
@@ -282,15 +291,63 @@ def seed_demo(config: AppConfig, keys: KeyProvider) -> None:
     repository = composition.build_repository(config, keys)
     crop_store = composition.build_crop_store(config, keys)
     try:
-        _start_runs(repository, start)
-        seeded = [_seed_sighting(repository, crop_store, rng, i, start) for i in range(40)]
-        id40, dup40 = _seed_duplicate(repository, 40, seeded[1][1])
-        id41, dup41 = _seed_duplicate(repository, 41, seeded[9][1])
-        repository.mark_duplicates([(id40, seeded[1][0]), (id41, seeded[9][0])])
-        saved = [sighting for _, sighting in seeded] + [dup40, dup41]
+        plans = [_plan_sighting(rng, i, start) for i in range(40)]
+        plans.append(replace(plans[1], track_id=40, first=60_000, last=61_000))
+        plans.append(replace(plans[9], track_id=41, first=60_000, last=61_000))
+        shas = _write_demo_videos(config.under_root(Path("videos")), plans)
+        _start_runs(repository, start, shas)
+        seeded = [_store_sighting(repository, crop_store, plan, start) for plan in plans]
+        repository.mark_duplicates([(seeded[40][0], seeded[1][0]), (seeded[41][0], seeded[9][0])])
+        saved = [sighting for _, sighting in seeded]
         _finish_runs(repository, saved, start)
     finally:
         repository.close()
+
+
+def _draw_vehicle(image: ImageBGR, plan: _SightingPlan, timestamp_ms: int) -> None:
+    """Dibuja el rectángulo del vehículo y su placa sobre el fotograma."""
+    x = int(40 + (timestamp_ms - plan.first) / max(1, plan.last - plan.first) * 410)
+    y = 230
+    cv2.rectangle(image, (x - 35, y - 70), (x + 185, y + 60), (120, 60, 40), -1)
+    plate = cv2.resize(render_plate(plan.guardado), (150, 50))
+    image[y : y + 50, x : x + 150] = plate
+
+
+def _render_frame(plans: Sequence[_SightingPlan], timestamp_ms: int) -> ImageBGR:
+    """Pinta el fotograma de la demo en el instante dado."""
+    image: ImageBGR = np.full((VIDEO_SIZE[1], VIDEO_SIZE[0], 3), 90, np.uint8)
+    for x in range(0, VIDEO_SIZE[0], 80):
+        cv2.line(image, (x, _LANE_Y), (x + 40, _LANE_Y), (255, 255, 255), 4)
+    for plan in plans:
+        if plan.first <= timestamp_ms <= plan.last:
+            _draw_vehicle(image, plan, timestamp_ms)
+    return image
+
+
+def _write_video(path: Path, plans: Sequence[_SightingPlan]) -> None:
+    """Codifica en WebM el recorrido de los planes de una corrida."""
+    with av.open(str(path), mode="w") as container:
+        stream = container.add_stream("libvpx", rate=VIDEO_FPS)
+        stream.width, stream.height = VIDEO_SIZE
+        stream.pix_fmt = "yuv420p"
+        stream.options = {"deadline": "realtime", "cpu-used": "8"}
+        for index in range(VIDEO_MS * VIDEO_FPS // 1000):
+            frame = av.VideoFrame.from_ndarray(_render_frame(plans, index * 100), format="bgr24")
+            for packet in stream.encode(frame):
+                container.mux(packet)
+        for packet in stream.encode():
+            container.mux(packet)
+
+
+def _write_demo_videos(videos_dir: Path, plans: Sequence[_SightingPlan]) -> dict[int, str]:
+    """Escribe un video WebM por corrida y devuelve el SHA-256 de cada uno."""
+    shas: dict[int, str] = {}
+    for n in range(1, _DEMO_RUNS + 1):
+        path = videos_dir / DEMO_VIDEOS[n - 1]
+        _write_video(path, [plan for plan in plans if plan.run_id == n])
+        path.chmod(0o600)
+        shas[n] = sha256_file(path)
+    return shas
 
 
 def demo_runner(config: AppConfig, keys: KeyProvider) -> JobRunner:

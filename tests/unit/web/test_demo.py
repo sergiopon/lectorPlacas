@@ -11,11 +11,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from lector_placas.adapters.video.pyav_frame_grabber import PyAVFrameGrabber
 from lector_placas.application.ports import ProgressUpdate
 from lector_placas.cli import composition
 from lector_placas.domain.entities import ReviewStatus, VehicleType
 from lector_placas.domain.errors import ProcessingCancelledError
 from lector_placas.infrastructure.config import AppConfig, load_config
+from lector_placas.infrastructure.input_validation import sha256_file
 from lector_placas.web.demo import (
     DEMO_VIDEOS,
     PLATE_BGR,
@@ -28,6 +30,7 @@ from lector_placas.web.demo import (
     render_plate,
     seed_demo,
 )
+from lector_placas.web.media import probe_duration_ms
 from lector_placas.web.session import open_web_session
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -67,12 +70,53 @@ def test_create_demo_root() -> None:
     try:
         assert root.is_dir()
         assert stat.S_IMODE(root.stat().st_mode) == 0o700
-        for name in DEMO_VIDEOS:
-            video = root / "videos" / name
-            assert video.stat().st_size == 18
-            assert stat.S_IMODE(video.stat().st_mode) == 0o600
+        videos = root / "videos"
+        assert videos.is_dir()
+        assert stat.S_IMODE(videos.stat().st_mode) == 0o700
+        assert list(videos.iterdir()) == []
     finally:
         shutil.rmtree(root)
+
+
+def test_demo_texts_unchanged(demo_root: Path) -> None:
+    keys = DemoKeyProvider()
+    config = make_config(demo_root)
+    seed_demo(config, keys)
+    repository = composition.build_repository(config, keys)
+    try:
+        records = repository.list_sightings(None, 5, 0)
+    finally:
+        repository.close()
+    assert [(r.sighting_id, r.ocr_text, r.first_seen_ms, r.last_seen_ms) for r in records] == [
+        (1, "DLT813", 0, 2961),
+        (2, "SVR309", 7000, 7830),
+        (3, "SYL364", 14000, 15924),
+        (4, "LCU844", 21000, 23373),
+        (5, "ZMM76C", 28000, 30133),
+    ]
+
+
+def test_demo_videos_are_real(demo_root: Path) -> None:
+    keys = DemoKeyProvider()
+    config = make_config(demo_root)
+    seed_demo(config, keys)
+    videos = demo_root / "videos"
+    files = sorted(videos.iterdir())
+    assert len(files) == 5
+    assert all(file.suffix == ".webm" for file in files)
+    assert all(stat.S_IMODE(file.stat().st_mode) == 0o600 for file in files)
+    repository = composition.build_repository(config, keys)
+    try:
+        hashes = repository.run_video_hashes()
+    finally:
+        repository.close()
+    for n, name in enumerate(DEMO_VIDEOS, start=1):
+        assert hashes[n] == sha256_file(videos / name)
+    sources = composition.build_video_source_factory()
+    assert abs(probe_duration_ms(sources, files[0]) - 62_000) <= 200
+    image = PyAVFrameGrabber().grab(videos / DEMO_VIDEOS[0], 1480)
+    close = np.abs(image.astype(int) - np.array(PLATE_BGR)).max(axis=2) < 40
+    assert int(close.sum()) >= 500
 
 
 def read_all(config: AppConfig, keys: DemoKeyProvider) -> list[tuple[str, str]]:
