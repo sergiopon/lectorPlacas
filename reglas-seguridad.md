@@ -61,6 +61,7 @@
 | ID | Regla |
 |---|---|
 | SEG-27 | La GUI muestra texto de placa y recortes solo dentro de sus widgets. NO DEBE: persistir estado de la interfaz con datos (no se usa `QSettings` ni archivos de estado; filtros, textos y miniaturas viven solo en memoria), escribir recortes o miniaturas a disco (SEG-07), copiar texto de placa al portapapeles por su cuenta ni ofrecer "copiar" en tablas (los gestores de portapapeles guardan historial en claro), ni poner texto de placa en el título de ventanas o en notificaciones del sistema. Los mensajes de error que muestra al operador siguen SEG-26. |
+| SEG-29 | El sistema NO DEBE leer, derivar ni guardar ubicación (GPS, metadatos de ubicación del contenedor de video, nombres de calle) ni la hora absoluta de grabación de un avistamiento. Solo DEBE guardarse el recorte de la placa: nunca el del vehículo ni el frame completo. NO DEBE implementarse cotejo con listas de placas buscadas, alertas ni consulta a bases externas sin un ADR propio y la validación legal del uso previsto. La retención (SEG-03) es la misma en los dos modos de cámara (ADR-017). SEG-28 queda reservada para la interfaz web (docs/08 §4.2). |
 
 ## 7. Dependencias y secretos
 
@@ -84,5 +85,6 @@
 - [ ] ¿Los fixtures son sintéticos y no hay binarios reales en el diff? (SEG-10)
 - [ ] ¿Se capturan excepciones genéricas fuera de `cli/main.py`? (ARQUITECTURA §6)
 - [ ] ¿Versiones fijadas con `==` y `uv.lock` actualizado? (SEG-23)
+- [ ] ¿Se lee o guarda algún metadato de ubicación u hora de grabación? ¿Se persiste algún recorte que no sea el de la placa? ¿Hay cotejo con listas o alertas? (SEG-29, ADR-017)
 - [ ] GUI: ¿algún `QSettings`, archivo de estado, `QtNetwork`, copia al portapapeles o placa en títulos/notificaciones? ¿Alguna llamada a `cv2.imshow`/`cv2.namedWindow` en `gui/`? (SEG-27, ADR-015)
 - [ ] ¿`.gitignore` sigue cubriendo datos, modelos, logs, videos y `.env`? (SEG-11)

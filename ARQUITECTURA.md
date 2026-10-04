@@ -224,8 +224,8 @@ lectorPlacas/
 
 ## 8. Configuración y perfiles
 
-Un único archivo `config/lector.yaml` validado con pydantic (spec 006). Tres perfiles de escenario
-(`parqueadero`, `calle_lenta`, `calle_rapida`) ajustan muestreo, filtros, finalización de tracks y
+Un único archivo `config/lector.yaml` validado con pydantic (spec 006). Perfiles de escenario
+(`parqueadero`, `calle_lenta`, `calle_rapida`, de modo `estatico`, y `patrulla`, de modo `movil`; ADR-017) ajustan muestreo, filtros, finalización de tracks y
 umbrales de consolidación. Valores iniciales **provisionales**; se calibran con `docs/04-evaluacion.md`.
 
 ## 9. Índice de ADRs
@@ -247,3 +247,4 @@ umbrales de consolidación. Valores iniciales **provisionales**; se calibran con
 | [013](docs/adr/ADR-013-placa-en-vehiculo.md) | Placa dentro del vehículo | La placa se detecta en el recorte del vehículo, lo que asocia placa↔track sin heurísticas. |
 | [014](docs/adr/ADR-014-receta-entrenamiento-ocr.md) | Receta del fine-tuning del OCR | Partición real por componente en train/val/test, sintéticos ≤ 50 % solo en train con cuota de motos, aceptación en test real contra el modelo base. |
 | [015](docs/adr/ADR-015-interfaz-grafica.md) | Interfaz gráfica | GUI de escritorio PySide6-Essentials en el mismo proceso, sin sockets; convivencia con el Qt5 de `opencv-python` probada; la GUI no abre ventanas de cv2. |
+| [017](docs/adr/ADR-017-modos-camara-cercania.md) | Modos de cámara y filtro de cercanía | Perfil con `mode` (`estatico`/`movil`), cercanía por ancho de placa, CMC por perfil, duplicados marcados, solo archivos de video, SEG-29. |

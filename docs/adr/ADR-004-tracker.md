@@ -30,3 +30,9 @@ Resto de parámetros: los valores por defecto de la librería, expuestos en conf
 - (−) Añade `supervision`, `scipy`, `opencv-python`, `requests` como dependencias transitivas.
   `requests` no se usa en runtime (guardia de red, ADR-012).
 - (−) CMC tiene costo por frame; se mide en Fase 5.
+
+## Actualización 2026-10-03 (ADR-017, spec 056)
+La CMC deja de estar «siempre activa»: es el campo `camera_motion_compensation` de cada perfil, que `build_tracker`
+pasa a `TrackerSettings.enable_cmc`. Los perfiles de modo `movil` la exigen en `true`; los cuatro perfiles actuales la
+dejan en `true` hasta que el experimento E3 (docs/09 §6) permita apagarla en estático. `cmc_method` y `cmc_downscale`
+siguen siendo globales en `tracker:`.

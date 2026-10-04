@@ -179,6 +179,8 @@ tracker:
 default_profile: calle_lenta
 profiles:
   parqueadero:
+    mode: estatico
+    camera_motion_compensation: true
     target_fps: 10
     max_readings_per_track: 8
     track_finalize_after_ms: 3000
@@ -190,6 +192,8 @@ profiles:
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
   calle_lenta:
+    mode: estatico
+    camera_motion_compensation: true
     target_fps: 15
     max_readings_per_track: 8
     track_finalize_after_ms: 2000
@@ -201,6 +205,21 @@ profiles:
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
   calle_rapida:
+    mode: estatico
+    camera_motion_compensation: true
+    target_fps: 30
+    max_readings_per_track: 6
+    track_finalize_after_ms: 1000
+    min_readings: 2
+    confirm_threshold: 0.90
+    min_agreement: 0.60
+    min_plate_width_px: 20
+    min_sharpness: 0.0
+    max_ocr_per_frame: 8
+    vehicle_crop_margin: 0.10
+  patrulla:                          # spec 056, modo movil (ADR-017)
+    mode: movil
+    camera_motion_compensation: true
     target_fps: 30
     max_readings_per_track: 6
     track_finalize_after_ms: 1000
@@ -269,7 +288,7 @@ Notas del catálogo:
 | `tracker.cmc_method` | `sparseOptFlow`, `orb`, `sift`, `ecc` |
 | `tracker.*threshold*` | [0, 1]; `lost_track_buffer >= 0`; `minimum_consecutive_frames >= 1`; `cmc_downscale >= 1` |
 | `default_profile` | existe en `profiles` |
-| `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1] |
+| `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1]; `mode` ∈ {`estatico`, `movil`}; si `mode` es `movil`, `camera_motion_compensation` debe ser `true` (spec 056) |
 | `consolidation.confusions` | pares `[letra A-Z, dígito 0-9]`, sin letras ni dígitos repetidos |
 | `retention` | `1 <= crops_days <= records_days <= 3650`; `1 <= training_days <= 3650` |
 | `plate_formats` | ≥ 1; `format_id` únicos; `regex` compila; `pattern` `^[LD]{1,10}$` |
