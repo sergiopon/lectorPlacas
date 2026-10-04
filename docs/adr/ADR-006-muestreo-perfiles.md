@@ -44,3 +44,8 @@ El presupuesto de 1× obliga a no leer OCR en todos los frames.
   (docs/07 §1, hallazgo 4). Coste: detección de placa y OCR en cada frame muestreado por track activo,
   acotado por `max_ocr_per_frame`; los tracks sin lecturas suficientes tienen prioridad. M-05 se
   vuelve a medir en la Fase 2 de docs/07.
+- (Enmienda 2026-10-03, ADR-017, specs 056–057) Cada perfil declara `mode` (`estatico`/`movil`) y
+  `camera_motion_compensation`; perfil nuevo `patrulla` (`movil`). Filtro de cercanía antes de leer:
+  ROI, tamaño del vehículo (`max_plate_vehicle_ratio` 0,5) antes del tope `max_ocr_per_frame`, placa
+  a menos de 2 px del borde y ancho mínimo efectivo `ceil(max(min_plate_width_px, near_min_width_frac ×
+  lado mayor))`, con `min_plate_width_px` 32 y `near_min_width_frac` 0,025 en los cuatro perfiles.

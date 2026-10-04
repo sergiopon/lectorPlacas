@@ -542,6 +542,13 @@ class ProcessingSettings:
     vehicle_crop_margin: float      # [0, 1]
     track_finalize_after_ms: int    # >= 1
     max_readings_per_track: int     # >= 1
+    near_min_width_frac: float = 0.0                    # [0, 0.2]; spec 057
+    max_plate_vehicle_ratio: float = 1.0                # (0, 1]; spec 057
+    roi: tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)   # 0 <= x1 < x2 <= 1, 0 <= y1 < y2 <= 1
+
+# application/proximity.py (spec 057): FRAME_EDGE_MARGIN_PX = 2; effective_min_width(w, h, min_px, frac) -> int
+#   = ceil(round(max(min_px, frac * max(w, h)), 6)); center_in_roi(box, roi, w, h) -> bool;
+#   touches_frame_edge(box, w, h) -> bool; validate_roi(roi) -> None; ProximityCounters
 
 @dataclass(frozen=True, slots=True)
 class PipelineDependencies:

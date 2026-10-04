@@ -187,10 +187,13 @@ profiles:
     min_readings: 3
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32            # spec 057 (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
   calle_lenta:
     mode: estatico
     camera_motion_compensation: true
@@ -200,10 +203,13 @@ profiles:
     min_readings: 3
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32            # spec 057 (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
   calle_rapida:
     mode: estatico
     camera_motion_compensation: true
@@ -213,10 +219,13 @@ profiles:
     min_readings: 2
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32            # spec 057 (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
   patrulla:                          # spec 056, modo movil (ADR-017)
     mode: movil
     camera_motion_compensation: true
@@ -226,10 +235,13 @@ profiles:
     min_readings: 2
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32            # spec 057 (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
 
 consolidation:
   ambiguity_margin: 0.10
@@ -288,7 +300,7 @@ Notas del catálogo:
 | `tracker.cmc_method` | `sparseOptFlow`, `orb`, `sift`, `ecc` |
 | `tracker.*threshold*` | [0, 1]; `lost_track_buffer >= 0`; `minimum_consecutive_frames >= 1`; `cmc_downscale >= 1` |
 | `default_profile` | existe en `profiles` |
-| `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1]; `mode` ∈ {`estatico`, `movil`}; si `mode` es `movil`, `camera_motion_compensation` debe ser `true` (spec 056) |
+| `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1]; `mode` ∈ {`estatico`, `movil`}; si `mode` es `movil`, `camera_motion_compensation` debe ser `true` (spec 056); `near_min_width_frac` [0, 0.2]; `max_plate_vehicle_ratio` (0, 1]; `roi` 0 ≤ x1 < x2 ≤ 1 y 0 ≤ y1 < y2 ≤ 1 (spec 057) |
 | `consolidation.confusions` | pares `[letra A-Z, dígito 0-9]`, sin letras ni dígitos repetidos |
 | `retention` | `1 <= crops_days <= records_days <= 3650`; `1 <= training_days <= 3650` |
 | `plate_formats` | ≥ 1; `format_id` únicos; `regex` compila; `pattern` `^[LD]{1,10}$` |
