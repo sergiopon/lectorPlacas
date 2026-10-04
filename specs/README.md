@@ -79,7 +79,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 071 | Pantallas conectadas y pruebas E2E | 070, 064 | Por redactar (bloqueada por 070) |
 | 072 | Publicación de la web | 068, 071 | Por redactar (bloqueada por 071) |
 | 073 | [Retirar la GUI PySide6](073-retirar-gui-pyside6.md) | 071 | Lista (solo cuando la web cubra la GUI) |
-| 074 | [Clave maestra desde un archivo (Docker secrets)](074-clave-desde-archivo.md) | 008, 028 | Lista |
+| 074 | [Clave maestra desde un archivo (Docker secrets)](074-clave-desde-archivo.md) | 008, 028 | Implementada |
 | 075 | Imagen Docker y compose | 068, 070, 074 | Por redactar (bloqueada: frontend e imágenes base sin verificar) |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
