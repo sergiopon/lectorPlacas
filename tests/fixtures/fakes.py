@@ -199,6 +199,9 @@ class InMemoryPlateRepository:
     def log_event(self, event: AuditEvent, occurred_at: datetime, detail: str) -> None:
         self.events.append((event, occurred_at, detail))
 
+    def run_video_hashes(self) -> dict[int, str]:
+        return {run_id: run.start.video_sha256 for run_id, run in self.runs.items()}
+
     def close(self) -> None:
         self.closed = True
 

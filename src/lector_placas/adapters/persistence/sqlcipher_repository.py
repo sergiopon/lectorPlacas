@@ -500,6 +500,21 @@ class SqlCipherPlateRepository:
             (event.value, to_db_time(occurred_at), detail),
         )
 
+    def run_video_hashes(self) -> dict[int, str]:
+        """Devuelve el hash del video de cada corrida registrada.
+
+        Returns:
+            `run_id` → `video_sha256` de todas las corridas existentes.
+
+        Raises:
+            RepositoryError: si la consulta falla.
+        """
+        try:
+            rows = self._connection.execute("SELECT run_id, video_sha256 FROM runs").fetchall()
+        except sqlcipher.Error as e:
+            raise RepositoryError("run_video_hashes falló") from e
+        return {int(run_id): str(digest) for run_id, digest in rows}
+
     def close(self) -> None:
         """Cierra la conexión a la base de datos, de forma idempotente."""
         if not self._closed:

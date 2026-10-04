@@ -11,6 +11,7 @@ from lector_placas.application.ports import (
     Clock,
     CropStore,
     ExportStore,
+    LegibilityExportStore,
     PlateRepository,
     TrainingExportStore,
 )
@@ -62,7 +63,7 @@ class PurgeExpiredData:
     borra las exportaciones vencidas, dejando constancia en el registro de auditoría.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 055
         self,
         repository: PlateRepository,
         crop_store: CropStore,
@@ -70,6 +71,7 @@ class PurgeExpiredData:
         clock: Clock,
         policy: RetentionPolicy,
         training_store: TrainingExportStore | None = None,
+        legibility_store: LegibilityExportStore | None = None,
     ) -> None:
         """Inicializa el caso de uso con sus puertos y su política.
 
@@ -80,6 +82,7 @@ class PurgeExpiredData:
             clock: fuente de la hora actual en UTC.
             policy: días de retención de recortes, registros y entrenamiento.
             training_store: almacén de exportaciones de entrenamiento; `None` no borra ninguna.
+            legibility_store: almacén del dataset de legibilidad; `None` no borra ninguno.
         """
         self._repository = repository
         self._crop_store = crop_store
@@ -87,6 +90,7 @@ class PurgeExpiredData:
         self._clock = clock
         self._policy = policy
         self._training_store = training_store
+        self._legibility_store = legibility_store
 
     def execute(self) -> PurgeResult:
         """Ejecuta la purga en orden y registra el evento de auditoría.
@@ -104,7 +108,7 @@ class PurgeExpiredData:
             self._crop_store.delete(ref)
         swept = self._crop_store.delete_older_than(crops_cutoff)
         exports = self._export_store.delete_older_than(records_cutoff)
-        training = self._delete_training(now)
+        training = self._delete_training(now) + self._delete_legibility(now)
         result = PurgeResult(
             crops_deleted=len(refs) + swept,
             sightings_deleted=purge.sightings_deleted,
@@ -128,3 +132,10 @@ class PurgeExpiredData:
             return 0
         cutoff = now - timedelta(days=self._policy.training_days)
         return self._training_store.delete_older_than(cutoff)
+
+    def _delete_legibility(self, now: datetime) -> int:
+        """Borra las exportaciones de legibilidad vencidas, si hay almacén."""
+        if self._legibility_store is None:
+            return 0
+        cutoff = now - timedelta(days=self._policy.training_days)
+        return self._legibility_store.delete_older_than(cutoff)
