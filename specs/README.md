@@ -67,7 +67,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 059 | [Calidad del mejor recorte, `duplicate_of` y esquema v3](059-calidad-y-esquema-v3.md) | 052, 055, 057 | Lista |
 | 060 | [Parada temprana por track](060-parada-temprana.md) | 051, 056, 057 | Implementada |
 | 061 | [Duplicados de la misma placa en una corrida](061-duplicados-en-corrida.md) | 041, 059, 060 | Implementada |
-| 062 | [Entrenamiento del filtro de legibilidad](062-entrenar-filtro-legibilidad.md) | 055, 059 | Lista |
+| 062 | [Entrenamiento del filtro de legibilidad](062-entrenar-filtro-legibilidad.md) | 055, 059 | Implementada |
 | 063 | [Filtro de legibilidad en el pipeline](063-filtro-legibilidad-pipeline.md) | 057, 059, 062 | Lista |
 | 064 | [Vista "solo legibles" y métricas de lo oculto](064-vista-solo-legibles.md) | 038, 041, 061, 063 | Lista |
 | 065 | Tipo de vehículo por la forma de la placa | 013, 015, 057 | Por redactar (bloqueada: dimensiones oficiales sin verificar) |
