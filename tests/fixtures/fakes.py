@@ -232,6 +232,13 @@ class InMemoryPlateRepository:
         ordered = [self._run_record(run_id) for run_id in sorted(self.runs, reverse=True)]
         return ordered[offset : offset + limit]
 
+    def count_duplicates(self, sighting_ids: Sequence[int]) -> dict[int, int]:
+        counts: dict[int, int] = {}
+        for record in self.records.values():
+            if record.duplicate_of is not None and record.duplicate_of in sighting_ids:
+                counts[record.duplicate_of] = counts.get(record.duplicate_of, 0) + 1
+        return counts
+
     def browser(self) -> InMemoryPlateRepository:
         return self
 

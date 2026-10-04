@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any, Final
 
 import sqlcipher3.dbapi2 as sqlcipher
@@ -15,6 +16,8 @@ from lector_placas.application.ports import RunRecord, RunStatus, SightingQuery
 from lector_placas.domain.errors import RepositoryError
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from lector_placas.domain.entities import SightingRecord
 
 MAX_PAGE: Final[int] = 10_000
@@ -50,6 +53,10 @@ _LIST_RUNS_SQL: Final[str] = (
     "SELECT run_id, profile, status, started_at, finished_at, duration_ms, frames_processed, "
     "sightings_confirmed, sightings_unverified, tracks_without_reading, processing_ms "
     "FROM runs ORDER BY run_id DESC LIMIT ? OFFSET ?"
+)
+_COUNT_DUPLICATES_SQL: Final[str] = (
+    "SELECT duplicate_of, count(*) FROM sightings "
+    "WHERE duplicate_of IN (SELECT value FROM json_each(?)) GROUP BY duplicate_of"
 )
 
 
@@ -125,6 +132,28 @@ class SqlCipherSightingBrowser:
         except sqlcipher.Error as e:
             raise RepositoryError("list_runs falló") from e
         return [_row_to_run(row) for row in rows]
+
+    def count_duplicates(self, sighting_ids: Sequence[int]) -> dict[int, int]:
+        """Cuenta los duplicados de cada avistamiento de `sighting_ids`.
+
+        Args:
+            sighting_ids: identificadores a consultar.
+
+        Returns:
+            Número de duplicados por id; los ids sin duplicados no aparecen.
+
+        Raises:
+            RepositoryError: si la consulta falla.
+        """
+        if not sighting_ids:
+            return {}
+        try:
+            rows = self._connection.execute(
+                _COUNT_DUPLICATES_SQL, (json.dumps(list(sighting_ids)),)
+            ).fetchall()
+        except sqlcipher.Error as e:
+            raise RepositoryError("count_duplicates falló") from e
+        return {int(row[0]): int(row[1]) for row in rows}
 
 
 def _require_page(limit: int, offset: int) -> None:
