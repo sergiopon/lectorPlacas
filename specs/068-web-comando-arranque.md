@@ -31,6 +31,9 @@ En `[project.scripts]`, añadir `lector-web = "lector_placas.web.app:main"` desp
 
 ### `web/factory.py`
 `create_app(..., runner: JobRunner | None = None, static_dir: Path | None = None)`:
+- La firma queda con 7 parámetros: única excepción permitida, `# noqa: PLR0913, PLR0917 — firma fijada por la spec 068`
+  en la línea `def create_app(` (precedente: `purge_expired.py`, spec 055). El montaje del frontend va en una función
+  privada `_mount_frontend(app, static_dir)` para no pasar de 20 sentencias.
 - Si `static_dir` no es `None` y `(static_dir / "index.html").is_file()`: tras registrar los routers y `/auth`,
   `app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")`.
 - Si no: registra `GET /` (`async def`) que devuelve `HTMLResponse(NO_FRONTEND_HTML)` con
