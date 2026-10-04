@@ -8,11 +8,14 @@ composición sin tocar este módulo (ARQUITECTURA.md §2 regla 4).
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from lector_placas.adapters.review.opencv_review_ui import OpenCvReviewUI
+from lector_placas.adapters.security.file_key_provider import KEY_FILE_ENV, write_key_file
+from lector_placas.adapters.security.keyring_key_provider import KEY_SIZE
 from lector_placas.application.export_sightings import ExportSightings
 from lector_placas.application.ports import (
     Clock,
@@ -53,9 +56,28 @@ def require_keys(args: argparse.Namespace) -> KeyProvider:
 
 
 def cmd_key_init(args: argparse.Namespace, config: AppConfig) -> int:
-    """Asegura la clave maestra en el llavero del sistema, creándola si no existe."""
+    """Asegura la clave maestra, creándola si no existe."""
     require_keys(args).master_key()
-    sys.stdout.write("clave maestra disponible en el keyring\n")
+    if os.environ.get(KEY_FILE_ENV):
+        sys.stdout.write("clave maestra disponible en el archivo de clave\n")
+    else:
+        sys.stdout.write("clave maestra disponible en el keyring\n")
+    return 0
+
+
+def cmd_key_export_file(args: argparse.Namespace, config: AppConfig) -> int:
+    """Copia la clave del keyring a un archivo privado."""
+    key = require_keys(args).master_key()
+    write_key_file(args.path, key)
+    sys.stdout.write("clave maestra copiada al archivo indicado (0400)\n")
+    return 0
+
+
+def cmd_key_init_file(args: argparse.Namespace, config: AppConfig) -> int:
+    """Genera una clave maestra nueva y la escribe en un archivo."""
+    key = os.urandom(KEY_SIZE)
+    write_key_file(args.path, key)
+    sys.stdout.write("clave maestra nueva escrita en el archivo indicado (0400)\n")
     return 0
 
 

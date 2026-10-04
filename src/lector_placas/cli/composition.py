@@ -7,6 +7,7 @@ para que los tests de integración puedan sustituir cualquiera de estas funcione
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Final
 
@@ -25,6 +26,7 @@ from lector_placas.adapters.inference.plate_reader_fpo import create_fast_plate_
 from lector_placas.adapters.inference.vehicle_detector_yolo import YoloVehicleDetector
 from lector_placas.adapters.inference.yolo_end2end import YoloEnd2EndOnnxModel
 from lector_placas.adapters.persistence.sqlcipher_repository import SqlCipherPlateRepository
+from lector_placas.adapters.security.file_key_provider import KEY_FILE_ENV, FileKeyProvider
 from lector_placas.adapters.security.keyring_key_provider import KeyringKeyProvider
 from lector_placas.adapters.storage.encrypted_crop_store import EncryptedFileCropStore
 from lector_placas.adapters.tracking.botsort_tracker import BotSortTracker, TrackerSettings
@@ -67,7 +69,20 @@ def data_dir(config: AppConfig) -> Path:
 
 
 def build_key_provider(create_if_missing: bool) -> KeyProvider:
-    """Construye el proveedor de la clave maestra respaldado por el llavero del sistema."""
+    """Construye el proveedor de la clave maestra.
+
+    Si la variable de entorno LECTOR_KEY_FILE está definida con un valor no vacío,
+    devuelve un proveedor de archivo; si no, un proveedor respaldado por el llavero del sistema.
+
+    Args:
+        create_if_missing: se ignora si se usa el proveedor de archivo.
+
+    Returns:
+        Proveedor de clave maestra configurado.
+    """
+    key_file = os.environ.get(KEY_FILE_ENV)
+    if key_file:
+        return FileKeyProvider(Path(key_file))
     return KeyringKeyProvider(create_if_missing)
 
 
