@@ -55,7 +55,7 @@ Carro, bus y camión: 3 letras de `LETTERS` y 3 dígitos de `DIGITS`, cada cará
 Moto: 3 letras, 2 dígitos y 1 letra. Ningún texto se compara con placas reales: son inventados (SEG-10).
 
 ### 3. `seed_demo(config, keys)`
-Con `rng = random.Random(DEMO_SEED)`, `repository = composition.build_repository(config, keys)` y
+Con `rng = random.Random(DEMO_SEED)` (única excepción permitida: `# noqa: S311 — datos de demo deterministas, no criptográficos (spec 069)` en esa línea), `repository = composition.build_repository(config, keys)` y
 `crop_store = composition.build_crop_store(config, keys)`; el repositorio se cierra al final (`try/finally`).
 1. **Corridas.** Para `n` de 1 a 5: `start_run(RunStart(hashlib.sha256(f"demo-{n}".encode()).hexdigest(),
    DEMO_PROFILES[n - 1], VideoInfo(1920, 1080, 0, 60_000 * n, 30.0, "h264"), DEMO_START + timedelta(hours=n)))`.
@@ -79,7 +79,7 @@ Con `rng = random.Random(DEMO_SEED)`, `repository = composition.build_repository
    `last = 61_000`, confianza 0.6, acuerdo 0.6 y 2 lecturas; después `mark_duplicates([(id40, id1), (id41, id9)])`.
 4. **Cierre de corridas.** Para cada corrida `n`: `finish_run(n, RunStats(1800 * n, 900 * n, total + 2, confirmados,
    sin_confirmar, 2, 50_000 * n, 60_000 * n), DEMO_START + timedelta(hours=n, minutes=1), True)`, donde `confirmados`
-   y `sin_confirmar` cuentan lo guardado en esa corrida con estado `CONFIRMED` y `UNVERIFIED` al guardarse, y
+   y `sin_confirmar` cuentan lo guardado en esa corrida (incluidos los dos duplicados del paso 3, que son `UNVERIFIED` y van a las corridas 1 y 2) con estado `CONFIRMED` y `UNVERIFIED` al guardarse, y
    `total = confirmados + sin_confirmar`.
 
 ### 4. `demo_runner(config, keys)`
