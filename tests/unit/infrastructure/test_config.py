@@ -216,3 +216,14 @@ def test_invalid_roi_wrong_length(tmp_path: Path) -> None:
     data["profiles"]["calle_lenta"]["roi"] = [0.0, 0.0, 1.0]
     with pytest.raises(ConfigurationError):
         load_config(write(tmp_path, data))
+
+
+def test_real_config_early_stop(tmp_path: Path) -> None:
+    """Verifica early_stop en los cuatro perfiles y que es obligatorio."""
+    config = load_config(REAL)
+    for profile_name in ["parqueadero", "calle_lenta", "calle_rapida", "patrulla"]:
+        assert config.profiles[profile_name].early_stop is True
+    data = base_data()
+    del data["profiles"]["calle_lenta"]["early_stop"]
+    with pytest.raises(ConfigurationError):
+        load_config(write(tmp_path, data))

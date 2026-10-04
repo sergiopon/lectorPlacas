@@ -57,6 +57,7 @@ profiles:
     near_min_width_frac: 0.025
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]
+    early_stop: true
   calle_lenta:
     mode: estatico
     camera_motion_compensation: true
@@ -73,6 +74,7 @@ profiles:
     near_min_width_frac: 0.025
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]
+    early_stop: true
   calle_rapida:
     mode: estatico
     camera_motion_compensation: true
@@ -89,6 +91,7 @@ profiles:
     near_min_width_frac: 0.025
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]
+    early_stop: true
   patrulla:
     mode: movil
     camera_motion_compensation: true
@@ -105,6 +108,7 @@ profiles:
     near_min_width_frac: 0.025
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]
+    early_stop: true
 
 consolidation:
   ambiguity_margin: 0.10

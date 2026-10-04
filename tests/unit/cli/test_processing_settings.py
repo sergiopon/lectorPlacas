@@ -28,3 +28,4 @@ def test_build_processing_settings_copies_profile() -> None:
     assert settings.near_min_width_frac == 0.025
     assert settings.max_plate_vehicle_ratio == 0.5
     assert settings.roi == (0.0, 0.0, 1.0, 1.0)
+    assert settings.early_stop is True
