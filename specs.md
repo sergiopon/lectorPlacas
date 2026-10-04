@@ -1,6 +1,6 @@
 # Specs de lectorPlacas
 
-Resumen de todas las specs: qué hace cada una, de cuáles depende y en qué estado está. Fecha: 2026-10-03.
+Resumen de todas las specs: qué hace cada una, de cuáles depende y en qué estado está. Fecha: 2026-10-04.
 Fuente de verdad del estado: `specs/README.md`. Las specs 056–064, 066–069, 073 y 074 están redactadas (2026-10-03); la 058 espera la aprobación del cambio de docs/04.
 Las 065, 070–072 y 075 están bloqueadas: dependen de datos o artefactos que aún no existen. Diseño en `docs/09`.
 
@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057 (58 specs; 055–057 el 2026-10-03) |
-| Redactada (lista para implementar) | 059–064, 066–069, 073, 074 (12) |
+| Implementada | 000–057, 059, 060 (60 specs; 059 y 060 el 2026-10-04) |
+| Redactada (lista para implementar) | 061–064, 066–069, 073, 074 (10) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -104,8 +104,8 @@ Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta e
 | **056** | Modos de cámara en la configuración: `mode` (`estatico`/`movil`) y `camera_motion_compensation` por perfil, validación "móvil exige CMC", perfil `patrulla`, `TrackerSettings.enable_cmc` | 006, 016, 028 | **Implementada** (2026-10-03, Haiku) |
 | 057 | Filtro de cercanía antes de leer: `near_min_width_frac` 0,025, `max_plate_vehicle_ratio` 0,5, `roi`, placa en borde, `min_plate_width_px` 32 | 051, 056 | **Implementada** (2026-10-03, implementador Haiku) |
 | 058 | Evaluación con cercanía: ground truth versión 2 (`max_plate_width_px`, cámara `vehicle_mounted`); requiere aprobar el cambio de M-02/M-03 en docs/04 | 029, 057, 059 | Redactada, bloqueada (aprobación de docs/04) |
-| 059 | Características de calidad por avistamiento (ancho/alto de placa, nitidez, contraste), `duplicate_of` y migración v2 → v3 | 052, 055, 057 | Redactada |
-| 060 | Parada temprana por track (`early_stop`): un track lleno que ya se confirmaría deja de leerse | 051, 056, 057 | Redactada |
+| 059 | Características de calidad por avistamiento (ancho/alto de placa, nitidez, contraste), `duplicate_of` y migración v2 → v3 | 052, 055, 057 | Implementada |
+| 060 | Parada temprana por track (`early_stop`): un track lleno que ya se confirmaría deja de leerse | 051, 056, 057 | Implementada |
 | 061 | Duplicados de la misma placa en la corrida (`dedup_window_ms` 30 000 ms): marca `duplicate_of`, oculta por defecto | 041, 059, 060 | Redactada |
 | 062 | Entrena el filtro de legibilidad (`training/legibility`) solo con la población cercana; línea base `num_readings` ≤ 1 | 055, 059 | Redactada |
 | 063 | Filtro de legibilidad en el pipeline: razones `PREDICTED_ILLEGIBLE` / `PREDICTED_NOT_PLATE`; nunca confirma ni borra | 057, 059, 062 | Redactada |
