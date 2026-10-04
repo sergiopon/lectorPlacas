@@ -23,7 +23,8 @@ copiados a `config/lector.yaml`). Si la probabilidad de "legible" queda por deba
 - `config/lector.yaml`
 - `tests/unit/application/test_legibility.py` (nuevo)
 - `tests/unit/application/test_process_video_legibility.py` (nuevo)
-- `tests/unit/infrastructure/test_config.py` (un test nuevo)
+- `tests/unit/infrastructure/test_config.py` (tests nuevos)
+- `tests/unit/domain/test_consolidation.py` (un cambio de expectativa)
 
 ## Dependencias externas
 Ninguna nueva.
@@ -105,6 +106,12 @@ Si `enabled` es `False`, el resto se ignora. Si es `True`:
 - `UnverifiedReason` crece: la BD guarda las razones como texto (sin migración), igual que en la spec 050.
 
 ## Tests de aceptación (en prosa)
+**Test existente que cambia de expectativa (solo este):**
+- `tests/unit/domain/test_consolidation.py::test_correction_conflict_is_last_in_canonical_order`: `CORRECTION_CONFLICT`
+  pasa a ser el último de las razones del consolidador: se comprueba `members[-3] is R.CORRECTION_CONFLICT`,
+  `[m.name for m in members[-2:]] == ["PREDICTED_ILLEGIBLE", "PREDICTED_NOT_PLATE"]`, y las dos listas de nombres y
+  valores que hoy se comparan con `members[:-1]` se comparan con `members[:-3]` (sin cambiar las listas esperadas).
+
 `tests/unit/application/test_legibility.py`:
 - `test_feature_vector_reference`: `ConsolidatedPlate("ABC123", 0.8, 0.75, 4, UNVERIFIED, (LOW_CONFIDENCE,), ())`,
   `CropQuality(60, 20, 99.0, 64.0)`, frame 1920×1080, `CAR` → exactamente (con `pytest.approx`)
@@ -132,7 +139,8 @@ Si `enabled` es `False`, el resto se ignora. Si es `True`:
 - `test_legibility_validation` (parametrizado sobre `base_data()`): `enabled: true` sin más claves → contiene
   `legibility.enabled exige threshold, mean, std, weights y bias`; con `mean` de 15 valores → contiene
   `dimensiones inválidas`; con un `std` 0 → contiene `std debe ser > 0`; con `threshold` 1.0 → contiene
-  `threshold debe estar en [0, 1)`; un caso válido (16/16/3×16/3, `std` 1, `threshold` 0.4) carga y
+  `threshold debe estar en [0, 1)`; los cuatro casos son los del parámetro.
+- `test_legibility_valid_config_builds_model`: un caso válido (16/16/3×16/3, `std` 1, `threshold` 0.4) carga y
   `build_legibility_model` devuelve un `LegibilityModel` con `threshold == 0.4`.
 
 ## Fuera de alcance
