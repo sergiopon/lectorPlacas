@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Final
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.staticfiles import StaticFiles
 
 from lector_placas.application.ports import KeyProvider
 from lector_placas.infrastructure.config import AppConfig
@@ -17,14 +20,43 @@ from lector_placas.web.routes_read import router
 from lector_placas.web.security import SESSION_COOKIE, SessionAuth, install_security
 from lector_placas.web.session import SessionFactory, open_web_session
 
+NO_FRONTEND_HTML: Final[str] = (
+    '<!doctype html><html lang="es"><meta charset="utf-8"><title>lectorPlacas</title>'
+    "<p>Frontend no compilado. Ejecute <code>npm ci &amp;&amp; npm run build</code> en "
+    "<code>frontend/</code> y reinicie <code>lector-web</code>.</p></html>"
+)
 
-def create_app(
+
+def _include_routers(app: FastAPI) -> None:
+    """Registra los routers de lectura y de acciones."""
+    app.include_router(router)
+    app.include_router(actions_router)
+
+
+def _mount_frontend(app: FastAPI, static_dir: Path | None) -> None:
+    """Monta el frontend compilado o registra un endpoint de no-frontend.
+
+    Args:
+        app: aplicación FastAPI.
+        static_dir: directorio del frontend compilado, o None.
+    """
+    if static_dir is not None and (static_dir / "index.html").is_file():
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
+    else:
+
+        @app.get("/")
+        async def no_frontend() -> Response:
+            return HTMLResponse(NO_FRONTEND_HTML)
+
+
+def create_app(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 068
     config: AppConfig,
     keys: KeyProvider,
     auth: SessionAuth,
     allowed_hosts: frozenset[str],
     session_factory: SessionFactory = open_web_session,
     runner: JobRunner | None = None,
+    static_dir: Path | None = None,
 ) -> FastAPI:
     """Crea la aplicación web local.
 
@@ -35,6 +67,8 @@ def create_app(
         allowed_hosts: valores `Host` permitidos.
         session_factory: función que abre la sesión al arrancar.
         runner: función que procesa un video; si es `None`, se usa `default_runner`.
+        static_dir: directorio del frontend compilado; si no existe `index.html`,
+            se sirve un mensaje.
 
     Returns:
         La aplicación FastAPI con seguridad y endpoints de lectura.
@@ -74,6 +108,6 @@ def create_app(
         )
         return response
 
-    app.include_router(router)
-    app.include_router(actions_router)
+    _include_routers(app)
+    _mount_frontend(app, static_dir)
     return app

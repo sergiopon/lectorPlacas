@@ -27,6 +27,7 @@ dependencies = [
 [project.scripts]
 lector = "lector_placas.cli.main:main"
 lector-gui = "lector_placas.gui.app:main"
+lector-web = "lector_placas.web.app:main"
 
 [dependency-groups]
 dev = [
