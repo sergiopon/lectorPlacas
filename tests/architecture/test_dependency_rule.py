@@ -15,7 +15,6 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
         "lector_placas.cli",
         "lector_placas.evaluation",
         "lector_placas.datasets",
-        "lector_placas.gui",
         "lector_placas.web",
     ),
     "infrastructure": (
@@ -23,31 +22,26 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
         "lector_placas.cli",
         "lector_placas.evaluation",
         "lector_placas.datasets",
-        "lector_placas.gui",
         "lector_placas.web",
     ),
     "adapters": (
         "lector_placas.cli",
         "lector_placas.evaluation",
         "lector_placas.datasets",
-        "lector_placas.gui",
         "lector_placas.web",
     ),
     "evaluation": (
         "lector_placas.cli",
         "lector_placas.datasets",
-        "lector_placas.gui",
         "lector_placas.web",
     ),
     "datasets": (
         "lector_placas.cli",
         "lector_placas.evaluation",
-        "lector_placas.gui",
         "lector_placas.web",
     ),
-    "cli": ("lector_placas.gui", "lector_placas.web"),
-    "gui": ("lector_placas.web",),
-    "web": ("lector_placas.gui", "lector_placas.datasets"),
+    "cli": ("lector_placas.web",),
+    "web": ("lector_placas.datasets",),
 }
 
 
@@ -98,28 +92,14 @@ def test_nobody_imports_torch_or_ultralytics() -> None:
             assert name.split(".")[0] not in {"torch", "ultralytics", "pickle"}, f"{path}: {name}"
 
 
-def test_gui_imports_from_cli_only_composition() -> None:
-    for path in _files("gui"):
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    assert not alias.name.startswith("lector_placas.cli"), f"{path}: {alias.name}"
-            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-                if not node.module.startswith("lector_placas.cli"):
-                    continue
-                allowed = node.module == "lector_placas.cli.composition" or (
-                    node.module == "lector_placas.cli"
-                    and all(alias.name == "composition" for alias in node.names)
-                )
-                assert allowed, f"{path}: {node.module}"
-
-
-def test_nobody_outside_gui_imports_pyside6() -> None:
+def test_nobody_imports_pyside6() -> None:
     for path in sorted(SRC.rglob("*.py")):
-        if "gui" in path.relative_to(SRC).parts:
-            continue
         for name in _imports(path):
             assert name.split(".")[0] != "PySide6", f"{path}: {name}"
+
+
+def test_gui_package_is_gone() -> None:
+    assert not (SRC / "gui").exists()
 
 
 def test_web_imports_from_cli_only_composition() -> None:
