@@ -5,6 +5,7 @@ import re
 import shutil
 import stat
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -22,10 +23,12 @@ from lector_placas.web.demo import (
     create_demo_root,
     demo_config,
     demo_runner,
+    demo_start,
     plate_text,
     render_plate,
     seed_demo,
 )
+from lector_placas.web.session import open_web_session
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -120,6 +123,23 @@ def test_seed_demo_contents(demo_root: Path) -> None:
     seed_demo(config, keys)
     check_counts(config, keys)
     check_deterministic(read_all(config, keys))
+
+
+def test_demo_survives_purge(demo_root: Path) -> None:
+    keys = DemoKeyProvider()
+    config = make_config(demo_root)
+    seed_demo(config, keys)
+    session = open_web_session(config, keys)
+    try:
+        assert len(session.repository.list_sightings(None, 100, 0)) == 42
+        assert len(session.repository.run_video_hashes()) == 5
+    finally:
+        session.close()
+
+
+def test_demo_start() -> None:
+    now = datetime(2026, 10, 4, 16, 45, 9, tzinfo=UTC)
+    assert demo_start(now) == datetime(2026, 10, 2, 16, 0, tzinfo=UTC)
 
 
 class Recorder:

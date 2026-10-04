@@ -40,7 +40,13 @@ from lector_placas.infrastructure.input_validation import sha256_file
 from lector_placas.web.jobs import JobRunner
 
 DEMO_SEED: Final[int] = 2026
-DEMO_START: Final[datetime] = datetime(2026, 1, 15, 9, 0, tzinfo=UTC)
+
+
+def demo_start(now: datetime) -> datetime:
+    """Devuelve el instante base de la demo: `now` truncado a la hora, menos 2 días."""
+    return now.astimezone(UTC).replace(minute=0, second=0, microsecond=0) - timedelta(days=2)
+
+
 DEMO_PROFILES: Final[tuple[str, ...]] = (
     "parqueadero",
     "calle_lenta",
@@ -152,14 +158,14 @@ def _shifted(text: str) -> str:
     return LETTERS[(LETTERS.index(text[0]) + 1) % len(LETTERS)] + text[1:]
 
 
-def _start_runs(repository: PlateRepository) -> None:
+def _start_runs(repository: PlateRepository, start: datetime) -> None:
     for n in range(1, _DEMO_RUNS + 1):
         repository.start_run(
             RunStart(
                 hashlib.sha256(f"demo-{n}".encode()).hexdigest(),
                 DEMO_PROFILES[n - 1],
                 VideoInfo(1920, 1080, 0, 60_000 * n, 30.0, "h264"),
-                DEMO_START + timedelta(hours=n),
+                start + timedelta(hours=n),
             )
         )
 
@@ -179,8 +185,10 @@ def _build_plate(rng: random.Random, i: int, texto: str) -> ConsolidatedPlate:
     )
 
 
-def _review(repository: PlateRepository, sighting_id: int, k: int, texto: str) -> None:
-    reviewed_at = DEMO_START + timedelta(days=1)
+def _review(
+    repository: PlateRepository, sighting_id: int, k: int, texto: str, start: datetime
+) -> None:
+    reviewed_at = start + timedelta(days=1)
     if k == _K_CORRECTED:
         repository.record_review(sighting_id, ReviewStatus.CORRECTED, texto, reviewed_at)
     elif k == _K_REJECTED:
@@ -190,7 +198,11 @@ def _review(repository: PlateRepository, sighting_id: int, k: int, texto: str) -
 
 
 def _seed_sighting(
-    repository: PlateRepository, crop_store: CropStore, rng: random.Random, i: int
+    repository: PlateRepository,
+    crop_store: CropStore,
+    rng: random.Random,
+    i: int,
+    start: datetime,
 ) -> tuple[int, Sighting]:
     """Guarda el avistamiento `i` y su revisión; devuelve su id y la entidad guardada."""
     run_id = i // 8 + 1
@@ -211,11 +223,11 @@ def _seed_sighting(
         vehicle_type,
         plate,
         crop_ref,
-        DEMO_START + timedelta(hours=run_id),
+        start + timedelta(hours=run_id),
         quality,
     )
     sighting_id = repository.save_sighting(sighting)
-    _review(repository, sighting_id, i % 8, texto)
+    _review(repository, sighting_id, i % 8, texto, start)
     return sighting_id, sighting
 
 
@@ -246,7 +258,7 @@ def _seed_duplicate(
     return repository.save_sighting(duplicate), duplicate
 
 
-def _finish_runs(repository: PlateRepository, saved: list[Sighting]) -> None:
+def _finish_runs(repository: PlateRepository, saved: list[Sighting], start: datetime) -> None:
     for n in range(1, _DEMO_RUNS + 1):
         of_run = [s for s in saved if s.run_id == n]
         confirmed = sum(1 for s in of_run if s.plate.status is ReviewStatus.CONFIRMED)
@@ -255,7 +267,7 @@ def _finish_runs(repository: PlateRepository, saved: list[Sighting]) -> None:
         stats = RunStats(
             1800 * n, 900 * n, total + 2, confirmed, unconfirmed, 2, 50_000 * n, 60_000 * n
         )
-        repository.finish_run(n, stats, DEMO_START + timedelta(hours=n, minutes=1), True)
+        repository.finish_run(n, stats, start + timedelta(hours=n, minutes=1), True)
 
 
 def seed_demo(config: AppConfig, keys: KeyProvider) -> None:
@@ -266,16 +278,17 @@ def seed_demo(config: AppConfig, keys: KeyProvider) -> None:
         keys: proveedor de la clave de demo.
     """
     rng = random.Random(DEMO_SEED)  # noqa: S311 — datos de demo deterministas, no criptográficos (spec 069)
+    start = demo_start(datetime.now(UTC))
     repository = composition.build_repository(config, keys)
     crop_store = composition.build_crop_store(config, keys)
     try:
-        _start_runs(repository)
-        seeded = [_seed_sighting(repository, crop_store, rng, i) for i in range(40)]
+        _start_runs(repository, start)
+        seeded = [_seed_sighting(repository, crop_store, rng, i, start) for i in range(40)]
         id40, dup40 = _seed_duplicate(repository, 40, seeded[1][1])
         id41, dup41 = _seed_duplicate(repository, 41, seeded[9][1])
         repository.mark_duplicates([(id40, seeded[1][0]), (id41, seeded[9][0])])
         saved = [sighting for _, sighting in seeded] + [dup40, dup41]
-        _finish_runs(repository, saved)
+        _finish_runs(repository, saved, start)
     finally:
         repository.close()
 
