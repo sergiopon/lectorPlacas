@@ -140,6 +140,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 | 074 | Clave maestra desde archivo (`LECTOR_KEY_FILE`, `lector key export-file`/`init-file`) | 008, 028 | Implementada |
 | 075 | `Dockerfile` multi-etapa y `compose.yaml` (perfiles cpu/gpu), puerto solo en loopback | 068, 074 | Bloqueada: frontend (070) e imágenes base sin verificar |
 | 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Implementada |
+| 077 | Escalas del gráfico de métricas ajustadas a los datos; capturas sin esqueletos ni transiciones | 070, 071, 072 | Redactada |
 
 ---
 
