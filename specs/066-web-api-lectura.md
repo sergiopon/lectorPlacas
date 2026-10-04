@@ -210,7 +210,7 @@ Fixtures sintéticos. `tests/unit/web/conftest.py` define:
 - `test_auth_exchanges_token_once`: con un cliente sin autenticar, `/auth?token=arranque` da 303 a `/` y
   `Set-Cookie` contiene `lector_session=`, `HttpOnly`, `SameSite=strict` y `Path=/`; repetirlo da 403
   `{"detail": "token inválido"}`.
-- `test_wrong_token_is_rejected`: `/auth?token=otro` da 403; `/auth` sin token da 403.
+- `test_wrong_token_is_rejected`: `/auth?token=otro` da 403; `/auth` sin token da 403. `/auth?token=é` da 403; una petición a `/api/health` con la cookie `lector_session=é` da 401.
 - `test_api_requires_cookie`: sin autenticar, `GET /api/health` da 401 `{"detail": "no autenticado"}`; autenticado, 200
   `{"status": "ok"}`; con la cookie cambiada por `x`, 401.
 - `test_host_is_checked`: con `headers={"host": "evil.example:8765"}` da 400 `{"detail": "host no permitido"}`; con
