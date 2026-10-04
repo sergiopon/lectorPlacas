@@ -44,3 +44,10 @@ La excepción a SEG-07 se amplía a `lector dataset export-legibility` (spec 055
 avistamientos con estado final (`confirmed`, `corrected`, `illegible`, `rejected`) con su clase de legibilidad y las
 métricas del consolidador, **sin texto de placa ni hash de video**, a `training/legibility/datasets/own/`. Misma
 retención (`training_days`), permisos y auditoría. Sirve para entrenar el filtro de legibilidad (docs/08 §2).
+
+## Actualización 2026-10-03 (spec 074)
+Dentro de un contenedor no hay Secret Service. Si `LECTOR_KEY_FILE` contiene una ruta absoluta, la clave se lee de ese
+archivo (64 hex y salto de línea opcional, archivo regular del usuario del proceso, sin permisos de grupo ni otros).
+`lector key export-file <ruta>` copia la clave del keyring (mismos datos dentro y fuera de Docker) y
+`lector key init-file <ruta>` genera una nueva. El archivo se monta como Docker secret (spec 075) y nunca entra en el
+repo ni en la imagen.
