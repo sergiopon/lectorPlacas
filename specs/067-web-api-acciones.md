@@ -27,9 +27,9 @@ Ninguna nueva.
 ## Interfaces y tipos involucrados
 
 ### `web/jobs.py`
-- `JobRunner: TypeAlias = Callable[[Path, str, ProgressReporter], int]`: recibe el video ya validado, el nombre del
+- `type JobRunner = Callable[[Path, str, ProgressReporter], int]`: recibe el video ya validado, el nombre del
   perfil y el reporter; procesa y devuelve el `run_id`.
-- `JobState: TypeAlias = Literal["running", "completed", "cancelled", "failed"]`.
+- `type JobState = Literal["running", "completed", "cancelled", "failed"]`.
 - `GENERIC_ERROR_MESSAGE: Final[str] = "error inesperado; revise logs/lector.log"`.
 - `@dataclass(frozen=True, slots=True) class JobSnapshot` con `job_id: str`, `state: JobState`, `run_id: int | None`,
   `progress: ProgressUpdate | None`, `message: str | None`.
@@ -95,7 +95,7 @@ sesión web.
 | `POST /api/sightings/{id}/decision` (cuerpo `DecisionIn`) | `ReviewDecision(ACCIÓN, corrected_text en mayúsculas si no es None)` con `confirm→CONFIRM`, `correct→CORRECT`, `reject→REJECT`, `illegible→ILLEGIBLE`; `DecideSighting(session.repository, session.clock).execute(id, decision)`. 200 `SightingOut` del registro devuelto (con `duplicates` de `count_duplicates([id])`). `InvalidEntityError` o `ReviewError` → 422 `{"detail": "decisión inválida"}`; `SightingNotFoundError` → 404 `{"detail": "avistamiento no encontrado"}`. |
 | `POST /api/export` (cuerpo `ExportIn`) | `ExportSightings(session.repository, session.export_store, session.clock).execute(ReviewStatus(status) o None)`; 200 `ExportOut(file=path.name)`. `ExportError` → 500 `{"detail": "no se pudo exportar"}`. |
 | `POST /api/purge` | `composition.build_purge(config, repository, crop_store, export_store, clock).execute()`; 200 `PurgeOut` con sus campos. |
-| `GET /api/metrics` | Recorre `session.repository.list_sightings(None, 500, offset)` hasta una página con menos de 500 y devuelve `MetricsOut` de `compute_review_metrics(registros)`. |
+| `GET /api/metrics` | Recorre `session.repository.list_sightings(None, 500, offset)` hasta una página con menos de 500 y devuelve `MetricsOut` de `compute_review_metrics(registros)`. `EvaluationError` (sin avistamientos) → 404 `{"detail": "no hay avistamientos para evaluar"}`. |
 
 `JobOut` desde un `JobSnapshot`: `frames_decoded`, `frames_processed`, `position_ms`, `duration_ms`, `sightings_saved` y
 `fraction` del `progress` (todos `None` si `progress` es `None`); `job_id`, `state`, `run_id` y `message` directos.
@@ -146,7 +146,8 @@ spec 007, no de esta).
   inválida"}`; sobre el id 999, 404.
 - `test_export_purge_metrics`: `POST /api/export` con `{}` da 200 con `file` igual al nombre que devuelve
   `InMemoryExportStore`; `POST /api/purge` da 200 con las seis claves en camelCase; `GET /api/metrics` da 200 con las
-  claves `precisionConfirmed`, `cer`, `reasonCounts` y `confirmedIllegible`.
+  claves `precisionConfirmed`, `cer`, `reasonCounts` y `confirmedIllegible`; con el repositorio vacío (antes de crear avistamientos), `GET /api/metrics` da 404
+  `{"detail": "no hay avistamientos para evaluar"}`.
 - `test_unknown_job_404`: `GET /api/jobs/x`, `POST /api/jobs/x/cancel` y `GET /api/jobs/x/events` dan 404
   `{"detail": "trabajo no encontrado"}`.
 
