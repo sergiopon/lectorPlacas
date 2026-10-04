@@ -7,11 +7,13 @@ from typing import Annotated, Final, Literal
 
 import cv2
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from starlette.concurrency import run_in_threadpool
 
 from lector_placas.application.ports import RunRecord, SightingQuery
 from lector_placas.domain.entities import PLATE_TEXT_REGEX, ReviewStatus, SightingRecord
 from lector_placas.domain.errors import CropNotFoundError, SightingNotFoundError
 from lector_placas.web.labels import profile_text
+from lector_placas.web.media import MediaServices, probe_duration_ms
 from lector_placas.web.schemas import (
     ProfileOut,
     RunOut,
@@ -44,24 +46,18 @@ def _session(request: Request) -> WebSession:
     return session
 
 
-def _list_videos(session: WebSession) -> list[VideoOut]:
+def _list_videos(session: WebSession, media: MediaServices) -> list[VideoOut]:
     """Lista los videos de los directorios permitidos."""
     config = session.config
-    videos: list[VideoOut] = []
-    for directory in config.input.allowed_dirs:
-        folder = config.under_root(directory)
-        if not folder.exists():
-            continue
-        for file in sorted(folder.iterdir()):
-            if file.is_file() and file.suffix.lower() in config.input.allowed_extensions:
-                videos.append(
-                    VideoOut(
-                        name=file.name,
-                        path=file.relative_to(config.root_dir).as_posix(),
-                        size_bytes=file.stat().st_size,
-                    )
-                )
-    return videos
+    return [
+        VideoOut(
+            name=file.name,
+            path=file.relative_to(config.root_dir).as_posix(),
+            size_bytes=file.stat().st_size,
+            duration_ms=probe_duration_ms(media.sources, file),
+        )
+        for file in media.locator.candidates()
+    ]
 
 
 def _run_out(session: WebSession, run: RunRecord) -> RunOut:
@@ -153,7 +149,8 @@ async def health() -> dict[str, str]:
 @router.get("/videos")
 async def videos(request: Request) -> list[VideoOut]:
     """Lista los videos disponibles."""
-    return _list_videos(_session(request))
+    media: MediaServices = request.app.state.media
+    return await run_in_threadpool(_list_videos, _session(request), media)
 
 
 @router.get("/profiles")

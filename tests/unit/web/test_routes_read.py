@@ -38,7 +38,7 @@ def test_videos_lists_allowed_files(config: AppConfig, tmp_path: Path) -> None:
     (folder / "sub" / "c.mp4").write_bytes(b"x")
     with authenticated_client(config.model_copy(update={"root_dir": tmp_path})) as c:
         assert c.get("/api/videos").json() == [
-            {"name": "a.mp4", "path": "videos/a.mp4", "sizeBytes": 3}
+            {"name": "a.mp4", "path": "videos/a.mp4", "sizeBytes": 3, "durationMs": None}
         ]
 
 

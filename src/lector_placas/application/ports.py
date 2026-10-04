@@ -263,6 +263,26 @@ class VideoSourceFactory(Protocol):
         ...
 
 
+class FrameGrabber(Protocol):
+    """Obtiene el fotograma completo de un video en un instante dado."""
+
+    def grab(self, path: Path, timestamp_ms: int) -> ImageBGR:
+        """Decodifica el fotograma de `path` en `timestamp_ms`.
+
+        Precondiciones:
+            `path` es un video ya localizado por `VideoLocator`; `timestamp_ms >= 0`.
+
+        Postcondiciones:
+            Imagen BGR upright (rotación aplicada) del primer frame cuyo timestamp (relativo al
+            PTS del primer frame) es `>= timestamp_ms`; si el video termina antes, el último
+            frame decodificado.
+
+        Raises:
+            VideoSourceError: si no se puede abrir o decodificar el video.
+        """
+        ...
+
+
 class FrameSampler(Protocol):
     """Decide qué frames se procesan según su marca de tiempo."""
 

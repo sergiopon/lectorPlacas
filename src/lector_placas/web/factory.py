@@ -13,9 +13,12 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from starlette.staticfiles import StaticFiles
 
 from lector_placas.application.ports import KeyProvider
+from lector_placas.cli import composition
 from lector_placas.infrastructure.config import AppConfig
 from lector_placas.web.jobs import JobManager, JobRunner, default_runner
+from lector_placas.web.media import MediaServices, VideoLocator
 from lector_placas.web.routes_actions import router as actions_router
+from lector_placas.web.routes_media import router as media_router
 from lector_placas.web.routes_read import router
 from lector_placas.web.security import SESSION_COOKIE, SessionAuth, install_security
 from lector_placas.web.session import SessionFactory, open_web_session
@@ -31,6 +34,19 @@ def _include_routers(app: FastAPI) -> None:
     """Registra los routers de lectura y de acciones."""
     app.include_router(router)
     app.include_router(actions_router)
+    app.include_router(media_router)
+
+
+def _install_state(
+    app: FastAPI, config: AppConfig, keys: KeyProvider, runner: JobRunner | None
+) -> None:
+    """Crea los trabajos y los servicios de medios en el estado de la app."""
+    app.state.jobs = JobManager(runner if runner is not None else default_runner(config, keys))
+    app.state.media = MediaServices(
+        VideoLocator(config),
+        composition.build_frame_grabber(),
+        composition.build_video_source_factory(),
+    )
 
 
 def _mount_frontend(app: FastAPI, static_dir: Path | None) -> None:
@@ -90,7 +106,7 @@ def create_app(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 068
         openapi_url="/api/openapi.json",
         lifespan=lifespan,
     )
-    app.state.jobs = JobManager(runner if runner is not None else default_runner(config, keys))
+    _install_state(app, config, keys, runner)
     install_security(app, auth, allowed_hosts)
 
     @app.exception_handler(RequestValidationError)
