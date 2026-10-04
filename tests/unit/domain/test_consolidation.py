@@ -97,9 +97,10 @@ def test_invalid_direct_reading_is_still_corrected() -> None:
 
 def test_correction_conflict_is_last_in_canonical_order() -> None:
     members = list(R)
-    assert members[-1] is R.CORRECTION_CONFLICT
+    assert members[-3] is R.CORRECTION_CONFLICT
+    assert [m.name for m in members[-2:]] == ["PREDICTED_ILLEGIBLE", "PREDICTED_NOT_PLATE"]
     assert R.CORRECTION_CONFLICT.value == "correction_conflict"
-    assert [member.name for member in members[:-1]] == [
+    assert [member.name for member in members[:-3]] == [
         "INSUFFICIENT_READINGS",
         "LOW_CONFIDENCE",
         "LOW_AGREEMENT",
@@ -108,7 +109,7 @@ def test_correction_conflict_is_last_in_canonical_order() -> None:
         "VEHICLE_FORMAT_MISMATCH",
         "AMBIGUOUS_FORMAT",
     ]
-    assert [member.value for member in members[:-1]] == [
+    assert [member.value for member in members[:-3]] == [
         "insufficient_readings",
         "low_confidence",
         "low_agreement",

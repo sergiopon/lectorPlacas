@@ -123,6 +123,10 @@ retention:
   records_days: 90
   training_days: 180
 
+legibility:
+  enabled: false
+  # spec 063: copiar threshold, mean, std, weights y bias de model.json (spec 062) cuando un revisor Opus lo acepte
+
 logging:
   level: INFO                          # DEBUG | INFO | WARNING | ERROR
 

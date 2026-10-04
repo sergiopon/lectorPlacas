@@ -17,6 +17,7 @@ from pydantic import (
     model_validator,
 )
 
+from lector_placas.application.legibility import FEATURE_COUNT
 from lector_placas.application.proximity import NEAR_MIN_WIDTH_FRAC_MAX
 from lector_placas.domain.consolidation import ConsolidationPolicy
 from lector_placas.domain.entities import PlateFormat, VehicleType
@@ -34,6 +35,7 @@ EXTENSION_MAX_LENGTH: Final[int] = 10
 TARGET_FPS_MAX: Final[float] = 120.0
 DEDUP_WINDOW_MS_MAX: Final[int] = 600_000
 RETENTION_MAX_DAYS: Final[int] = 3650
+LEGIBILITY_CLASSES: Final[int] = 3
 
 
 def _field_name(info: ValidationInfo) -> str:
@@ -368,6 +370,46 @@ class RetentionConfig(StrictModel):
     training_days: int
 
 
+class LegibilityConfig(StrictModel):
+    """Modelo de legibilidad (spec 063): coeficientes copiados de `model.json` (spec 062)."""
+
+    enabled: bool
+    threshold: float | None = None
+    mean: tuple[float, ...] | None = None
+    std: tuple[float, ...] | None = None
+    weights: tuple[tuple[float, ...], ...] | None = None
+    bias: tuple[float, ...] | None = None
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> LegibilityConfig:
+        """Si está habilitado, exige coeficientes completos y coherentes."""
+        if not self.enabled:
+            return self
+        if (
+            self.threshold is None
+            or self.mean is None
+            or self.std is None
+            or self.weights is None
+            or self.bias is None
+        ):
+            raise ValueError("legibility.enabled exige threshold, mean, std, weights y bias")
+        if (
+            len(self.mean) != FEATURE_COUNT
+            or len(self.std) != FEATURE_COUNT
+            or len(self.weights) != LEGIBILITY_CLASSES
+            or any(len(row) != FEATURE_COUNT for row in self.weights)
+            or len(self.bias) != LEGIBILITY_CLASSES
+        ):
+            raise ValueError(
+                "legibility: dimensiones inválidas (se esperan 16 características y 3 clases)"
+            )
+        if any(value <= 0 for value in self.std):
+            raise ValueError("legibility: std debe ser > 0")
+        if not 0 <= self.threshold < 1:
+            raise ValueError("legibility: threshold debe estar en [0, 1)")
+        return self
+
+
 class LoggingConfig(StrictModel):
     """Nivel de logging de la aplicación."""
 
@@ -400,6 +442,7 @@ class AppConfig(StrictModel):
     profiles: dict[str, ProfileConfig]
     consolidation: ConsolidationConfig
     retention: RetentionConfig
+    legibility: LegibilityConfig
     logging: LoggingConfig
     plate_formats: tuple[PlateFormatConfig, ...]
 

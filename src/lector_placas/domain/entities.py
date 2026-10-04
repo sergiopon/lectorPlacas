@@ -72,6 +72,8 @@ class UnverifiedReason(StrEnum):
     VEHICLE_FORMAT_MISMATCH = "vehicle_format_mismatch"
     AMBIGUOUS_FORMAT = "ambiguous_format"
     CORRECTION_CONFLICT = "correction_conflict"
+    PREDICTED_ILLEGIBLE = "predicted_illegible"
+    PREDICTED_NOT_PLATE = "predicted_not_plate"
 
 
 @dataclass(frozen=True, slots=True)
