@@ -12,7 +12,7 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 | Estado | Specs |
 |---|---|
 | Implementada | 000–057, 059–064, 066–069, 074 (70 specs; 059–064, 066–069 y 074 el 2026-10-04) |
-| Redactada (lista para implementar) | 073 (1, solo cuando la web cubra la GUI) |
+| Redactada (lista para implementar) | 070, 073, 076 (3) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -128,9 +128,9 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 | 067 | API de acciones: trabajos de procesamiento en hilo + SSE + cancelación, decisiones, export, purga, métricas | 025, 026, 038, 040, 046, 066 | Implementada |
 | 068 | Script `lector-web`: 127.0.0.1, puerto libre, abre el navegador con el token, sirve `frontend/dist/` | 066, 067 | Implementada |
 | 069 | Modo demo sintético (`lector-web --demo`) | 059, 061, 066, 067, 068 | Implementada |
-| 070 | Importar el frontend de Figma Make a `frontend/` con cliente tipado desde OpenAPI | 066, 069 y el diseño del usuario | Bloqueada: falta la exportación de Figma Make |
-| 071 | Pantallas conectadas y pruebas (Vitest, Playwright contra el demo) | 070, 064 | Bloqueada: falta la exportación de Figma Make |
-| 072 | Publicación: README con inicio rápido, capturas del demo, nivel F con `bind` en loopback | 068, 071 | Bloqueada: falta la exportación de Figma Make |
+| 070 | Frontend de Figma Make en `frontend/` conectado a la API real (sin plugins de Figma ni analítica; npm, versiones exactas) | 066–069, 076 | Redactada |
+| 071 | Pantallas conectadas y pruebas (Vitest, Playwright contra el demo) | 070, 064 | Por redactar |
+| 072 | Publicación: README con inicio rápido, capturas del demo, nivel F con `bind` en loopback | 068, 071 | Por redactar |
 | 073 | Retirar la GUI PySide6 (solo cuando la web cubra sus funciones) | 071 | Redactada |
 
 ## 6. Docker (074–075)
@@ -139,6 +139,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 |---|---|---|---|
 | 074 | Clave maestra desde archivo (`LECTOR_KEY_FILE`, `lector key export-file`/`init-file`) | 008, 028 | Implementada |
 | 075 | `Dockerfile` multi-etapa y `compose.yaml` (perfiles cpu/gpu), puerto solo en loopback | 068, 074 | Bloqueada: frontend (070) e imágenes base sin verificar |
+| 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Redactada |
 
 ---
 

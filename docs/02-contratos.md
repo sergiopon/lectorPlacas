@@ -481,6 +481,7 @@ class SightingBrowser(Protocol):
 | Puerto.método | Precondiciones | Postcondiciones | Raises |
 |---|---|---|---|
 | `VideoSourceFactory.open` | `path` ya validado (spec 007) | Fuente abierta; `info()` disponible | `VideoSourceError` si no decodifica o no tiene stream de video |
+| `FrameGrabber.grab` (spec 076) | `path` localizado por `VideoLocator`; `timestamp_ms >= 0` | Imagen BGR upright del primer frame con timestamp `>= timestamp_ms` (o el último) | `VideoSourceError` si no abre o no decodifica |
 | `VideoSource.frames` | Fuente abierta; se llama una sola vez | `Frame` en orden de decodificación, `timestamp_ms` no decreciente, imagen upright BGR | `VideoSourceError` ante error de decodificación |
 | `VideoSource.close` | — | Idempotente; libera el contenedor | — |
 | `FrameSampler.should_process` | `timestamp_ms >= 0` | `True` para el primer frame; luego según ADR-006 | — |
