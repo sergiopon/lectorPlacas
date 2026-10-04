@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057, 059–064, 066–069, 074 (70 specs; 059–064, 066–069 y 074 el 2026-10-04) |
-| Redactada (lista para implementar) | 070, 073, 076 (3) |
+| Implementada | 000–057, 059–064, 066–069, 074, 076 (71 specs; 059–064, 066–069, 074 y 076 el 2026-10-04) |
+| Redactada (lista para implementar) | 070, 073 (2) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -139,7 +139,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 |---|---|---|---|
 | 074 | Clave maestra desde archivo (`LECTOR_KEY_FILE`, `lector key export-file`/`init-file`) | 008, 028 | Implementada |
 | 075 | `Dockerfile` multi-etapa y `compose.yaml` (perfiles cpu/gpu), puerto solo en loopback | 068, 074 | Bloqueada: frontend (070) e imágenes base sin verificar |
-| 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Redactada |
+| 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Implementada |
 
 ---
 
