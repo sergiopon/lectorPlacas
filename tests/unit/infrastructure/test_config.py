@@ -111,7 +111,7 @@ def test_patrulla_profile_values() -> None:
     assert profile.min_readings == 2
     assert profile.confirm_threshold == 0.90
     assert profile.min_agreement == 0.60
-    assert profile.min_plate_width_px == 20
+    assert profile.min_plate_width_px == 32
     assert profile.min_sharpness == 0.0
     assert profile.max_ocr_per_frame == 8
     assert profile.vehicle_crop_margin == 0.10
@@ -163,3 +163,56 @@ def test_first_offending_profile_is_named(tmp_path: Path) -> None:
     error_str = str(exc_info.value)
     assert "el perfil patrulla es movil" in error_str
     assert "patrulla_extra" not in error_str
+
+
+def test_real_config_proximity_values() -> None:
+    """Verifica que los cuatro perfiles tienen los valores correctos de proximidad."""
+    config = load_config(REAL)
+    for profile_name in ["parqueadero", "calle_lenta", "calle_rapida", "patrulla"]:
+        profile = config.profiles[profile_name]
+        assert profile.min_plate_width_px == 32
+        assert profile.near_min_width_frac == 0.025
+        assert profile.max_plate_vehicle_ratio == 0.5
+        assert profile.roi == (0.0, 0.0, 1.0, 1.0)
+
+
+@pytest.mark.parametrize(
+    "mutate,error_substring",
+    [
+        (
+            lambda d: d["profiles"]["calle_lenta"].update(near_min_width_frac=0.21),
+            "near_min_width_frac debe estar en [0, 0.2]: 0.21",
+        ),
+        (
+            lambda d: d["profiles"]["calle_lenta"].update(near_min_width_frac=-0.01),
+            "near_min_width_frac debe estar en [0, 0.2]: -0.01",
+        ),
+        (
+            lambda d: d["profiles"]["calle_lenta"].update(max_plate_vehicle_ratio=0.0),
+            "max_plate_vehicle_ratio debe estar en (0, 1]: 0.0",
+        ),
+        (
+            lambda d: d["profiles"]["calle_lenta"].update(max_plate_vehicle_ratio=1.01),
+            "max_plate_vehicle_ratio debe estar en (0, 1]: 1.01",
+        ),
+        (
+            lambda d: d["profiles"]["calle_lenta"].update(roi=[0.5, 0.0, 0.4, 1.0]),
+            "roi inválida: se espera 0 <= x1 < x2 <= 1 y 0 <= y1 < y2 <= 1",
+        ),
+    ],
+)
+def test_invalid_proximity_values(tmp_path: Path, mutate: Any, error_substring: str) -> None:
+    """Verifica que valores inválidos de proximidad lanzan ConfigurationError."""
+    data = base_data()
+    mutate(data)
+    with pytest.raises(ConfigurationError) as exc_info:
+        load_config(write(tmp_path, data))
+    assert error_substring in str(exc_info.value)
+
+
+def test_invalid_roi_wrong_length(tmp_path: Path) -> None:
+    """Verifica que una ROI con longitud incorrecta causa error."""
+    data = base_data()
+    data["profiles"]["calle_lenta"]["roi"] = [0.0, 0.0, 1.0]
+    with pytest.raises(ConfigurationError):
+        load_config(write(tmp_path, data))

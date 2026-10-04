@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
 
 from lector_placas.application.image_ops import crop_image
@@ -27,6 +27,15 @@ from lector_placas.application.ports import (
     VehicleDetector,
     VideoSource,
     VideoSourceFactory,
+)
+from lector_placas.application.proximity import (
+    FULL_FRAME_ROI,
+    NEAR_MIN_WIDTH_FRAC_MAX,
+    ProximityCounters,
+    center_in_roi,
+    effective_min_width,
+    touches_frame_edge,
+    validate_roi,
 )
 from lector_placas.application.track_registry import FinalizedTrack, TrackRegistry
 from lector_placas.domain.entities import (
@@ -64,6 +73,9 @@ class ProcessingSettings:
     vehicle_crop_margin: float
     track_finalize_after_ms: int
     max_readings_per_track: int
+    near_min_width_frac: float = 0.0
+    max_plate_vehicle_ratio: float = 1.0
+    roi: tuple[float, float, float, float] = FULL_FRAME_ROI
 
     def __post_init__(self) -> None:
         """Valida los umbrales y límites del perfil.
@@ -72,6 +84,11 @@ class ProcessingSettings:
             InvalidEntityError: si algún entero es menor que 1, `min_sharpness` es negativo,
                 `vehicle_crop_margin` sale de [0, 1] o `profile_name` está vacío.
         """
+        self._validate_core_settings()
+        self._validate_proximity_settings()
+
+    def _validate_core_settings(self) -> None:
+        """Valida los umbrales básicos (compatibles con versiones anteriores)."""
         for name, value in (
             ("max_ocr_per_frame", self.max_ocr_per_frame),
             ("min_plate_width_px", self.min_plate_width_px),
@@ -88,6 +105,21 @@ class ProcessingSettings:
             )
         if not self.profile_name.strip():
             raise InvalidEntityError("profile_name no puede estar vacío")
+
+    def _validate_proximity_settings(self) -> None:
+        """Valida los parámetros de filtro de proximidad (spec 057)."""
+        if not 0.0 <= self.near_min_width_frac <= NEAR_MIN_WIDTH_FRAC_MAX:
+            msg = f"near_min_width_frac debe estar en [0, {NEAR_MIN_WIDTH_FRAC_MAX}]: "
+            msg += f"{self.near_min_width_frac}"
+            raise InvalidEntityError(msg)
+        if not 0.0 < self.max_plate_vehicle_ratio <= 1.0:
+            raise InvalidEntityError(
+                f"max_plate_vehicle_ratio debe estar en (0, 1]: {self.max_plate_vehicle_ratio}"
+            )
+        try:
+            validate_roi(self.roi)
+        except ValueError as error:
+            raise InvalidEntityError(str(error)) from error
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,6 +157,7 @@ class _Counters:
     sightings_confirmed: int = 0
     sightings_unverified: int = 0
     tracks_without_reading: int = 0
+    proximity: ProximityCounters = field(default_factory=ProximityCounters)
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -246,47 +279,92 @@ class ProcessVideo:
         detections = deps.vehicle_detector.detect(frame.image)
         tracked = deps.tracker.update(detections, frame.image, frame.timestamp_ms)
         registry.observe(tracked, frame.timestamp_ms)
-        candidates = self._collect_candidates(tracked, frame, registry)
+        candidates = self._collect_candidates(tracked, frame, registry, counters)
         if candidates:
             self._record_readings(candidates, frame, registry)
 
     def _collect_candidates(
-        self, tracked: list[TrackedVehicle], frame: Frame, registry: TrackRegistry
+        self,
+        tracked: list[TrackedVehicle],
+        frame: Frame,
+        registry: TrackRegistry,
+        counters: _Counters,
     ) -> list[_PlateCandidate]:
-        """Elige, hasta el máximo por frame, los tracks que aún necesitan lectura.
-
-        Los tracks que todavía no están llenos van primero, para no quitarle turno de OCR
-        a uno que aún necesita lecturas frente a uno que solo podría mejorar las suyas.
-        Dentro de cada grupo, por área de la caja del vehículo descendente.
-        """
+        """Elige, hasta el máximo por frame, los tracks que aún necesitan lectura con filtros."""
+        # Paso 1: Elegir tracks que necesiten lectura
         eligible = [t for t in tracked if registry.needs_reading(t.track_id)]
-        ordered = sorted(eligible, key=lambda t: (registry.is_full(t.track_id), -t.box.area))
+
+        # Paso 2-3: Filtrar por ROI y tamaño de vehículo
+        min_width = effective_min_width(
+            frame.width,
+            frame.height,
+            self._settings.min_plate_width_px,
+            self._settings.near_min_width_frac,
+        )
+        min_vehicle_width = min_width / self._settings.max_plate_vehicle_ratio
+
+        roi_filtered = []
+        for track in eligible:
+            if not center_in_roi(track.box, self._settings.roi, frame.width, frame.height):
+                counters.proximity.outside_roi += 1
+                continue
+            if track.box.width < min_vehicle_width:
+                counters.proximity.small_vehicle += 1
+                continue
+            roi_filtered.append(track)
+
+        # Paso 4: Ordenar y tomar top
+        ordered = sorted(roi_filtered, key=lambda t: (registry.is_full(t.track_id), -t.box.area))
+
+        # Paso 5-6: Por cada track elegido, aplicar filtros adicionales
         candidates: list[_PlateCandidate] = []
         for tracked_vehicle in ordered[: self._settings.max_ocr_per_frame]:
-            candidate = self._plate_candidate(tracked_vehicle, frame)
+            candidate = self._plate_candidate(tracked_vehicle, frame, min_width, counters)
             if candidate is not None:
                 candidates.append(candidate)
         return candidates
 
     def _plate_candidate(
-        self, tracked_vehicle: TrackedVehicle, frame: Frame
+        self,
+        tracked_vehicle: TrackedVehicle,
+        frame: Frame,
+        min_width: int,
+        counters: _Counters,
     ) -> _PlateCandidate | None:
-        """Recorta el vehículo, detecta su placa y valida tamaño y nitidez."""
+        """Recorta el vehículo, detecta su placa y valida tamaño, borde y nitidez."""
         deps = self._deps
         vbox = _expand_vehicle_box(tracked_vehicle.box, self._settings.vehicle_crop_margin, frame)
         if vbox is None:
-            return None
-        vehicle_crop = crop_image(frame.image, vbox)
-        plates = deps.plate_detector.detect(vehicle_crop)
-        found = _best_plate_box(plates, vbox, frame, self._settings.min_plate_width_px)
-        if found is None:
-            return None
-        best_confidence, pbox = found
-        plate_crop = crop_image(frame.image, pbox)
-        sharp = deps.quality.sharpness(plate_crop)
-        if sharp < self._settings.min_sharpness:
-            return None
-        return _PlateCandidate(tracked_vehicle, pbox, best_confidence, plate_crop, sharp)
+            counters.proximity.small_vehicle += 1
+        else:
+            vehicle_crop = crop_image(frame.image, vbox)
+            plates = deps.plate_detector.detect(vehicle_crop)
+            found = _best_plate_box(plates, vbox, frame)
+            if found is not None:
+                best_confidence, pbox = found
+                if self._plate_is_near(pbox, frame, min_width, counters):
+                    plate_crop = crop_image(frame.image, pbox)
+                    sharp = deps.quality.sharpness(plate_crop)
+                    if sharp >= self._settings.min_sharpness:
+                        return _PlateCandidate(
+                            tracked_vehicle, pbox, best_confidence, plate_crop, sharp
+                        )
+                    counters.proximity.blurry += 1
+            else:
+                counters.proximity.no_plate += 1
+        return None
+
+    def _plate_is_near(
+        self, pbox: BoundingBox, frame: Frame, min_width: int, counters: _Counters
+    ) -> bool:
+        """Valida que la placa detectada esté cerca: no toque borde ni sea muy estrecha."""
+        if touches_frame_edge(pbox, frame.width, frame.height):
+            counters.proximity.plate_at_edge += 1
+            return False
+        if pbox.width < min_width:
+            counters.proximity.narrow_plate += 1
+            return False
+        return True
 
     def _record_readings(
         self, candidates: list[_PlateCandidate], frame: Frame, registry: TrackRegistry
@@ -369,6 +447,18 @@ class ProcessVideo:
         finished = deps.clock.now()
         stats = self._stats(counters, started, finished, video_duration_ms)
         deps.repository.finish_run(run_id, stats, finished, True)
+        p = counters.proximity
+        logger.info(
+            "cercania run_id=%d fuera_roi=%d vehiculo_pequeno=%d sin_placa=%d"
+            " placa_en_borde=%d placa_estrecha=%d borrosa=%d",
+            run_id,
+            p.outside_roi,
+            p.small_vehicle,
+            p.no_plate,
+            p.plate_at_edge,
+            p.narrow_plate,
+            p.blurry,
+        )
         logger.info(
             "corrida terminada run_id=%d frames_procesados=%d confirmados=%d"
             " sin_confirmar=%d sin_lectura=%d duracion_ms=%d",
@@ -411,15 +501,15 @@ def _expand_vehicle_box(box: BoundingBox, margin: float, frame: Frame) -> Boundi
 
 
 def _best_plate_box(
-    plates: list[PlateDetection], vbox: BoundingBox, frame: Frame, min_plate_width_px: int
+    plates: list[PlateDetection], vbox: BoundingBox, frame: Frame
 ) -> tuple[float, BoundingBox] | None:
-    """Elige la placa de mayor confianza, la traslada al frame y valida su ancho mínimo."""
+    """Elige la placa de mayor confianza y la traslada al frame."""
     if not plates:
         return None
     best = max(plates, key=lambda plate: plate.confidence)
     pbox = best.box.translate(math.floor(vbox.x1), math.floor(vbox.y1)).clip(
         frame.width, frame.height
     )
-    if pbox is None or pbox.width < min_plate_width_px:
+    if pbox is None:
         return None
     return best.confidence, pbox
