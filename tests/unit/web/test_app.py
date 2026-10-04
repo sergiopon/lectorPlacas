@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -172,3 +173,41 @@ def test_main_port_busy(
     monkeypatch.setattr("lector_placas.web.app.bind_socket", busy)
     assert main(["--port", "8765"]) == 1
     assert "lector-web: no se pudo abrir el puerto 8765" in capsys.readouterr().err
+
+
+def check_demo_root(demo_root: Path) -> None:
+    assert str(demo_root).startswith(tempfile.gettempdir())
+    assert "lector-demo-" in str(demo_root)
+    assert not demo_root.exists()
+
+
+def test_main_demo_mode(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    recorder = install_fakes(monkeypatch)
+    seeded: list[Any] = []
+    app_configs: list[Any] = []
+
+    def fake_create_app(config: Any, *args: Any, **kwargs: Any) -> object:
+        app_configs.append(config)
+        recorder.create_app_kwargs = kwargs
+        return object()
+
+    monkeypatch.setattr("lector_placas.web.app.create_app", fake_create_app)
+
+    def forbidden_key_provider(_flag: bool) -> FakeKeyProvider:
+        raise AssertionError("no debe leerse el keyring en modo demo")
+
+    monkeypatch.setattr(
+        "lector_placas.web.app.composition.build_key_provider", forbidden_key_provider
+    )
+    monkeypatch.setattr(
+        "lector_placas.web.app.seed_demo", lambda config, keys: seeded.append(config)
+    )
+    assert main(["--demo", "--no-browser"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("Modo demo: datos sintéticos en una carpeta temporal")
+    assert recorder.create_app_kwargs["static_dir"] == ROOT / "frontend" / "dist"
+    assert len(seeded) == 1
+    assert app_configs == seeded
+    check_demo_root(app_configs[0].root_dir)
