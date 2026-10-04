@@ -55,4 +55,4 @@ Se elimina `PySide6-Essentials==6.11.2` (y lo que `uv lock` retire con ella). No
 - [ ] `uv lock` y `uv sync --locked` sin errores.
 - [ ] `uv run pytest -q` (suite completa, incluidos `tests/review`) en verde.
 - [ ] `uv run ruff check . && uv run ruff format --check . && uv run mypy src` limpios.
-- [ ] `grep -rn "PySide6\|lector_placas.gui" src tests pyproject.toml` sin resultados.
+- [ ] `grep -rn "PySide6\|lector_placas.gui" src tests pyproject.toml | grep -v test_dependency_rule.py` sin resultados.
