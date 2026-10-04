@@ -36,6 +36,8 @@ from lector_placas.web.security import SessionAuth, allowed_hosts_for
 DEFAULT_CONFIG_PATH: Final[Path] = Path("config/lector.yaml")
 LOG_FILENAME: Final[str] = "lector.log"
 HOST: Final[str] = "127.0.0.1"
+CONTAINER_ENV: Final[str] = "LECTOR_IN_CONTAINER"
+CONTAINER_BIND: Final[str] = "0.0.0.0"  # noqa: S104 — excepción de contenedor de SEG-28 (spec 075)
 FRONTEND_DIST: Final[Path] = Path("frontend/dist")
 KEY_HINT: Final[str] = "Cree la clave con: lector key init"
 MAX_PORT: Final[int] = 65535
@@ -76,6 +78,17 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def bind_host() -> str:
+    """Devuelve la dirección de enlace del servidor.
+
+    Returns:
+        CONTAINER_BIND si LECTOR_IN_CONTAINER es "1"; si no, HOST.
+    """
+    if os.environ.get(CONTAINER_ENV) == "1":
+        return CONTAINER_BIND
+    return HOST
+
+
 def bind_socket(port: int) -> socket.socket:
     """Crea y vincula un socket TCP a 127.0.0.1.
 
@@ -94,7 +107,7 @@ def bind_socket(port: int) -> socket.socket:
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind((HOST, port))
+    sock.bind((bind_host(), port))
     return sock
 
 
@@ -149,7 +162,7 @@ def _serve(
     server = uvicorn.Server(
         uvicorn.Config(
             app,
-            host=HOST,
+            host=bind_host(),
             port=port,
             lifespan="on",
             log_level="warning",

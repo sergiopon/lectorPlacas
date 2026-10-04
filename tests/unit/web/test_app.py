@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from lector_placas.domain.errors import KeyUnavailableError
-from lector_placas.web.app import KEY_HINT, bind_socket, launch_url, main, parse_args
+from lector_placas.web.app import KEY_HINT, bind_host, bind_socket, launch_url, main, parse_args
 from tests.fixtures.fakes import FakeKeyProvider
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -103,6 +103,15 @@ def test_bind_socket_is_loopback() -> None:
     finally:
         sock.close()
     check_bind_socket_invalid_port()
+
+
+def test_bind_host_container(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LECTOR_IN_CONTAINER", "1")
+    assert bind_host() == "0.0.0.0"  # noqa: S104 — excepción de contenedor de SEG-28 (spec 075)
+    monkeypatch.setenv("LECTOR_IN_CONTAINER", "true")
+    assert bind_host() == "127.0.0.1"
+    monkeypatch.delenv("LECTOR_IN_CONTAINER")
+    assert bind_host() == "127.0.0.1"
 
 
 def test_launch_url() -> None:
