@@ -24,7 +24,8 @@ Ultralytics viven solo en entornos de entrenamiento separados (`training/`). Ver
 | Infraestructura | `lector_placas.infrastructure` | Configuración, rutas seguras, cripto, logging, registro de modelos, guardia de red, reloj | `domain`, `application`, librerías de terceros |
 | Adaptadores | `lector_placas.adapters` | Implementaciones concretas de los puertos (PyAV, ONNX, trackers, fast-plate-ocr, SQLCipher, keyring, OpenCV) | `domain`, `application`, `infrastructure`, terceros |
 | Entrada (composición) | `lector_placas.cli` | Composition root y comandos de la CLI | Todo, excepto `gui` |
-| Entrada (GUI) | `lector_placas.gui` | Segundo composition root: GUI de escritorio PySide6 (ADR-015) | Todo, excepto `cli`; de `cli` solo `lector_placas.cli.composition` |
+| Entrada (GUI) | `lector_placas.gui` | Segundo composition root: GUI de escritorio PySide6 (ADR-015); se retira en la spec 073 | Todo, excepto `cli` y `web`; de `cli` solo `lector_placas.cli.composition` |
+| Entrada (web) | `lector_placas.web` | Tercer composition root: API FastAPI en 127.0.0.1 que sirve el frontend compilado (ADR-016, specs 066–072) | Todo, excepto `cli`, `gui` y `datasets`; de `cli` solo `lector_placas.cli.composition` |
 | Evaluación | `lector_placas.evaluation` | Métricas contra ground truth | `domain`, `application`, `infrastructure`, `adapters` |
 | Datasets | `lector_placas.datasets` | Preparación de datos de entrenamiento (offline) | `domain`, `application`, `infrastructure`, `adapters` |
 
@@ -32,11 +33,13 @@ Reglas obligatorias:
 1. `domain` no importa nada fuera de la stdlib (ni numpy, ni pydantic, ni cv2).
 2. `application` no importa `adapters`, `infrastructure` ni `cli`; depende de abstracciones (DIP).
 3. Nadie importa `lector_placas.cli`, salvo `gui`, que puede importar solo `lector_placas.cli.composition` (constructores
-   de adaptadores, para no duplicar la composición). Nadie importa `lector_placas.gui`.
+   de adaptadores, para no duplicar la composición), y `web`, con la misma restricción. Nadie importa `lector_placas.gui`
+   ni `lector_placas.web`.
 4. Los casos de uso reciben sus dependencias por constructor (inyección manual en `cli/composition.py`).
    No hay contenedores de DI, singletons ni variables globales mutables. `gui` compone igual, llamando a
    `composition.<función>`.
-6. PySide6 solo se importa en `lector_placas.gui`. Ninguna capa interior conoce Qt.
+6. PySide6 solo se importa en `lector_placas.gui`. Ninguna capa interior conoce Qt. `fastapi`, `starlette` y `uvicorn`
+   solo se importan en `lector_placas.web`; todos sus endpoints son `async def` (ADR-016).
 5. La regla se verifica con `tests/architecture/test_dependency_rule.py` (spec 000).
 
 ```mermaid
@@ -247,4 +250,5 @@ umbrales de consolidación. Valores iniciales **provisionales**; se calibran con
 | [013](docs/adr/ADR-013-placa-en-vehiculo.md) | Placa dentro del vehículo | La placa se detecta en el recorte del vehículo, lo que asocia placa↔track sin heurísticas. |
 | [014](docs/adr/ADR-014-receta-entrenamiento-ocr.md) | Receta del fine-tuning del OCR | Partición real por componente en train/val/test, sintéticos ≤ 50 % solo en train con cuota de motos, aceptación en test real contra el modelo base. |
 | [015](docs/adr/ADR-015-interfaz-grafica.md) | Interfaz gráfica | GUI de escritorio PySide6-Essentials en el mismo proceso, sin sockets; convivencia con el Qt5 de `opencv-python` probada; la GUI no abre ventanas de cv2. |
+| [016](docs/adr/ADR-016-interfaz-web-local.md) | Interfaz web local | FastAPI 0.141.1 + Uvicorn en 127.0.0.1, capa `web` (tercer composition root), token de arranque → cookie de sesión, SSE; sustituye a la GUI PySide6. |
 | [017](docs/adr/ADR-017-modos-camara-cercania.md) | Modos de cámara y filtro de cercanía | Perfil con `mode` (`estatico`/`movil`), cercanía por ancho de placa, CMC por perfil, duplicados marcados, solo archivos de video, SEG-29. |
