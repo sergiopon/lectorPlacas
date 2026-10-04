@@ -1,7 +1,7 @@
 # ADR-016 — Interfaz web local (sustituye a la GUI PySide6)
 
 - Estado: **Aprobado** (2026-09-27, decisiones del usuario en docs/08 §6; redactado 2026-10-03). Sustituye a ADR-015
-  cuando la spec 073 retire la GUI.
+  desde el 2026-10-04 (spec 073: GUI retirada).
 - Requisitos afectados: RF-28, RF-36 (pasa a cumplirse con la web), RF-33, §7 (UI web deja de estar fuera de alcance,
   solo en loopback); SEG-20, nueva SEG-28.
 

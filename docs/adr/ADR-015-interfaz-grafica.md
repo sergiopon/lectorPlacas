@@ -1,6 +1,6 @@
 # ADR-015 — Interfaz gráfica (frontend)
 
-- Estado: **Aprobado** (2026-09-27): opción 2, escritorio nativo con PySide6. La prueba de convivencia PySide6 +
+- Estado: **Sustituido por ADR-016** (2026-10-04: la spec 073 retiró la GUI PySide6). Aprobado originalmente (2026-09-27): opción 2, escritorio nativo con PySide6. La prueba de convivencia PySide6 +
   `opencv-python` se hizo el 2026-09-27 y pasó (ver "Resultado de la prueba de convivencia").
 - Requisitos afectados: RF-28, §7 (fuera de alcance), RF-34 (stream futuro), SEG-05, SEG-07, SEG-20, SEG-26.
 
