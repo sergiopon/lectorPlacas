@@ -69,6 +69,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 066 | [Web: app FastAPI, seguridad local y API de lectura](066-web-api-lectura.md) | 041, 046, 056, 059, 061 | Lista |
 | 067 | [Web: API de acciones](067-web-api-acciones.md) | 025, 026, 038, 040, 046, 066 | Lista |
 | 068 | [Web: comando `lector-web` y frontend compilado](068-web-comando-arranque.md) | 066, 067 | Lista |
+| 069 | [Web: modo demo sintético](069-web-modo-demo.md) | 059, 061, 066, 067, 068 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 
