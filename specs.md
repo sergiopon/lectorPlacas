@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057, 059–064, 074 (66 specs; 059–064 y 074 el 2026-10-04) |
-| Redactada (lista para implementar) | 066–069, 073 (5) |
+| Implementada | 000–057, 059–064, 066, 074 (67 specs; 059–064, 066 y 074 el 2026-10-04) |
+| Redactada (lista para implementar) | 067–069, 073 (4) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -124,7 +124,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 
 | # | Qué hace | Depende de | Estado |
 |---|---|---|---|
-| 066 | API de lectura: app factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop`, `summary` | ADR-016/SEG-28, 041, 046, 056, 059, 061, 064 | Redactada |
+| 066 | API de lectura: app factory, token, cabeceras, `videos`, `profiles`, `runs`, `sightings`, `crop`, `summary` | ADR-016/SEG-28, 041, 046, 056, 059, 061, 064 | Implementada |
 | 067 | API de acciones: trabajos de procesamiento en hilo + SSE + cancelación, decisiones, export, purga, métricas | 025, 026, 038, 040, 046, 066 | Redactada |
 | 068 | Script `lector-web`: 127.0.0.1, puerto libre, abre el navegador con el token, sirve `frontend/dist/` | 066, 067 | Redactada |
 | 069 | Modo demo sintético (`lector-web --demo`) | 059, 061, 066, 067, 068 | Redactada |
