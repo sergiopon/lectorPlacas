@@ -201,6 +201,30 @@ def build_tracker(config: AppConfig, profile: ProfileConfig) -> Tracker:
     return BotSortTracker(settings)
 
 
+def build_processing_settings(name: str, profile: ProfileConfig) -> ProcessingSettings:
+    """Construye la configuración de procesamiento de video desde un perfil.
+
+    Args:
+        name: nombre del perfil.
+        profile: configuración del perfil de escenario.
+
+    Returns:
+        Configuración de procesamiento lista para usar.
+    """
+    return ProcessingSettings(
+        name,
+        profile.max_ocr_per_frame,
+        profile.min_plate_width_px,
+        profile.min_sharpness,
+        profile.vehicle_crop_margin,
+        profile.track_finalize_after_ms,
+        profile.max_readings_per_track,
+        near_min_width_frac=profile.near_min_width_frac,
+        max_plate_vehicle_ratio=profile.max_plate_vehicle_ratio,
+        roi=profile.roi,
+    )
+
+
 def build_process_video(
     config: AppConfig,
     profile_name: str,
@@ -226,13 +250,5 @@ def build_process_video(
         crop_store,
         clock,
     )
-    settings = ProcessingSettings(
-        name,
-        profile.max_ocr_per_frame,
-        profile.min_plate_width_px,
-        profile.min_sharpness,
-        profile.vehicle_crop_margin,
-        profile.track_finalize_after_ms,
-        profile.max_readings_per_track,
-    )
+    settings = build_processing_settings(name, profile)
     return ProcessVideo(deps, settings)

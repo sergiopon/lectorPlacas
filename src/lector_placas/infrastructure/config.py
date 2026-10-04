@@ -17,6 +17,7 @@ from pydantic import (
     model_validator,
 )
 
+from lector_placas.application.proximity import NEAR_MIN_WIDTH_FRAC_MAX
 from lector_placas.domain.consolidation import ConsolidationPolicy
 from lector_placas.domain.entities import PlateFormat, VehicleType
 from lector_placas.domain.errors import ConfigurationError, DomainError
@@ -270,6 +271,9 @@ class ProfileConfig(StrictModel):
     min_sharpness: float
     max_ocr_per_frame: int
     vehicle_crop_margin: float
+    near_min_width_frac: float
+    max_plate_vehicle_ratio: float
+    roi: tuple[float, float, float, float]
 
     @field_validator("target_fps")
     @classmethod
@@ -303,6 +307,32 @@ class ProfileConfig(StrictModel):
         """Exige una nitidez mínima no negativa."""
         if value < 0.0:
             raise ValueError(f"min_sharpness debe ser >= 0: {value}")
+        return value
+
+    @field_validator("near_min_width_frac")
+    @classmethod
+    def _validate_near_min_width_frac(cls, value: float) -> float:
+        """Exige una fracción en [0, 0.2]."""
+        if not 0.0 <= value <= NEAR_MIN_WIDTH_FRAC_MAX:
+            raise ValueError(f"near_min_width_frac debe estar en [0, 0.2]: {value}")
+        return value
+
+    @field_validator("max_plate_vehicle_ratio")
+    @classmethod
+    def _validate_max_plate_vehicle_ratio(cls, value: float) -> float:
+        """Exige un ratio en (0, 1]."""
+        if not 0.0 < value <= 1.0:
+            raise ValueError(f"max_plate_vehicle_ratio debe estar en (0, 1]: {value}")
+        return value
+
+    @field_validator("roi")
+    @classmethod
+    def _validate_roi(
+        cls, value: tuple[float, float, float, float]
+    ) -> tuple[float, float, float, float]:
+        """Valida la región de interés."""
+        if not (0.0 <= value[0] < value[2] <= 1.0 and 0.0 <= value[1] < value[3] <= 1.0):
+            raise ValueError("roi inválida: se espera 0 <= x1 < x2 <= 1 y 0 <= y1 < y2 <= 1")
         return value
 
 

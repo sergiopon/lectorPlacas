@@ -50,10 +50,13 @@ profiles:
     min_readings: 3
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]
   calle_lenta:
     mode: estatico
     camera_motion_compensation: true
@@ -63,10 +66,13 @@ profiles:
     min_readings: 3
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]
   calle_rapida:
     mode: estatico
     camera_motion_compensation: true
@@ -76,10 +82,13 @@ profiles:
     min_readings: 2
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]
   patrulla:
     mode: movil
     camera_motion_compensation: true
@@ -89,10 +98,13 @@ profiles:
     min_readings: 2
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 20
+    min_plate_width_px: 32
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
+    near_min_width_frac: 0.025
+    max_plate_vehicle_ratio: 0.5
+    roi: [0.0, 0.0, 1.0, 1.0]
 
 consolidation:
   ambiguity_margin: 0.10
