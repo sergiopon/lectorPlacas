@@ -83,6 +83,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 075 | [Imagen Docker y compose](075-docker.md) | 068, 070, 074 | Implementada |
 | 076 | [Web: video original, fotograma completo, conteos y ajustes](076-web-video-fotograma.md) | 066, 067, 068 | Implementada |
 | 077 | [Frontend: escalas de métricas y capturas estables](077-frontend-escalas-capturas.md) | 070, 071, 072 | Implementada |
+| 078 | [Demo con videos sintéticos reales y GIF del README](078-demo-videos-sinteticos.md) | 069, 071, 076, 077 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 

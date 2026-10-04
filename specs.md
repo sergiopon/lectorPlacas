@@ -141,6 +141,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 | 075 | `Dockerfile` multietapa con digests, `compose.yaml` (puerto solo en 127.0.0.1, secret de la clave), perfil gpu sin verificar | 068, 070, 074 | Implementada |
 | 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Implementada |
 | 077 | Escalas del gráfico de métricas ajustadas a los datos; capturas sin esqueletos ni transiciones | 070, 071, 072 | Implementada |
+| 078 | Demo con videos WebM sintéticos (Ir al video funciona en la demo) y script del GIF del README | 069, 071, 076, 077 | Redactada |
 
 ---
 
