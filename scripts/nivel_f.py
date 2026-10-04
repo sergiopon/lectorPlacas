@@ -7,6 +7,7 @@ Corre el pipeline sobre un video sintético 1080p30 de 60 s (o uno provisto) y v
   4. cifrado en reposo → 0 `SQLite format 3` y 0 bytes PNG en claro en data/
   5. velocidad         → speed_factor >= 1.0
   6. VRAM              → pico <= 4096 MiB (por encima de la línea base)
+  7. web             → escucha solo en 127.0.0.1; Host ajeno → 400; /api sin sesión → 401
 
 Uso:
     uv run python scripts/nivel_f.py [--video VIDEOS/mi_video.mp4] [--seconds 60] [--regen]
@@ -20,10 +21,14 @@ Requisitos previos:
 from __future__ import annotations
 
 import argparse
+import http.client
 import re
 import shutil
+import signal
+import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import av
@@ -41,8 +46,11 @@ PLATE_PATTERN = re.compile(
     r"(?<![A-Z0-9])(?:[A-Z]{3}[0-9]{2}[A-Z0-9]?|[0-9]{3}[A-Z]{3}"
     r"|[A-Z]{2}[0-9]{4}|[RS][0-9]{5}|T[0-9]{4})(?![A-Z0-9])"
 )
+WEB_URL_RE = re.compile(r"^lectorPlacas web en http://127\.0\.0\.1:(\d+)/$")
 SPEED_RE = re.compile(r"velocidad=(\d+(?:\.\d+)?)x|velocidad=(n/d)")
 
+HTTP_BAD_REQUEST = 400
+HTTP_UNAUTHORIZED = 401
 LIMITS = {"speed": 1.0, "vram_mib": 4096}
 
 
@@ -195,6 +203,95 @@ def run_pipeline(video: Path) -> tuple[float | None, int | None]:
     return parse_speed_factor(result.stdout), monitor.peak_mib
 
 
+def _read_web_port(proc: subprocess.Popen[str]) -> int | None:
+    """Lee el stdout de lector-web (máximo 30 s) y devuelve el puerto anunciado."""
+    deadline = time.monotonic() + 30
+    while proc.stdout is not None and time.monotonic() < deadline:
+        line = proc.stdout.readline()
+        if not line:
+            return None
+        match = WEB_URL_RE.match(line.strip())
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def _wait_port(port: int) -> bool:
+    """Reintenta conectar al puerto cada 0,2 s (máximo 15 s); True si acepta."""
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        try:
+            socket.create_connection(("127.0.0.1", port), timeout=1).close()
+        except OSError:
+            time.sleep(0.2)
+        else:
+            return True
+    return False
+
+
+def _web_bind_ok(port: int) -> bool:
+    """Verdadero si el puerto solo escucha en 127.0.0.1 según `ss -Hltn`."""
+    out = subprocess.run(
+        ["ss", "-Hltn"], capture_output=True, text=True, check=False
+    ).stdout.splitlines()
+    loopback = any(f"127.0.0.1:{port}" in line for line in out)
+    exposed = any(
+        f"0.0.0.0:{port}" in line or f"*:{port}" in line or f"[::]:{port}" in line for line in out
+    )
+    return loopback and not exposed
+
+
+def _web_status(port: int, path: str, host: str) -> int:
+    """Estado HTTP de un GET a la web con la cabecera Host indicada."""
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    try:
+        conn.request("GET", path, headers={"Host": host})
+        return conn.getresponse().status
+    finally:
+        conn.close()
+
+
+def check_web_loopback() -> tuple[bool, str]:
+    """Arranca lector-web --demo y comprueba loopback, Host ajeno y /api sin sesión."""
+    if shutil.which("ss") is None:
+        return False, "ss no disponible; omitido"
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "from lector_placas.web.app import main; raise SystemExit(main())",
+            "--demo",
+            "--no-browser",
+            "--port",
+            "0",
+        ],
+        cwd=ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        port = _read_web_port(proc)
+        if port is None:
+            return False, "lector-web no arrancó"
+        if not _wait_port(port):
+            return False, "lector-web no acepta conexiones"
+        ok_bind = _web_bind_ok(port)
+        ok_host = _web_status(port, "/", f"ejemplo.invalid:{port}") == HTTP_BAD_REQUEST
+        ok_auth = _web_status(port, "/api/health", f"127.0.0.1:{port}") == HTTP_UNAUTHORIZED
+    finally:
+        proc.send_signal(signal.SIGINT)
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+    detail = (
+        f"bind={'ok' if ok_bind else 'MAL'} host={'ok' if ok_host else 'MAL'} "
+        f"auth={'ok' if ok_auth else 'MAL'} puerto={port}"
+    )
+    return ok_bind and ok_host and ok_auth, detail
+
+
 def collect_checks(video: Path) -> list[tuple[str, bool, str]]:
     """Ejecuta los seis chequeos y devuelve (nombre, ok, detalle)."""
     checks: list[tuple[str, bool, str]] = []
@@ -202,6 +299,8 @@ def collect_checks(video: Path) -> list[tuple[str, bool, str]]:
     checks.append(("2. permisos", *check_permissions()))
     checks.append(("3. placas en claro", *check_plates_in_logs()))
     checks.append(("4. cifrado en reposo", *check_encryption_at_rest()))
+
+    checks.append(("7. web solo en loopback", *check_web_loopback()))
 
     speed, vram_peak = run_pipeline(video)
     if speed is None:
