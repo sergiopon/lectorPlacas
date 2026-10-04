@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057, 059–063, 074 (65 specs; 059–063 y 074 el 2026-10-04) |
-| Redactada (lista para implementar) | 064, 066–069, 073 (6) |
+| Implementada | 000–057, 059–064, 074 (66 specs; 059–064 y 074 el 2026-10-04) |
+| Redactada (lista para implementar) | 066–069, 073 (5) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -109,7 +109,7 @@ Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta e
 | 061 | Duplicados de la misma placa en la corrida (`dedup_window_ms` 30 000 ms): marca `duplicate_of`, oculta por defecto | 041, 059, 060 | Implementada |
 | 062 | Entrena el filtro de legibilidad (`training/legibility`) solo con la población cercana; línea base `num_readings` ≤ 1 | 055, 059 | Implementada |
 | 063 | Filtro de legibilidad en el pipeline: razones `PREDICTED_ILLEGIBLE` / `PREDICTED_NOT_PLATE`; nunca confirma ni borra | 057, 059, 062 | Implementada |
-| 064 | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad" | 038, 041, 061, 063 | Redactada |
+| 064 | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad" | 038, 041, 061, 063 | Implementada |
 | 065 | Tipo de vehículo por la forma de la placa (bloqueada: dimensiones oficiales PENDIENTES DE VALIDAR) | 013, 015, 057 | Bloqueada: dimensiones oficiales de placa sin verificar |
 
 Criterio de aceptación del filtro de legibilidad (docs/09 §4.2): se mide solo sobre la población cercana; legibles
