@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from lector_placas.application.ports import KeyProvider
 from lector_placas.infrastructure.config import AppConfig
+from lector_placas.web.jobs import JobManager, JobRunner, default_runner
+from lector_placas.web.routes_actions import router as actions_router
 from lector_placas.web.routes_read import router
 from lector_placas.web.security import SESSION_COOKIE, SessionAuth, install_security
 from lector_placas.web.session import SessionFactory, open_web_session
@@ -22,6 +24,7 @@ def create_app(
     auth: SessionAuth,
     allowed_hosts: frozenset[str],
     session_factory: SessionFactory = open_web_session,
+    runner: JobRunner | None = None,
 ) -> FastAPI:
     """Crea la aplicación web local.
 
@@ -31,6 +34,7 @@ def create_app(
         auth: autenticación de sesión.
         allowed_hosts: valores `Host` permitidos.
         session_factory: función que abre la sesión al arrancar.
+        runner: función que procesa un video; si es `None`, se usa `default_runner`.
 
     Returns:
         La aplicación FastAPI con seguridad y endpoints de lectura.
@@ -52,6 +56,7 @@ def create_app(
         openapi_url="/api/openapi.json",
         lifespan=lifespan,
     )
+    app.state.jobs = JobManager(runner if runner is not None else default_runner(config, keys))
     install_security(app, auth, allowed_hosts)
 
     @app.exception_handler(RequestValidationError)
@@ -70,4 +75,5 @@ def create_app(
         return response
 
     app.include_router(router)
+    app.include_router(actions_router)
     return app

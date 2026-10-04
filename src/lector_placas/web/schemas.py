@@ -102,3 +102,81 @@ class ErrorOut(ApiModel):
     """Error de la API."""
 
     detail: str
+
+
+class JobRequest(ApiModel):
+    """Solicitud de procesamiento."""
+
+    video: str
+    profile: str
+
+
+class JobOut(ApiModel):
+    """Estado de un trabajo de procesamiento."""
+
+    job_id: str
+    state: Literal["running", "completed", "cancelled", "failed"]
+    run_id: int | None
+    frames_decoded: int | None
+    frames_processed: int | None
+    position_ms: int | None
+    duration_ms: int | None
+    sightings_saved: int | None
+    fraction: float | None
+    message: str | None
+
+
+class DecisionIn(ApiModel):
+    """Decisión sobre un avistamiento."""
+
+    action: Literal["confirm", "correct", "reject", "illegible"]
+    corrected_text: str | None = None
+
+
+class ExportIn(ApiModel):
+    """Solicitud de exportación."""
+
+    status: Literal["unverified", "confirmed", "corrected", "rejected", "illegible"] | None = None
+
+
+class ExportOut(ApiModel):
+    """Resultado de una exportación."""
+
+    file: str
+
+
+class PurgeOut(ApiModel):
+    """Resultado de una purga."""
+
+    crops_deleted: int
+    sightings_deleted: int
+    runs_deleted: int
+    plates_deleted: int
+    exports_deleted: int
+    training_deleted: int
+
+
+class MetricsOut(ApiModel):
+    """Métricas de la revisión."""
+
+    confirmed_total: int
+    confirmed_audited: int
+    confirmed_kept: int
+    confirmed_corrected: int
+    confirmed_rejected: int
+    precision_confirmed: float | None
+    unverified_total: int
+    unverified_confirmed: int
+    unverified_corrected: int
+    unverified_rejected: int
+    unverified_pending: int
+    reason_counts: dict[str, int]
+    reviewed_readings: int
+    cer: float | None
+    exact_match_rate: float | None
+    confirmed_illegible: int
+    unverified_illegible: int
+    hidden_total: int
+    hidden_legible: int
+    hidden_unusable: int
+    hidden_pending: int
