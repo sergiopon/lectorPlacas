@@ -84,11 +84,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _add_key_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
-    """Agrega `key init`."""
+    """Agrega `key init`, `key export-file` y `key init-file`."""
     key_parser = subparsers.add_parser("key")
     key_sub = key_parser.add_subparsers(dest="key_command", required=True)
     init_parser = key_sub.add_parser("init")
     init_parser.set_defaults(handler=commands.cmd_key_init, network=False, key="create")
+    export_file_parser = key_sub.add_parser("export-file")
+    export_file_parser.add_argument("path", type=Path)
+    export_file_parser.set_defaults(handler=commands.cmd_key_export_file, network=False, key="load")
+    init_file_parser = key_sub.add_parser("init-file")
+    init_file_parser.add_argument("path", type=Path)
+    init_file_parser.set_defaults(handler=commands.cmd_key_init_file, network=False)
 
 
 def _add_models_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]
