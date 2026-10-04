@@ -62,7 +62,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 054 | [Entrenamiento OCR: mezcla con reparto congelado y `test_video`](054-mezcla-congelada-test-video.md) | 035, 039 | Implementada |
 | 055 | [Exportar el dataset de legibilidad](055-exportar-dataset-legibilidad.md) | 035, 052 | Implementada |
 | 056 | [Modos de cámara en la configuración](056-modos-de-camara.md) | 006, 016, 028 | Implementada |
-| 057 | [Filtro de cercanía antes de leer](057-filtro-cercania.md) | 051, 056 | Lista |
+| 057 | [Filtro de cercanía antes de leer](057-filtro-cercania.md) | 051, 056 | Implementada |
 | 058 | [Evaluación con cercanía: ground truth versión 2](058-evaluacion-con-cercania.md) | 029, 057, 059 | Bloqueada (aprobación del cambio de M-02/M-03 en docs/04) |
 | 059 | [Calidad del mejor recorte, `duplicate_of` y esquema v3](059-calidad-y-esquema-v3.md) | 052, 055, 057 | Lista |
 | 060 | [Parada temprana por track](060-parada-temprana.md) | 051, 056, 057 | Lista |

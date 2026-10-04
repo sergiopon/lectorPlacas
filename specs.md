@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–056 (57 specs; 055 y 056 el 2026-10-03) |
-| Redactada (lista para implementar) | 057, 059–064, 066–069, 073, 074 (13) |
+| Implementada | 000–057 (58 specs; 055–057 el 2026-10-03) |
+| Redactada (lista para implementar) | 059–064, 066–069, 073, 074 (12) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -102,7 +102,7 @@ Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta e
 | 054 | Entrenamiento OCR: mezcla con test congelado y split `test_video` | 035, 039 | Implementada |
 | 055 | `dataset export-legibility`: dataset de legibilidad (clase, métricas, sin texto de placa). Ejecutado el 2026-10-03: 1 141 filas (354 legibles, 424 borrosas, 363 no-placa) | 035, 052 | Implementada |
 | **056** | Modos de cámara en la configuración: `mode` (`estatico`/`movil`) y `camera_motion_compensation` por perfil, validación "móvil exige CMC", perfil `patrulla`, `TrackerSettings.enable_cmc` | 006, 016, 028 | **Implementada** (2026-10-03, Haiku) |
-| 057 | Filtro de cercanía antes de leer: `near_min_width_frac` 0,025, `max_plate_vehicle_ratio` 0,5, `roi`, placa en borde, `min_plate_width_px` 32 | 051, 056 | Redactada |
+| 057 | Filtro de cercanía antes de leer: `near_min_width_frac` 0,025, `max_plate_vehicle_ratio` 0,5, `roi`, placa en borde, `min_plate_width_px` 32 | 051, 056 | **Implementada** (2026-10-03, implementador Haiku) |
 | 058 | Evaluación con cercanía: ground truth versión 2 (`max_plate_width_px`, cámara `vehicle_mounted`); requiere aprobar el cambio de M-02/M-03 en docs/04 | 029, 057, 059 | Redactada, bloqueada (aprobación de docs/04) |
 | 059 | Características de calidad por avistamiento (ancho/alto de placa, nitidez, contraste), `duplicate_of` y migración v2 → v3 | 052, 055, 057 | Redactada |
 | 060 | Parada temprana por track (`early_stop`): un track lleno que ya se confirmaría deja de leerse | 051, 056, 057 | Redactada |
