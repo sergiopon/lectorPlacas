@@ -62,6 +62,31 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 054 | [Entrenamiento OCR: mezcla con reparto congelado y `test_video`](054-mezcla-congelada-test-video.md) | 035, 039 | Implementada |
 | 055 | [Exportar el dataset de legibilidad](055-exportar-dataset-legibilidad.md) | 035, 052 | Implementada |
 
+## Reglas de redacción de las specs (cero ambigüedad)
+
+Toda spec debe poder implementarla **cualquier IA que solo programe y no piense**. Si una spec obliga al implementador a
+decidir algo, está mal escrita. Quien la redacta decide antes (las decisiones de diseño con datos o de métricas pasan por
+un subagente Opus) y la spec solo contiene el resultado.
+
+1. **Números explícitos:** umbrales, tamaños, límites, rangos, valores por defecto y unidades, siempre con cifra. Nada de
+   "suficiente", "razonable" o "pequeño".
+2. **Nombres exactos:** rutas de archivo, módulos, clases, funciones, parámetros, tipos, constantes, campos de config y
+   columnas de BD, tal como se escribirán.
+3. **Literales exactos:** mensajes de error, textos de log, cabeceras de CSV, claves y formatos de salida, entre comillas.
+4. **Orden numerado:** el comportamiento se describe como pasos ordenados; cada paso dice qué entra y qué sale.
+5. **Casos borde y errores cerrados:** para cada entrada inválida o límite, la clase de excepción y el resultado. Qué
+   hacer con vacíos, nulos, empates y valores fuera de rango.
+6. **Tests en prosa con datos concretos:** nombre del test, datos de entrada con valores y resultado esperado con
+   valores. Un test por caso borde listado.
+7. **Una sola vía:** sin alternativas ("o bien", "según convenga", "si es necesario", "por ejemplo", "etc.", "o
+   similar", "adecuado", "apropiado"). Si hay dos formas, la spec elige una.
+8. **Sin huecos de conocimiento:** si falta un dato verificable (versión, API, formato), se verifica en la fuente antes de
+   redactar; si no se puede verificar, la spec no se redacta todavía y el dato se marca `PENDIENTE DE VALIDAR` fuera de
+   la spec.
+9. **Autosuficiente y agnóstica:** la spec más `CONTEXT.md` bastan; no asume herramientas, skills ni memoria de un
+   modelo concreto. El Definition of Done lista los comandos exactos y su resultado esperado.
+10. **Lista cerrada de archivos:** el implementador solo toca los archivos listados; todo lo demás es duda para reportar.
+
 Nota: para probar el pipeline completo (028, test gpu) hace falta antes la spec 030 (exportar `yolo26n-coco.onnx`).
 
 Decisión del usuario (2026-09-26): exportar lecturas revisadas con retención propia (180 días) → spec 035; excepción documentada en SEG-07/SEG-03 y ADR-005.
