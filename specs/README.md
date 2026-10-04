@@ -78,7 +78,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 070 | [Frontend: importar Figma Make y conectar la API](070-frontend-figma-make.md) | 066–069, 076 | Implementada |
 | 071 | [Frontend: pruebas Vitest y Playwright contra el demo](071-frontend-pruebas.md) | 064, 069, 070, 076 | Implementada |
 | 072 | [Publicación: capturas del demo y nivel F de la web](072-publicacion-web.md) | 068, 069, 071 | Lista |
-| 073 | [Retirar la GUI PySide6](073-retirar-gui-pyside6.md) | 071 | Lista (solo cuando la web cubra la GUI) |
+| 073 | [Retirar la GUI PySide6](073-retirar-gui-pyside6.md) | 071 | Implementada |
 | 074 | [Clave maestra desde un archivo (Docker secrets)](074-clave-desde-archivo.md) | 008, 028 | Implementada |
 | 075 | Imagen Docker y compose | 068, 070, 074 | Por redactar (bloqueada: frontend e imágenes base sin verificar) |
 | 076 | [Web: video original, fotograma completo, conteos y ajustes](076-web-video-fotograma.md) | 066, 067, 068 | Implementada |
@@ -161,3 +161,4 @@ Decisión del usuario (2026-09-27): opción de revisión "placa borrosa" → spe
 | 2026-10-04 | 069 | `DEMO_START` fija (2026-01-15) pasa a `demo_start(now)` = hora actual truncada menos 2 días; tests `test_demo_survives_purge` y `test_demo_start` | La purga por retención (90 días) de `open_web_session` borraba los 42 avistamientos de la demo: `lector-web --demo` arrancaba vacío (hallado en la prueba manual de la 070) |
 | 2026-10-04 | 071 | `vite` 8.0.5 → 8.0.16; `npm audit` completo en el DoD; `__dirname` definido con `fileURLToPath` en `global-setup.ts` | Vite 8.0.0–8.0.15 tiene una vulnerabilidad alta del servidor de desarrollo; el paquete es ESM y `__dirname` no existe (hallado al implementar) |
 | 2026-10-04 | 073 | El grep del DoD excluye `test_dependency_rule.py` | `test_nobody_imports_pyside6` contiene por fuerza la cadena `PySide6` (hallado al implementar) |
+| 2026-10-04 | 072 | `check_web_loopback` espera hasta 15 s a que el puerto acepte conexiones; el botón "Procesar" se busca en la navegación; `docs/img/` escribible en el worktree | `lector-web` imprime la URL antes de escuchar (`ConnectionRefusedError`); `docs/` está en solo lectura en el ciclo (hallado al implementar) |

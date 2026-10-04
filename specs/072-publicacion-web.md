@@ -32,7 +32,7 @@ Ninguna nueva. `ss` (iproute2) para listar sockets en escucha: presente en este 
 - `test.use({ viewport: { width: 1440, height: 900 }, colorScheme: "light" })`.
 - Una sola prueba `capturas del modo demo` que, en este orden y sin modificar datos: abre `/`, pulsa "Lecturas",
   espera a que haya al menos una tarjeta, pulsa la primera y guarda `page.screenshot({ path: "../docs/img/web-lecturas.png" })`;
-  pulsa "Procesar", elige `demo_entrada.mp4` y guarda `../docs/img/web-procesar.png` (sin pulsar "Procesar");
+  pulsa "Procesar" en la navegación principal (`page.getByRole("navigation").getByRole("button", { name: "Procesar" })`), elige `demo_entrada.mp4` y guarda `../docs/img/web-procesar.png` (sin pulsar "Procesar");
   pulsa "Métricas", espera a las cuatro tarjetas y guarda `../docs/img/web-metricas.png`; pulsa "Historial" y guarda
   `../docs/img/web-historial.png`.
 - El nombre del archivo (`capturas`) ordena antes que `demo.spec.ts`, así que con `workers: 1` las capturas se toman
@@ -47,6 +47,9 @@ no cambian). También se actualiza el docstring del módulo con la línea
 2. Lanza `subprocess.Popen([sys.executable, "-c", "from lector_placas.web.app import main; raise SystemExit(main())", "--demo", "--no-browser", "--port", "0"], cwd=ROOT, stdout=PIPE, stderr=PIPE, text=True)`.
 3. Lee `stdout` línea a línea (máximo 30 s) hasta una que cumpla `^lectorPlacas web en http://127\.0\.0\.1:(\d+)/$`;
    si no aparece → termina el proceso y `(False, "lector-web no arrancó")`.
+3b. Espera a que el puerto acepte conexiones: reintenta `socket.create_connection(("127.0.0.1", puerto), timeout=1)`
+   cada 0,2 s durante un máximo de 15 s (cerrando cada socket); si nunca acepta → termina el proceso y
+   `(False, "lector-web no acepta conexiones")`. (`lector-web` imprime la URL antes de que Uvicorn empiece a escuchar.)
 4. `ss -Hltn` (texto): `ok_bind` es verdadero si alguna línea contiene `127.0.0.1:<puerto>` y ninguna contiene
    `0.0.0.0:<puerto>`, `*:<puerto>` ni `[::]:<puerto>`.
 5. Con `http.client.HTTPConnection("127.0.0.1", puerto, timeout=5)`: `GET /` con cabecera `Host: ejemplo.invalid:<puerto>`
