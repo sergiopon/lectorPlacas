@@ -7,7 +7,7 @@ import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
 
-from lector_placas.application.image_ops import crop_image
+from lector_placas.application.image_ops import crop_image, rms_contrast
 from lector_placas.application.ports import (
     Clock,
     CropStore,
@@ -40,6 +40,7 @@ from lector_placas.application.proximity import (
 from lector_placas.application.track_registry import FinalizedTrack, TrackRegistry
 from lector_placas.domain.entities import (
     BoundingBox,
+    CropQuality,
     PlateDetection,
     PlateReading,
     ReviewStatus,
@@ -401,6 +402,14 @@ class ProcessVideo:
         deps = self._deps
         plate = deps.consolidator.consolidate(track.readings, track.vehicle_type)
         crop_ref = deps.crop_store.save(track.best_crop) if track.best_crop is not None else None
+        quality: CropQuality | None = None
+        if track.best_crop is not None:
+            quality = CropQuality(
+                track.best_crop.shape[1],
+                track.best_crop.shape[0],
+                deps.quality.sharpness(track.best_crop),
+                rms_contrast(track.best_crop),
+            )
         sighting = Sighting(
             run_id,
             track.track_id,
@@ -410,6 +419,7 @@ class ProcessVideo:
             plate,
             crop_ref,
             deps.clock.now(),
+            quality,
         )
         deps.repository.save_sighting(sighting)
         if plate.status is ReviewStatus.CONFIRMED:

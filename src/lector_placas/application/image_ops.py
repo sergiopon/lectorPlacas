@@ -33,3 +33,24 @@ def crop_image(image: ImageBGR, box: BoundingBox) -> ImageBGR:
     if x1 <= x0 or y1 <= y0:
         raise InvalidEntityError("recorte vacío")
     return np.ascontiguousarray(image[y0:y1, x0:x1]).copy()
+
+
+def rms_contrast(image: ImageBGR) -> float:
+    """Calcula el contraste de una imagen como desviación típica de luminancia.
+
+    Convierte a escala de grises usando pesos CIE: 0.114 * B + 0.587 * G + 0.299 * R,
+    luego devuelve la desviación típica poblacional.
+
+    Args:
+        image: imagen BGR de entrada.
+
+    Returns:
+        Valor no negativo, finito.
+    """
+    # Canales BGR en orden image[..., 0], image[..., 1], image[..., 2]
+    gris = (
+        0.114 * image[..., 0].astype(np.float64)
+        + 0.587 * image[..., 1].astype(np.float64)
+        + 0.299 * image[..., 2].astype(np.float64)
+    )
+    return float(np.std(gris, ddof=0))

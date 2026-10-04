@@ -53,7 +53,13 @@ CREATE TABLE IF NOT EXISTS sightings (
                                                    AND crop_ref NOT GLOB '*[^0-9a-f]*')),
     created_at    TEXT    NOT NULL,
     reviewed_at   TEXT,
-    UNIQUE (run_id, track_id, first_seen_ms)
+    plate_width_px  INTEGER CHECK (plate_width_px IS NULL OR plate_width_px >= 1),
+    plate_height_px INTEGER CHECK (plate_height_px IS NULL OR plate_height_px >= 1),
+    sharpness       REAL    CHECK (sharpness IS NULL OR sharpness >= 0.0),
+    contrast        REAL    CHECK (contrast IS NULL OR contrast >= 0.0),
+    duplicate_of    INTEGER REFERENCES sightings(sighting_id) ON DELETE SET NULL CHECK (duplicate_of IS NULL OR duplicate_of <> sighting_id),
+    UNIQUE (run_id, track_id, first_seen_ms),
+    CHECK ((plate_width_px IS NULL) = (plate_height_px IS NULL) AND (plate_width_px IS NULL) = (sharpness IS NULL) AND (plate_width_px IS NULL) = (contrast IS NULL))
 );
 
 CREATE INDEX IF NOT EXISTS idx_sightings_status     ON sightings(status);

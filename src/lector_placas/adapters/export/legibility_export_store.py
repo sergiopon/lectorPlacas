@@ -35,6 +35,12 @@ _HEADER: Final[tuple[str, ...]] = (
     "reasons",
     "crop_width",
     "crop_height",
+    "plate_width_px",
+    "plate_height_px",
+    "sharpness",
+    "contrast",
+    "frame_width",
+    "frame_height",
 )
 _TIMESTAMP_FORMAT: Final[str] = "%Y%m%dT%H%M%SZ"
 
@@ -161,4 +167,10 @@ def _row(index: int, sample: LegibilitySample) -> tuple[str, ...]:
         "|".join(reason.value for reason in sample.reasons),
         str(sample.image.shape[1]),
         str(sample.image.shape[0]),
+        str(sample.plate_width_px) if sample.plate_width_px is not None else "",
+        str(sample.plate_height_px) if sample.plate_height_px is not None else "",
+        f"{sample.sharpness:.4f}" if sample.sharpness is not None else "",
+        f"{sample.contrast:.4f}" if sample.contrast is not None else "",
+        str(sample.frame_width) if sample.frame_width is not None else "",
+        str(sample.frame_height) if sample.frame_height is not None else "",
     )

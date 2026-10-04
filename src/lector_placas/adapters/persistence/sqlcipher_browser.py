@@ -23,7 +23,8 @@ MAX_PAGE: Final[int] = 10_000
 _SEARCH_SQL: Final[str] = (
     "SELECT sighting_id, run_id, track_id, first_seen_ms, last_seen_ms, vehicle_type, "
     "ocr_text, plate_text, confidence, agreement, num_readings, status, reasons, "
-    "format_ids, crop_ref, created_at, reviewed_at FROM sightings "
+    "format_ids, crop_ref, created_at, reviewed_at, plate_width_px, plate_height_px, "
+    "sharpness, contrast, duplicate_of FROM sightings "
     "WHERE (? IS NULL OR status = ?) "
     "AND (? IS NULL OR substr(plate_text, 1, length(?)) = ?) "
     "AND (? IS NULL OR run_id = ?) "
