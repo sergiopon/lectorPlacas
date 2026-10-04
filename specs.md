@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057, 059–064, 066–071, 074, 076 (73 specs; 059–064, 066–071, 074 y 076 el 2026-10-04) |
-| Redactada (lista para implementar) | 072, 073 (2) |
+| Implementada | 000–057, 059–064, 066–074, 076 (75 specs; 059–064, 066–074 y 076 el 2026-10-04) |
+| Redactada (lista para implementar) | — |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 
@@ -130,8 +130,8 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 | 069 | Modo demo sintético (`lector-web --demo`) | 059, 061, 066, 067, 068 | Implementada |
 | 070 | Frontend de Figma Make en `frontend/` conectado a la API real (sin plugins de Figma ni analítica; npm, versiones exactas) | 066–069, 076 | Implementada |
 | 071 | Pruebas del frontend: Vitest + Testing Library y Playwright (Chromium) contra `lector-web --demo`, sin violaciones de CSP | 064, 069, 070, 076 | Implementada |
-| 072 | Publicación: capturas del modo demo (Playwright) y chequeo de nivel F «web solo en loopback» | 068, 069, 071 | Redactada |
-| 073 | Retirar la GUI PySide6 (solo cuando la web cubra sus funciones) | 071 | Redactada |
+| 072 | Publicación: capturas del modo demo (Playwright) y chequeo de nivel F «web solo en loopback» | 068, 069, 071 | Implementada |
+| 073 | Retirar la GUI PySide6 (solo cuando la web cubra sus funciones) | 071 | Implementada |
 
 ## 6. Docker (074–075)
 
