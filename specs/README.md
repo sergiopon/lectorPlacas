@@ -61,7 +61,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 053 | [GUI: botón y filtro "Placa borrosa"](053-gui-placa-borrosa.md) | 046–048, 052 | Implementada |
 | 054 | [Entrenamiento OCR: mezcla con reparto congelado y `test_video`](054-mezcla-congelada-test-video.md) | 035, 039 | Implementada |
 | 055 | [Exportar el dataset de legibilidad](055-exportar-dataset-legibilidad.md) | 035, 052 | Implementada |
-| 056 | [Modos de cámara en la configuración](056-modos-de-camara.md) | 006, 016, 028 | Lista |
+| 056 | [Modos de cámara en la configuración](056-modos-de-camara.md) | 006, 016, 028 | Implementada |
 | 057 | [Filtro de cercanía antes de leer](057-filtro-cercania.md) | 051, 056 | Lista |
 | 058 | [Evaluación con cercanía: ground truth versión 2](058-evaluacion-con-cercania.md) | 029, 057, 059 | Bloqueada (aprobación del cambio de M-02/M-03 en docs/04) |
 | 059 | [Calidad del mejor recorte, `duplicate_of` y esquema v3](059-calidad-y-esquema-v3.md) | 052, 055, 057 | Lista |
@@ -150,3 +150,4 @@ Decisión del usuario (2026-09-27): opción de revisión "placa borrosa" → spe
 | 2026-09-27 | 052 | Añade `tests/unit/application/test_ports.py` a los archivos (su aserción de `ReviewAction` debe incluir `illegible`); el fallo de `BEGIN IMMEDIATE` también se convierte en `RepositoryError` y un fallo de `ROLLBACK` no oculta el original | Omisión de la spec detectada por el implementador; hallazgo de la revisión (BD bloqueada por la conexión del hilo de la GUI) |
 | 2026-09-27 | config/models.yaml, docs/03 §5, ATRIBUCIONES | Los 3 modelos propios pasan de `url: null` a los assets del Release `models-v1` de GitHub; atribuciones completas (versiones y fechas verificadas en los datos descargados) | Publicación del repositorio: quien lo clone debe poder ejecutar `lector models fetch` |
 | 2026-10-03 | docs/00 (RF-03, RF-04, RF-37), SEG-29, ADR-017, ADR-004, docs/03, ARQUITECTURA §8–§9, CONTEXT, docs/08 (renumerado), docs/09 | Enfoque nuevo (placas cercanas y legibles; modos estático y móvil, solo archivos de video); las specs 056–071 del plan 08 pasan a 056–075; `min_plate_width_px` 32 se aplica en la spec 057, no en la 056 | Decisión del usuario 2026-10-03 y diseño Opus (docs/09) |
+| 2026-10-03 | 056 | El perfil del test `test_first_offending_profile_is_named` pasa de `patrulla_2` a `patrulla_extra` | `PROFILE_NAME_REGEX` (`^[a-z_]{1,32}$`) no admite dígitos; el implementador lo detectó |

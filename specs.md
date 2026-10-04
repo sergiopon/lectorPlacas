@@ -11,8 +11,8 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–055 (56 specs; 055 el 2026-10-03) |
-| Redactada (lista para implementar) | 056, 057, 059–064, 066–069, 073, 074 (14) |
+| Implementada | 000–056 (57 specs; 055 y 056 el 2026-10-03) |
+| Redactada (lista para implementar) | 057, 059–064, 066–069, 073, 074 (13) |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
 

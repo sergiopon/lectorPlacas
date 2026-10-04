@@ -115,7 +115,8 @@ Fixtures sintéticos únicamente. Los tests nuevos se **añaden** a los archivos
 - `test_missing_mode_or_cmc_raises`: dos casos independientes; borrar la clave `mode` de `calle_lenta` lanza
   `ConfigurationError`; borrar la clave `camera_motion_compensation` de `calle_lenta` lanza `ConfigurationError`.
 - `test_first_offending_profile_is_named`: con `patrulla` sin CMC y un segundo perfil móvil copiado de `patrulla`
-  (clave `patrulla_2`) también sin CMC, el mensaje contiene `el perfil patrulla es movil` y no contiene `patrulla_2`.
+  (clave `patrulla_extra`; los nombres de perfil solo admiten `[a-z_]`) también sin CMC, el mensaje contiene
+  `el perfil patrulla es movil` y no contiene `patrulla_extra`.
 
 `tests/unit/adapters/test_botsort_tracker.py` (añadir `import dataclasses`, y `import pytest` si no está):
 - `test_enable_cmc_defaults_to_true`: `SETTINGS.enable_cmc is True` (el `SETTINGS` existente de 10 argumentos).
