@@ -11,7 +11,7 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–057, 059–064, 066–077 (76 specs; 059–064 y 066–077 el 2026-10-04) |
+| Implementada | 000–057, 059–064, 066–078 (77 specs; 059–064 y 066–078 el 2026-10-04) |
 | Redactada (lista para implementar) | — |
 | Redactada, bloqueada | 058 (aprobación del cambio de M-02/M-03 en docs/04) |
 | Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
@@ -141,7 +141,7 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 | 075 | `Dockerfile` multietapa con digests, `compose.yaml` (puerto solo en 127.0.0.1, secret de la clave), perfil gpu sin verificar | 068, 070, 074 | Implementada |
 | 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Implementada |
 | 077 | Escalas del gráfico de métricas ajustadas a los datos; capturas sin esqueletos ni transiciones | 070, 071, 072 | Implementada |
-| 078 | Demo con videos WebM sintéticos (Ir al video funciona en la demo) y script del GIF del README | 069, 071, 076, 077 | Redactada |
+| 078 | Demo con videos WebM sintéticos (Ir al video funciona en la demo) y script del GIF del README | 069, 071, 076, 077 | Implementada |
 
 ---
 

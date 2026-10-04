@@ -137,7 +137,7 @@ Plan de mejora y diagnóstico completo: [`docs/07-plan-mejora-lectura.md`](docs/
 El proyecto se hizo con **spec-driven development asistido por IA**, entre septiembre y octubre de 2026:
 
 - **Diseño y revisión: Claude (Anthropic).** Escribió los requisitos, la arquitectura, los 17 ADRs y las specs
-  (**76 implementadas** de `specs/000`–`077`; la 058 y la 065 esperan una decisión o datos), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
+  (**77 implementadas** de `specs/000`–`078`; la 058 y la 065 esperan una decisión o datos), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
   `reglas-seguridad.md`.
 - **Implementación: agentes de código.** Cada spec la implementó un agente en su propia rama y worktree: subagentes
   Claude Sonnet y Haiku y modelos DeepSeek, según la dificultad de cada spec. Los agentes no podían modificar
@@ -150,8 +150,8 @@ El proyecto se hizo con **spec-driven development asistido por IA**, entre septi
 - **Regla de trabajo:** no inventar datos técnicos (versiones, formatos de placa, hashes). Lo que no se pudo
   verificar está marcado `NO VERIFICADO` en el repositorio.
 
-Tamaño (2026-10-04): 14 740 líneas de Python en `src/`, 12 055 de tests (749 tests), 5 123 en `training/` y
-1 890 de TypeScript en `frontend/` (interfaz y sus pruebas: 14 de Vitest y 5 de Playwright).
+Tamaño (2026-10-04): 14 797 líneas de Python en `src/`, 12 099 de tests (751 tests), 5 123 en `training/` y
+1 944 de TypeScript en `frontend/` (interfaz y sus pruebas: 14 de Vitest y 5 de Playwright).
 Las instrucciones operativas de los agentes (`CLAUDE.md`, `CONTEXT.md` y el plan de orquestación) son archivos locales
 que no se publican. Por eso algunos documentos los mencionan sin que estén en el repositorio. Las specs, ADRs, contratos
 y tests sí están completos.
