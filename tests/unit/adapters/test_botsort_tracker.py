@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import dataclasses
+
 import numpy as np
+import pytest
 
 from lector_placas.adapters.tracking.botsort_tracker import (
     BotSortTracker,
@@ -55,3 +58,39 @@ def test_empty_frame_is_accepted() -> None:
     tracker = BotSortTracker(SETTINGS)
     tracker.update([det(10, 10)], BACKGROUND, 0)
     assert tracker.update([], BACKGROUND, 100) == []
+
+
+def test_enable_cmc_defaults_to_true() -> None:
+    assert SETTINGS.enable_cmc is True
+
+
+@pytest.mark.parametrize("value", [True, False])
+def test_enable_cmc_is_passed_to_library(value: bool) -> None:
+    captured_kwargs: list[dict] = []
+
+    class Fake:
+        def __init__(self, **kwargs):
+            captured_kwargs.append(kwargs)
+
+    import lector_placas.adapters.tracking.botsort_tracker
+
+    original = lector_placas.adapters.tracking.botsort_tracker.BoTSORTTracker
+    try:
+        lector_placas.adapters.tracking.botsort_tracker.BoTSORTTracker = Fake  # type: ignore
+        settings = dataclasses.replace(SETTINGS, enable_cmc=value)
+        BotSortTracker(settings)
+        assert len(captured_kwargs) == 1
+        assert captured_kwargs[0]["enable_cmc"] is value
+    finally:
+        lector_placas.adapters.tracking.botsort_tracker.BoTSORTTracker = original
+
+
+def test_tracker_keeps_id_without_cmc() -> None:
+    settings = dataclasses.replace(SETTINGS, enable_cmc=False)
+    tracker = BotSortTracker(settings)
+    ids = []
+    for step in range(6):
+        result = tracker.update([det(20 + 5 * step, 50)], BACKGROUND, step * 100)
+        ids.extend(t.track_id for t in result)
+    assert ids and len(set(ids)) == 1
+    assert ids[0] >= 0

@@ -196,6 +196,7 @@ def build_tracker(config: AppConfig, profile: ProfileConfig) -> Tracker:
         t.high_conf_det_threshold,
         t.cmc_method,
         t.cmc_downscale,
+        profile.camera_motion_compensation,
     )
     return BotSortTracker(settings)
 
