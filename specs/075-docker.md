@@ -35,7 +35,9 @@ en `127.0.0.1` del anfitrión; dentro del contenedor el servidor escucha en `0.0
 ## Interfaces y tipos involucrados
 
 ### `web/app.py`
-- `CONTAINER_ENV: Final[str] = "LECTOR_IN_CONTAINER"`; `CONTAINER_BIND: Final[str] = "0.0.0.0"`.
+- `CONTAINER_ENV: Final[str] = "LECTOR_IN_CONTAINER"`; `CONTAINER_BIND: Final[str] = "0.0.0.0"` con
+  `# noqa: S104 — excepción de contenedor de SEG-28 (spec 075)` (única excepción; la misma en la línea del test que
+  compara con ese literal).
 - `def bind_host() -> str`: `CONTAINER_BIND` si `os.environ.get(CONTAINER_ENV) == "1"`; si no, `HOST`.
 - `bind_socket` hace `bind((bind_host(), port))` y `uvicorn.Config(..., host=bind_host(), ...)`. `launch_url` y los
   mensajes de la salida estándar siguen usando `HOST` (`127.0.0.1`), que es la dirección del anfitrión.
@@ -77,8 +79,8 @@ Exactamente estas líneas (una por línea): `.git`, `.venv`, `data`, `videos`, `
 ```
 mkdir -m 700 -p secrets videos data logs
 docker compose build
-docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/secrets:/secrets" lector-placas:local lector key init-file /secrets/lector_key
-UID=$(id -u) GID=$(id -g) docker compose up
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/secrets:/secrets" -v "$PWD/logs:/app/logs" lector-placas:local lector key init-file /secrets/lector_key
+env UID=$(id -u) GID=$(id -g) docker compose up
 ```
 La URL con el token aparece en la salida de `docker compose up` (`Abra: http://127.0.0.1:8765/auth?token=…`); el token
 es de un solo uso.
@@ -106,7 +108,7 @@ es de un solo uso.
 ## Definition of Done
 - [ ] `uv run pytest -q`, `uv run ruff check .`, `uv run ruff format --check .` y `uv run mypy src` limpios.
 - [ ] `docker compose build` sin errores; pegar el tamaño de la imagen (`docker image ls lector-placas:local`).
-- [ ] Con `secrets/lector_key` creado por el comando del §4, `UID=$(id -u) GID=$(id -g) docker compose up -d`, el
+- [ ] Con `secrets/lector_key` creado por el comando del §4, `env UID=$(id -u) GID=$(id -g) docker compose up -d`, el
       contenedor llega a `healthy` (`docker compose ps`), `curl -s -o /dev/null -w "%{http_code}" -c jar "<URL de Abra:>"`
       da `303`, `curl -s -b jar -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/api/health` da `200`, y
       `ss -Hltn | grep 8765` solo muestra `127.0.0.1:8765`. Después `docker compose down` y borrar `secrets/lector_key`.

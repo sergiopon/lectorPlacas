@@ -1,13 +1,13 @@
 # lectorPlacas
 
-Lector local de placas colombianas (ALPR) a partir de video, con aplicación de escritorio. Detecta los vehículos, los
+Lector local de placas colombianas (ALPR) a partir de video, con una interfaz web que corre solo en tu equipo. Detecta los vehículos, los
 sigue entre frames, lee su placa varias veces y vota el resultado. Lo que no puede asegurar lo deja para que una
 persona lo revise en una galería. Todo corre en tu equipo: **no se conecta a internet mientras procesa**, y la base de
 datos y los recortes de placa se guardan cifrados.
 
 > **English summary.** Local, privacy-first license-plate reader for Colombian plates (video → vehicle detection with
 > YOLO26n → BoT-SORT tracking → plate detection inside each vehicle → fast-plate-ocr → per-character voting against
-> the Colombian plate formats). Uncertain reads go to a human-review gallery (PySide6). ONNX Runtime only, no network
+> the Colombian plate formats). Uncertain reads go to a human-review gallery in a local web UI (FastAPI on 127.0.0.1 + React, designed in Figma Make), with a button that jumps to the exact second of the original video where the plate appears. ONNX Runtime only, no network
 > at runtime, SQLCipher + AES-GCM at rest. Built with spec-driven development: 55 specs written and reviewed by Claude,
 > implemented by AI coding agents (see [How it was built](#15-cómo-se-construyó)). Honest results below: it works, but on
 > real street video most errors come from image quality, not from the software.
@@ -19,8 +19,9 @@ Licencia: AGPL-3.0 (ver `LICENSE` y `docs/adr/ADR-008-licencia-agpl.md`). Atribu
 
 ## Inicio rápido
 
-Requisitos: Linux con escritorio (probado en Fedora 44), [uv](https://docs.astral.sh/uv/getting-started/installation/)
-y un llavero del sistema (GNOME Keyring o KWallet). La GPU NVIDIA es opcional (§2).
+Requisitos: Linux (probado en Fedora 44), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12
+o posterior (solo para compilar la interfaz) y un llavero del sistema (GNOME Keyring o KWallet). La GPU NVIDIA es
+opcional (§2). Sin instalar nada de eso, también funciona con Docker (§3b).
 
 ```bash
 git clone https://github.com/sergiopon/lectorPlacas.git
@@ -28,11 +29,13 @@ cd lectorPlacas
 uv sync --locked                 # instala Python 3.13 y las dependencias (descarga grande: incluye CUDA)
 uv run lector key init           # crea la clave maestra en el llavero
 uv run lector models fetch       # descarga y verifica por SHA-256 los 6 modelos (~33 MB)
+(cd frontend && npm ci && npm run build)   # compila la interfaz web
 mkdir -p videos                  # copia aquí tus videos (.mp4, .mov, .mkv…)
-uv run lector-gui                # abre la aplicación
+uv run lector-web                # abre la interfaz en el navegador (solo en 127.0.0.1)
 ```
 
-En la aplicación: **Procesar** → elige un video de `videos/` y el escenario → al terminar, **Lecturas** para revisar.
+En la interfaz: **Procesar** → elige un video de `videos/` y el escenario → al terminar, **Lecturas** para revisar.
+Para verla sin videos propios: `uv run lector-web --demo` (datos inventados en una carpeta temporal que se borra al salir).
 Por terminal: `uv run lector process videos/<video>.mp4` y `uv run lector review`.
 
 > El repositorio no incluye videos de ejemplo: las placas son datos personales. Usa un video tuyo.
@@ -43,7 +46,7 @@ Por terminal: `uv run lector process videos/<video>.mp4` y `uv run lector review
 1. [Qué hace, en una imagen](#1-qué-hace-en-una-imagen)
 2. [Requisitos](#2-requisitos)
 3. [Instalación y primer uso](#3-instalación-y-primer-uso)
-4. [Uso diario con la aplicación de escritorio](#4-uso-diario-con-la-aplicación-de-escritorio)
+4. [Uso diario con la interfaz web](#4-uso-diario-con-la-interfaz-web)
 5. [Uso desde la terminal (CLI)](#5-uso-desde-la-terminal-cli)
 6. [Cómo decide el sistema](#6-cómo-decide-el-sistema)
 7. [Configuración](#7-configuración)
@@ -95,7 +98,8 @@ equivocada.
   fallo. Para quitarlo, pon `inference.execution_provider: cpu` en `config/lector.yaml`.
 - **[uv](https://docs.astral.sh/uv/)** en `~/.local/bin/uv`. uv instala Python 3.13 y todas las dependencias; no
   hace falta instalar Python a mano.
-- Un **llavero del sistema** (GNOME Keyring o KWallet) para guardar la clave maestra.
+- Un **llavero del sistema** (GNOME Keyring o KWallet) para guardar la clave maestra (o un archivo de clave, §3b).
+- **Node.js 22.12 o posterior** y npm, solo para compilar la interfaz web (`frontend/`). No se usa en ejecución.
 - Opcional: `strace`, para los chequeos no funcionales (`scripts/nivel_f.py`).
 
 > ⚠️ **Hay otro programa llamado `lector`** (un lector de ebooks en `/usr/bin/lector`). Ejecuta siempre este
@@ -127,26 +131,25 @@ Crea la carpeta **`videos/`** (`mkdir -p videos`) y pon ahí tus videos. Por seg
 
 ---
 
-## 4. Uso diario con la aplicación de escritorio
+## 4. Uso diario con la interfaz web
 
 ```bash
-uv run lector-gui
+uv run lector-web                # abre el navegador; --no-browser solo imprime la dirección
 ```
 
-La ventana tiene dos secciones, arriba:
+`lector-web` escucha solo en `127.0.0.1` (nadie más en la red puede entrar), en un puerto libre, y abre el navegador
+con un enlace de un solo uso que inicia la sesión. Si cierras la pestaña, reinicia `lector-web` para obtener otro.
 
-**Procesar**
-1. Elige un video de `videos/`.
-2. Elige el escenario (perfil): *Parqueadero o entrada*, *Calle con tráfico lento* o *Vía rápida* (ver §7).
-3. Pulsa procesar. Se ve el avance y se puede cancelar. Al terminar, el botón *Revisar N placas pendientes* (o *Ver
-   lecturas*) lleva directo a sus lecturas.
+![Lecturas: galería de placas por revisar y panel de revisión](docs/img/web-lecturas.png)
 
-**Lecturas**: una galería con una tarjeta por placa (recorte + texto).
-- Filtros arriba: *Por revisar*, *Confirmadas*, *Corregidas*, *Descartadas*, *Borrosas*, *Todas*. También se
-  puede buscar por placa y filtrar por video.
-- Al hacer clic en una tarjeta, el panel derecho la muestra en grande, junto con lo que leyó el sistema, su seguridad
-  y **por qué hay que revisarla**.
-- Decisiones, con botón o con teclado:
+**Procesar**: elige un video de `videos/` y el escenario (*Parqueadero o entrada*, *Calle con tráfico lento*, *Vía
+rápida* o *Patrulla*, ver §7) y pulsa *Procesar*. Se ve el avance en vivo y se puede cancelar. Al terminar, *Revisar N
+placas* lleva directo a sus lecturas.
+
+**Lecturas**: una tarjeta por placa (recorte + texto), con pestañas *Por revisar*, *Confirmadas*, *Corregidas*,
+*Descartadas*, *Borrosas* y *Todas*, búsqueda por placa y filtro por video. Las que el filtro de legibilidad considera
+inservibles van aparte, en *Ocultas por baja calidad*. El panel derecho muestra la placa en grande, lo que leyó el
+sistema, su seguridad y **por qué hay que revisarla**:
 
 | Tecla | Acción |
 |---|---|
@@ -155,22 +158,32 @@ La ventana tiene dos secciones, arriba:
 | `R` | No es una placa |
 | `B` | Placa borrosa: es una placa, pero no se lee |
 | `S` | Saltar |
+| `V` | **Ir al video**: abre el video original un segundo antes de que aparezca la placa |
+| `F` | Captura completa: el fotograma entero de ese momento |
 
-Tras decidir, pasa sola a la siguiente pendiente.
+Tras decidir, pasa sola a la siguiente pendiente. El video se encuentra por su huella SHA-256 dentro de `videos/` (la
+base no guarda nombres ni rutas); si lo borraste o lo moviste fuera de `videos/`, la interfaz lo indica.
 
-**Botón *Más*** (barra superior):
-- *Exportar, retención y métricas*: exporta a CSV, purga los datos vencidos y muestra las métricas de la revisión.
-- *Historial de videos*: las corridas anteriores, con sus conteos.
+**Métricas**: precisión de las confirmadas auditadas, lecturas completas, error por carácter y tasa de confirmación
+automática, con gráficos por video. **Historial**: los videos procesados. **Ajustes**: retención, exportar CSV (a
+`data/exports/`) y purgar datos vencidos.
+
+| | |
+|---|---|
+| ![Procesar](docs/img/web-procesar.png) | ![Métricas](docs/img/web-metricas.png) |
+
+Las capturas son del modo demo (`lector-web --demo`): placas inventadas, ningún dato real.
 
 ---
 
 ## 5. Uso desde la terminal (CLI)
 
-Todo lo que hace la GUI se puede hacer por terminal. Siempre con `uv run lector ...`.
+Casi todo lo que hace la interfaz web se puede hacer por terminal. Siempre con `uv run lector ...`.
 
 | Orden | Para qué |
 |---|---|
-| `lector key init` | Crear la clave maestra (primera vez) |
+| `lector key init` | Crear la clave maestra en el llavero (primera vez) |
+| `lector key init-file <ruta>` / `key export-file <ruta>` | Crear la clave en un archivo 0400, o copiar ahí la del llavero (para Docker; se usa con `LECTOR_KEY_FILE`) |
 | `lector models fetch` / `verify` | Descargar / verificar modelos |
 | `lector process videos/<v>.mp4 [--profile calle_lenta]` | Procesar un video |
 | `lector review [--limit N] [--status unverified\|confirmed]` | Revisar en una ventana OpenCV. Teclas: `C` confirmar, `E` editar, `R` rechazar, `B` borrosa, `S` saltar, `Q` salir. Con `--status confirmed` se **auditan** las confirmadas automáticas |
@@ -203,7 +216,7 @@ consolidan (algoritmo en `docs/adr/ADR-007-votacion.md`):
 
 Motivos de "por revisar":
 
-| Motivo (GUI) | Código |
+| Motivo (en la interfaz) | Código |
 |---|---|
 | Se leyó pocas veces | `insufficient_readings` |
 | El lector no estaba seguro | `low_confidence` |
@@ -213,6 +226,8 @@ Motivos de "por revisar":
 | El formato no corresponde al tipo de vehículo | `vehicle_format_mismatch` |
 | Encaja en más de un formato | `ambiguous_format` |
 | Podría ser otra placa: una letra o un número dudoso | `correction_conflict` |
+| Parece borrosa (filtro automático; desactivado hasta aceptar un modelo) | `predicted_illegible` |
+| Parece que no es una placa (filtro automático; desactivado hasta aceptar un modelo) | `predicted_not_plate` |
 
 En la base de datos, `ocr_text` es lo que leyó el sistema (no cambia nunca) y `plate_text` es el texto vigente (la
 revisión lo sobrescribe).
@@ -262,7 +277,8 @@ training/detector  entrenamiento del detector de placas (proyecto uv aparte)
 training/ocr       entrenamiento del OCR colombiano (proyecto uv aparte)
 src/lector_placas  código (ver §12)
 docs/              requisitos, contratos, modelo de datos, evaluación, ADRs y plan de mejora
-specs/             especificaciones numeradas (000–054) y su estado en specs/README.md
+frontend/          interfaz web (React + Vite); `npm run build` genera frontend/dist, que sirve lector-web
+specs/             especificaciones numeradas (000–077) y su estado en specs/README.md
 ```
 
 La clave maestra **no** está en disco: vive en el llavero del sistema. Sin ella no se pueden leer ni la base ni los
@@ -347,12 +363,15 @@ se compara el CER de v2 con el de v1.
 
 ## 11. Seguridad y privacidad
 
-Reglas completas en `reglas-seguridad.md` (SEG-01..SEG-27). Lo esencial:
+Reglas completas en `reglas-seguridad.md` (SEG-01..SEG-29). Lo esencial:
 - **Sin red en ejecución.** Todas las órdenes bloquean la red, salvo `models fetch`, `dataset download` y
   `dataset prepare`.
 - **Cifrado en reposo.** La base va en SQLCipher y los recortes en AES-GCM, con subclaves derivadas de la clave maestra
   del llavero.
 - **Sin placas en claro** en logs, reportes, auditoría ni mensajes de error.
+- **Web solo local.** `lector-web` escucha en `127.0.0.1`, rechaza cualquier `Host` ajeno, exige una cookie de sesión
+  obtenida con un enlace de un solo uso y envía una CSP sin orígenes externos: sin CDN, sin fuentes remotas, sin
+  analítica. El video y los fotogramas se sirven solo con sesión y nunca se escriben a disco.
 - **Retención.** Los datos vencidos se purgan solos al iniciar cada orden.
 - **Modelos verificados** por SHA-256 en cada carga. Solo ONNX, nunca pickles de PyTorch.
 - **Entradas acotadas.** Solo videos de `videos/`, con extensión y tamaño permitidos. Las rutas se resuelven dentro
@@ -366,7 +385,7 @@ Arquitectura limpia (`ARQUITECTURA.md`). Regla de dependencia verificada por `te
 
 ```
 domain  ←  application  ←  infrastructure / adapters  ←  evaluation / datasets  ←  cli  (composition root)
-                                                                                  ←  gui  (2.º composition root, PySide6)
+                                                                                  ←  web  (2.º composition root, FastAPI)
 ```
 
 | Capa | Contenido |
@@ -376,16 +395,17 @@ domain  ←  application  ←  infrastructure / adapters  ←  evaluation / data
 | `adapters` | ONNX (detectores, OCR), BoT-SORT, PyAV, SQLCipher, recortes cifrados, ventana OpenCV |
 | `infrastructure` | Configuración, claves, registro de modelos, red controlada |
 | `evaluation` / `datasets` | Métricas y herramientas de datasets |
-| `cli` / `gui` | Puntos de entrada |
+| `cli` / `web` | Puntos de entrada (`lector`, `lector-web`) |
+| `frontend/` | Interfaz React + TypeScript (diseño de Figma Make), solo habla con `/api` |
 
 Comandos:
 ```bash
 uv run pytest                                  # toda la suite (marcadores: -m gpu, -m integration)
-QT_QPA_PLATFORM=offscreen uv run pytest tests/unit/gui
+(cd frontend && npm test && npm run e2e)       # Vitest y Playwright (Chromium) contra lector-web --demo
 uv run ruff check . && uv run ruff format --check .
 uv run mypy src                                # modo strict
 uv run pre-commit run --all-files
-uv run python scripts/nivel_f.py               # red (strace), permisos, cifrado, placas en claro, velocidad, VRAM
+uv run python scripts/nivel_f.py               # red (strace), permisos, cifrado, placas en claro, web solo en loopback, velocidad, VRAM
 ```
 
 Cómo se trabaja: **spec-driven development**. Cada cambio se describe primero en una spec de `specs/` y se implementa en
@@ -405,7 +425,9 @@ una rama `feature/NNN-*` con merge `--no-ff`. El estado de cada spec y el regist
 | Va muy lento / "cae a CPU" | Revisa `scripts/verify_gpu.py` y que `inference.execution_provider` sea `cuda` |
 | Error de clave o del llavero | Ejecuta `lector key init` en una sesión de escritorio con llavero desbloqueado. Sin la clave original, los datos cifrados no se recuperan |
 | Un modelo "no verificado" tras entrenar | `train.py` sobrescribió el `.onnx`. Restaura tu copia o registra el hash nuevo en `config/models.yaml` |
-| La GUI avisa de Wayland | Es solo un aviso; para forzarlo: `QT_QPA_PLATFORM=wayland uv run lector-gui` |
+| La interfaz dice "Frontend no compilado" | Ejecuta `npm ci && npm run build` en `frontend/` y reinicia `lector-web` |
+| "El video original no está disponible" | El video ya no está en `videos/` con el mismo contenido. Vuelve a copiarlo ahí |
+| `token inválido` al abrir el enlace | El enlace es de un solo uso. Reinicia `lector-web` |
 | "versión de esquema no soportada" | La base es de una versión más nueva que el código. Actualiza el repo; no la borres |
 
 ---
