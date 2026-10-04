@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import secrets
+import shutil
 import socket
 import sys
 import webbrowser
@@ -21,7 +22,15 @@ from lector_placas.domain.errors import KeyUnavailableError, LectorPlacasError
 from lector_placas.infrastructure import network_guard
 from lector_placas.infrastructure.config import AppConfig, load_config
 from lector_placas.infrastructure.logging_setup import configure_logging
+from lector_placas.web.demo import (
+    DemoKeyProvider,
+    create_demo_root,
+    demo_config,
+    demo_runner,
+    seed_demo,
+)
 from lector_placas.web.factory import create_app
+from lector_placas.web.jobs import JobRunner
 from lector_placas.web.security import SessionAuth, allowed_hosts_for
 
 DEFAULT_CONFIG_PATH: Final[Path] = Path("config/lector.yaml")
@@ -58,6 +67,11 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "--no-browser",
         action="store_true",
         help="No abre el navegador automáticamente",
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Arranca con datos sintéticos en una carpeta temporal",
     )
     return parser.parse_args(argv)
 
@@ -97,7 +111,14 @@ def launch_url(port: int, token: str) -> str:
     return f"http://{HOST}:{port}/auth?token={token}"
 
 
-def _serve(config: AppConfig, keys: KeyProvider, sock: socket.socket, no_browser: bool) -> int:
+def _serve(
+    config: AppConfig,
+    keys: KeyProvider,
+    sock: socket.socket,
+    no_browser: bool,
+    static_dir: Path,
+    runner: JobRunner | None = None,
+) -> int:
     """Crea la app, la sirve en el socket y lo cierra al terminar.
 
     Args:
@@ -105,6 +126,8 @@ def _serve(config: AppConfig, keys: KeyProvider, sock: socket.socket, no_browser
         keys: proveedor de la clave maestra.
         sock: socket vinculado a 127.0.0.1.
         no_browser: si es `True`, no abre el navegador.
+        static_dir: directorio del frontend compilado.
+        runner: función que procesa un video; `None` usa el real.
 
     Returns:
         0 al terminar el servidor.
@@ -116,7 +139,8 @@ def _serve(config: AppConfig, keys: KeyProvider, sock: socket.socket, no_browser
         keys,
         SessionAuth(token),
         allowed_hosts_for(port),
-        static_dir=config.under_root(FRONTEND_DIST),
+        runner=runner,
+        static_dir=static_dir,
     )
     url = launch_url(port, token)
     sys.stdout.write(f"lectorPlacas web en http://{HOST}:{port}/\nAbra: {url}\n")
@@ -139,6 +163,49 @@ def _serve(config: AppConfig, keys: KeyProvider, sock: socket.socket, no_browser
     return 0
 
 
+def _run_server(
+    config: AppConfig,
+    keys: KeyProvider,
+    args: argparse.Namespace,
+    static_dir: Path,
+    runner: JobRunner | None = None,
+) -> int:
+    """Bloquea la red, abre el puerto y sirve la aplicación."""
+    network_guard.block_network()
+    try:
+        sock = bind_socket(args.port)
+    except (OSError, ValueError):
+        sys.stderr.write(f"lector-web: no se pudo abrir el puerto {args.port}\n")
+        return 1
+    return _serve(config, keys, sock, args.no_browser, static_dir, runner)
+
+
+def _run_demo(config: AppConfig, args: argparse.Namespace) -> int:
+    """Arranca la web sobre una carpeta temporal con datos sintéticos."""
+    keys = DemoKeyProvider()
+    sys.stdout.write("Modo demo: datos sintéticos en una carpeta temporal\n")
+    root = create_demo_root()
+    try:
+        config_demo = demo_config(config, root)
+        seed_demo(config_demo, keys)
+        return _run_server(
+            config_demo,
+            keys,
+            args,
+            config.under_root(FRONTEND_DIST),
+            demo_runner(config_demo, keys),
+        )
+    finally:
+        shutil.rmtree(root)
+
+
+def _real_keys() -> KeyProvider:
+    """Construye el proveedor de claves del keyring y comprueba que la clave existe."""
+    keys = composition.build_key_provider(False)
+    keys.master_key()
+    return keys
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Punto de entrada de lector-web.
 
@@ -155,21 +222,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         configure_logging(
             config.logging.level, config.under_root(config.paths.log_dir) / LOG_FILENAME
         )
-        keys = composition.build_key_provider(False)
-        keys.master_key()
+        keys = None if args.demo else _real_keys()
     except LectorPlacasError as error:
         sys.stderr.write(f"lector-web: {error}\n")
         if isinstance(error, KeyUnavailableError):
             sys.stderr.write(f"{KEY_HINT}\n")
         return 1
     try:
-        network_guard.block_network()
-        try:
-            sock = bind_socket(args.port)
-        except (OSError, ValueError):
-            sys.stderr.write(f"lector-web: no se pudo abrir el puerto {args.port}\n")
-            return 1
-        return _serve(config, keys, sock, args.no_browser)
+        if keys is None:
+            return _run_demo(config, args)
+        return _run_server(config, keys, args, config.under_root(FRONTEND_DIST))
     except Exception:  # último nivel permitido para except Exception, ARQUITECTURA §6
         logging.getLogger(__name__).exception("error inesperado")
         return 1
