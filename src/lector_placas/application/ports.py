@@ -564,6 +564,20 @@ class PlateRepository(Protocol):
         """
         ...
 
+    def run_frame_sizes(self) -> dict[int, tuple[int, int]]:
+        """Devuelve el tamaño del frame de cada corrida registrada.
+
+        Precondiciones:
+            BD abierta.
+
+        Postcondiciones:
+            `run_id` → `(width, height)` tal como se guardaron en `runs`.
+
+        Raises:
+            RepositoryError: si falla la lectura.
+        """
+        ...
+
     def close(self) -> None:
         """Cierra la base de datos.
 
@@ -727,6 +741,12 @@ class LegibilitySample:
     agreement: float
     num_readings: int
     reasons: tuple[UnverifiedReason, ...]
+    plate_width_px: int | None = None
+    plate_height_px: int | None = None
+    sharpness: float | None = None
+    contrast: float | None = None
+    frame_width: int | None = None
+    frame_height: int | None = None
 
     def __post_init__(self) -> None:
         """Valida los identificadores, el grupo de video y el número de lecturas.

@@ -140,7 +140,7 @@ def test_v1_database_is_migrated_preserving_rows(tmp_path: Path) -> None:
     records_before = _build_v1_database(tmp_path, key_provider)
     repo = SqlCipherPlateRepository(tmp_path / "lector.db", key_provider)
     version = repo._connection.execute("SELECT version FROM schema_version").fetchone()[0]
-    assert version == 2
+    assert version == 3
     records_after = repo.list_sightings(None, 10, 0)
     assert records_after == records_before
     repo.close()
@@ -176,6 +176,7 @@ def test_migration_keeps_indexes_and_autoincrement(tmp_path: Path) -> None:
         "idx_sightings_created_at",
         "idx_sightings_plate_id",
         "idx_sightings_crop_ref",
+        "idx_sightings_duplicate_of",
     }
     run_id = repo.start_run(RunStart("e" * 64, "p", INFO, T0))
     new_id = repo.save_sighting(_sighting(run_id, 9, CONFIRMED, crop="e" * 32))

@@ -139,6 +139,8 @@ class InMemoryPlateRepository:
             sighting.crop_ref,
             sighting.created_at,
             None,
+            sighting.quality,
+            None,
         )
         if plate.status is ReviewStatus.CONFIRMED:
             self.plates.add(plate.text)
@@ -201,6 +203,12 @@ class InMemoryPlateRepository:
 
     def run_video_hashes(self) -> dict[int, str]:
         return {run_id: run.start.video_sha256 for run_id, run in self.runs.items()}
+
+    def run_frame_sizes(self) -> dict[int, tuple[int, int]]:
+        return {
+            run_id: (run.start.video.width, run.start.video.height)
+            for run_id, run in self.runs.items()
+        }
 
     def close(self) -> None:
         self.closed = True

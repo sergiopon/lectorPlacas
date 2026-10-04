@@ -186,3 +186,68 @@ def test_paginates(monkeypatch: pytest.MonkeyPatch) -> None:
     result, _ = execute(repo, crops, store)
 
     assert result.exported == 5 and len(store.samples) == 5
+
+
+def _verify_quality_export(samples: list[LegibilitySample], run_id: int) -> None:
+    """Verifica que las muestras tienen calidad y tamaño de frame."""
+    # Primera muestra con calidad
+    sample_with_quality = next(s for s in samples if s.run_id == run_id and s.track_id == 0)
+    assert sample_with_quality.plate_width_px == 100
+    assert sample_with_quality.plate_height_px == 30
+    assert sample_with_quality.sharpness == 12.5
+    assert sample_with_quality.contrast == 40.0
+    assert sample_with_quality.frame_width == 1920
+    assert sample_with_quality.frame_height == 1080
+
+    # Segunda muestra sin calidad
+    sample_without_quality = next(s for s in samples if s.run_id == run_id and s.track_id == 1)
+    assert sample_without_quality.plate_width_px is None
+    assert sample_without_quality.plate_height_px is None
+    assert sample_without_quality.sharpness is None
+    assert sample_without_quality.contrast is None
+    assert sample_without_quality.frame_width == 1920
+    assert sample_without_quality.frame_height == 1080
+
+
+def test_exports_quality_and_frame_size() -> None:
+    """Las muestras incluyen calidad y tamaño del frame."""
+    from lector_placas.domain.entities import CropQuality
+
+    repo, crops, store = InMemoryPlateRepository(), InMemoryCropStore(), FakeLegibilityStore()
+    run_id = repo.start_run(
+        RunStart(HASH_A, "p", VideoInfo(1920, 1080, 0, None, None, "h264"), START)
+    )
+
+    # Guardar un avistamiento con calidad
+    sighting_with_quality = Sighting(
+        run_id,
+        0,
+        0,
+        1,
+        VehicleType.CAR,
+        confirmed("ABC123"),
+        crops.save(crop(1)),
+        START,
+        CropQuality(100, 30, 12.5, 40.0),
+    )
+    repo.save_sighting(sighting_with_quality)
+
+    # Guardar un avistamiento sin calidad
+    sighting_without_quality = Sighting(
+        run_id,
+        1,
+        1,
+        1,
+        VehicleType.CAR,
+        confirmed("DEF456"),
+        crops.save(crop(2)),
+        START,
+        None,
+    )
+    repo.save_sighting(sighting_without_quality)
+
+    result, store = execute(repo, crops, store)
+
+    assert result.exported == 2
+    samples = store.samples
+    _verify_quality_export(samples, run_id)

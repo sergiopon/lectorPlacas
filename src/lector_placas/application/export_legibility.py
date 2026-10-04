@@ -84,7 +84,8 @@ class ExportLegibilityDataset:
         """
         now = self._clock.now()
         groups = _video_groups(self._repository.run_video_hashes())
-        samples, skipped, per_label = self._collect(groups)
+        sizes = self._repository.run_frame_sizes()
+        samples, skipped, per_label = self._collect(groups, sizes)
         path = self._legibility_store.write_samples(samples, now)
         detail = _detail(samples, skipped, per_label, path)
         self._repository.log_event(AuditEvent.EXPORT, now, detail)
@@ -92,7 +93,7 @@ class ExportLegibilityDataset:
         return ExportLegibilityResult(path, len(samples), skipped, per_label)
 
     def _collect(
-        self, groups: dict[int, int]
+        self, groups: dict[int, int], sizes: dict[int, tuple[int, int]]
     ) -> tuple[list[LegibilitySample], int, dict[LegibilityLabel, int]]:
         """Recorre los estados exportables y reúne sus muestras disponibles."""
         samples: list[LegibilitySample] = []
@@ -104,7 +105,7 @@ class ExportLegibilityDataset:
                 if image is None:
                     skipped += 1
                     continue
-                samples.append(self._sample(record, label, image, groups))
+                samples.append(self._sample(record, label, image, groups, sizes))
                 per_label[label] += 1
         return samples, skipped, per_label
 
@@ -134,6 +135,7 @@ class ExportLegibilityDataset:
         label: LegibilityLabel,
         image: ImageBGR,
         groups: dict[int, int],
+        sizes: dict[int, tuple[int, int]],
     ) -> LegibilitySample:
         """Construye la muestra de un registro con recorte disponible.
 
@@ -142,6 +144,7 @@ class ExportLegibilityDataset:
         """
         if record.run_id not in groups:
             raise ExportError("corrida sin video")
+        frame_width, frame_height = sizes.get(record.run_id, (None, None))
         return LegibilitySample(
             image=image,
             label=label,
@@ -155,6 +158,12 @@ class ExportLegibilityDataset:
             agreement=record.agreement,
             num_readings=record.num_readings,
             reasons=record.reasons,
+            plate_width_px=record.quality.plate_width_px if record.quality is not None else None,
+            plate_height_px=record.quality.plate_height_px if record.quality is not None else None,
+            sharpness=record.quality.sharpness if record.quality is not None else None,
+            contrast=record.quality.contrast if record.quality is not None else None,
+            frame_width=frame_width,
+            frame_height=frame_height,
         )
 
 

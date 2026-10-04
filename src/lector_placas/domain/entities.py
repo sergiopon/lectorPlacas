@@ -260,6 +260,27 @@ class PlateFormat:
 
 
 @dataclass(frozen=True, slots=True)
+class CropQuality:
+    """Medidas de calidad del mejor recorte de placa de un avistamiento."""
+
+    plate_width_px: int
+    plate_height_px: int
+    sharpness: float
+    contrast: float
+
+    def __post_init__(self) -> None:
+        """Valida las dimensiones, nitidez y contraste."""
+        if self.plate_width_px < 1:
+            raise InvalidEntityError(f"plate_width_px debe ser >= 1: {self.plate_width_px}")
+        if self.plate_height_px < 1:
+            raise InvalidEntityError(f"plate_height_px debe ser >= 1: {self.plate_height_px}")
+        if not math.isfinite(self.sharpness) or self.sharpness < 0.0:
+            raise InvalidEntityError(f"sharpness debe ser finito y >= 0: {self.sharpness}")
+        if not math.isfinite(self.contrast) or self.contrast < 0.0:
+            raise InvalidEntityError(f"contrast debe ser finito y >= 0: {self.contrast}")
+
+
+@dataclass(frozen=True, slots=True)
 class ConsolidatedPlate:
     """Resultado consolidado de las lecturas de la placa de un track."""
 
@@ -307,6 +328,7 @@ class Sighting:
     plate: ConsolidatedPlate
     crop_ref: str | None
     created_at: datetime
+    quality: CropQuality | None = None
 
     def __post_init__(self) -> None:
         """Valida identificadores, tiempos, recorte y fecha de creación."""
@@ -342,28 +364,12 @@ class SightingRecord:
     crop_ref: str | None
     created_at: datetime
     reviewed_at: datetime | None
+    quality: CropQuality | None = None
+    duplicate_of: int | None = None
 
     def __post_init__(self) -> None:
         """Valida identificadores, textos, métricas, recorte y fechas."""
-        if self.sighting_id < 1:
-            raise InvalidEntityError(f"sighting_id debe ser >= 1: {self.sighting_id}")
-        if self.run_id < 1:
-            raise InvalidEntityError(f"run_id debe ser >= 1: {self.run_id}")
-        _require_non_negative_int(self.track_id, "track_id")
-        _require_non_negative_int(self.first_seen_ms, "first_seen_ms")
-        if self.last_seen_ms < self.first_seen_ms:
-            raise InvalidEntityError("last_seen_ms debe ser >= first_seen_ms")
-        _require_plate_text(self.ocr_text, "ocr_text")
-        _require_plate_text(self.plate_text, "plate_text")
-        _require_unit_interval(self.confidence, "confidence")
-        _require_unit_interval(self.agreement, "agreement")
-        if self.num_readings < 1:
-            raise InvalidEntityError(f"num_readings debe ser >= 1: {self.num_readings}")
-        if self.crop_ref is not None and CROP_REF_REGEX.fullmatch(self.crop_ref) is None:
-            raise InvalidEntityError("crop_ref inválido")
-        _require_utc(self.created_at, "created_at")
-        if self.reviewed_at is not None:
-            _require_utc(self.reviewed_at, "reviewed_at")
+        _validate_sighting_record(self)
 
 
 def _require_matching_lengths(text: str, char_confidences: tuple[float, ...]) -> None:
@@ -394,3 +400,55 @@ def _require_vehicle_types(vehicle_types: frozenset[VehicleType]) -> None:
         raise PlateFormatCatalogError("vehicle_types no puede estar vacío")
     if any(not isinstance(vehicle_type, VehicleType) for vehicle_type in vehicle_types):
         raise PlateFormatCatalogError("vehicle_types debe contener solo VehicleType")
+
+
+def _validate_sighting_record(record: SightingRecord) -> None:
+    """Valida todos los campos de un SightingRecord."""
+    _validate_sighting_ids(record)
+    _validate_sighting_times(record)
+    _validate_sighting_plate_texts(record)
+    _validate_sighting_metrics(record)
+    _validate_sighting_references(record)
+
+
+def _validate_sighting_ids(record: SightingRecord) -> None:
+    """Valida los identificadores de un SightingRecord."""
+    if record.sighting_id < 1:
+        raise InvalidEntityError(f"sighting_id debe ser >= 1: {record.sighting_id}")
+    if record.run_id < 1:
+        raise InvalidEntityError(f"run_id debe ser >= 1: {record.run_id}")
+    _require_non_negative_int(record.track_id, "track_id")
+
+
+def _validate_sighting_times(record: SightingRecord) -> None:
+    """Valida los timestamps de un SightingRecord."""
+    _require_non_negative_int(record.first_seen_ms, "first_seen_ms")
+    if record.last_seen_ms < record.first_seen_ms:
+        raise InvalidEntityError("last_seen_ms debe ser >= first_seen_ms")
+    _require_utc(record.created_at, "created_at")
+    if record.reviewed_at is not None:
+        _require_utc(record.reviewed_at, "reviewed_at")
+
+
+def _validate_sighting_plate_texts(record: SightingRecord) -> None:
+    """Valida los textos de placa de un SightingRecord."""
+    _require_plate_text(record.ocr_text, "ocr_text")
+    _require_plate_text(record.plate_text, "plate_text")
+
+
+def _validate_sighting_metrics(record: SightingRecord) -> None:
+    """Valida las métricas de confianza de un SightingRecord."""
+    _require_unit_interval(record.confidence, "confidence")
+    _require_unit_interval(record.agreement, "agreement")
+    if record.num_readings < 1:
+        raise InvalidEntityError(f"num_readings debe ser >= 1: {record.num_readings}")
+
+
+def _validate_sighting_references(record: SightingRecord) -> None:
+    """Valida las referencias a recortes y duplicados de un SightingRecord."""
+    if record.crop_ref is not None and CROP_REF_REGEX.fullmatch(record.crop_ref) is None:
+        raise InvalidEntityError("crop_ref inválido")
+    if record.duplicate_of is not None and (
+        record.duplicate_of < 1 or record.duplicate_of == record.sighting_id
+    ):
+        raise InvalidEntityError("duplicate_of inválido")

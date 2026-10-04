@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any, Final
 
 from lector_placas.domain.entities import (
+    CropQuality,
     ReviewStatus,
     SightingRecord,
     UnverifiedReason,
@@ -16,7 +17,8 @@ from lector_placas.domain.entities import (
 SIGHTING_COLUMNS: Final[str] = (
     "sighting_id, run_id, track_id, first_seen_ms, last_seen_ms, vehicle_type, "
     "ocr_text, plate_text, confidence, agreement, num_readings, status, reasons, "
-    "format_ids, crop_ref, created_at, reviewed_at"
+    "format_ids, crop_ref, created_at, reviewed_at, plate_width_px, plate_height_px, "
+    "sharpness, contrast, duplicate_of"
 )
 
 
@@ -71,7 +73,16 @@ def row_to_record(row: tuple[Any, ...]) -> SightingRecord:
         crop_ref,
         created_at,
         reviewed_at,
+        plate_width_px,
+        plate_height_px,
+        sharpness,
+        contrast,
+        duplicate_of,
     ) = row
+    # Si plate_width_px es NULL, quality es None; si no, construir CropQuality
+    quality: CropQuality | None = None
+    if plate_width_px is not None:
+        quality = CropQuality(plate_width_px, plate_height_px, sharpness, contrast)
     return SightingRecord(
         sighting_id,
         run_id,
@@ -90,6 +101,8 @@ def row_to_record(row: tuple[Any, ...]) -> SightingRecord:
         crop_ref,
         from_db_time(created_at),
         from_db_time(reviewed_at) if reviewed_at is not None else None,
+        quality,
+        duplicate_of,
     )
 
 

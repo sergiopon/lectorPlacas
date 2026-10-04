@@ -81,7 +81,11 @@ Y una restricción de tabla nueva, después de `UNIQUE (run_id, track_id, first_
 `CHECK ((plate_width_px IS NULL) = (plate_height_px IS NULL) AND (plate_width_px IS NULL) = (sharpness IS NULL) AND (plate_width_px IS NULL) = (contrast IS NULL))`.
 Índice nuevo: `CREATE INDEX IF NOT EXISTS idx_sightings_duplicate_of ON sightings(duplicate_of) WHERE duplicate_of IS NOT NULL`.
 
-`schema.sql` pasa a crear directamente la tabla v3 y el índice nuevo. `SCHEMA_VERSION` (repositorio) pasa a `3`.
+`schema.sql` pasa a crear directamente la tabla v3, **pero no** el índice `idx_sightings_duplicate_of`: `schema.sql` se
+ejecuta en cada apertura, antes de comprobar la versión, y en una BD v1/v2 la columna aún no existe. El índice lo crea
+`_check_schema_version` con `CREATE INDEX IF NOT EXISTS idx_sightings_duplicate_of ON sightings(duplicate_of) WHERE duplicate_of IS NOT NULL`
+justo antes de devolver, en todos los casos en que la versión queda en 3 (BD nueva, migrada o ya v3), y también
+`migrate_v2_to_v3` dentro de su transacción. `SCHEMA_VERSION` (repositorio) pasa a `3`.
 
 ### 2. Migración
 - `migrate_v2_to_v3`: crea `sightings_v3` con el DDL v3, copia todas las filas con una lista de columnas fija
