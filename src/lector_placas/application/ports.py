@@ -1000,6 +1000,20 @@ class SightingBrowser(Protocol):
         """
         ...
 
+    def count_duplicates(self, sighting_ids: Sequence[int]) -> dict[int, int]:
+        """Cuenta, por avistamiento, cuántos avistamientos lo tienen como `duplicate_of`.
+
+        Precondiciones:
+            Ninguna.
+
+        Postcondiciones:
+            Solo aparecen los ids de `sighting_ids` con al menos un duplicado.
+
+        Raises:
+            RepositoryError: si la consulta falla.
+        """
+        ...
+
 
 @dataclass(frozen=True, slots=True)
 class ProgressUpdate:

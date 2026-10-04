@@ -20,6 +20,8 @@ dependencies = [
     "pydantic==2.13.5",
     "PyYAML==6.0.3",
     "PySide6-Essentials==6.11.2",
+    "fastapi==0.141.1",
+    "uvicorn==0.54.0",
 ]
 
 [project.scripts]
@@ -35,6 +37,7 @@ dev = [
     "pip-audit==2.10.1",
     "onnx==1.23.0",
     "types-PyYAML==6.0.12.20260906",
+    "httpx2==2.13.1",
 ]
 
 [build-system]

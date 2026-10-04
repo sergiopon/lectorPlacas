@@ -16,6 +16,7 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
         "lector_placas.evaluation",
         "lector_placas.datasets",
         "lector_placas.gui",
+        "lector_placas.web",
     ),
     "infrastructure": (
         "lector_placas.adapters",
@@ -23,16 +24,30 @@ FORBIDDEN_PREFIXES: dict[str, tuple[str, ...]] = {
         "lector_placas.evaluation",
         "lector_placas.datasets",
         "lector_placas.gui",
+        "lector_placas.web",
     ),
     "adapters": (
         "lector_placas.cli",
         "lector_placas.evaluation",
         "lector_placas.datasets",
         "lector_placas.gui",
+        "lector_placas.web",
     ),
-    "evaluation": ("lector_placas.cli", "lector_placas.datasets", "lector_placas.gui"),
-    "datasets": ("lector_placas.cli", "lector_placas.evaluation", "lector_placas.gui"),
-    "cli": ("lector_placas.gui",),
+    "evaluation": (
+        "lector_placas.cli",
+        "lector_placas.datasets",
+        "lector_placas.gui",
+        "lector_placas.web",
+    ),
+    "datasets": (
+        "lector_placas.cli",
+        "lector_placas.evaluation",
+        "lector_placas.gui",
+        "lector_placas.web",
+    ),
+    "cli": ("lector_placas.gui", "lector_placas.web"),
+    "gui": ("lector_placas.web",),
+    "web": ("lector_placas.gui", "lector_placas.datasets"),
 }
 
 
@@ -105,3 +120,27 @@ def test_nobody_outside_gui_imports_pyside6() -> None:
             continue
         for name in _imports(path):
             assert name.split(".")[0] != "PySide6", f"{path}: {name}"
+
+
+def test_web_imports_from_cli_only_composition() -> None:
+    for path in _files("web"):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not alias.name.startswith("lector_placas.cli"), f"{path}: {alias.name}"
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                if not node.module.startswith("lector_placas.cli"):
+                    continue
+                allowed = node.module == "lector_placas.cli.composition" or (
+                    node.module == "lector_placas.cli"
+                    and all(alias.name == "composition" for alias in node.names)
+                )
+                assert allowed, f"{path}: {node.module}"
+
+
+def test_only_web_imports_http_server_packages() -> None:
+    for path in sorted(SRC.rglob("*.py")):
+        if "web" in path.relative_to(SRC).parts:
+            continue
+        for name in _imports(path):
+            assert name.split(".")[0] not in {"fastapi", "starlette", "uvicorn"}, f"{path}: {name}"
