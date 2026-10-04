@@ -8,7 +8,7 @@ datos y los recortes de placa se guardan cifrados.
 > **English summary.** Local, privacy-first license-plate reader for Colombian plates (video → vehicle detection with
 > YOLO26n → BoT-SORT tracking → plate detection inside each vehicle → fast-plate-ocr → per-character voting against
 > the Colombian plate formats). Uncertain reads go to a human-review gallery in a local web UI (FastAPI on 127.0.0.1 + React, designed in Figma Make), with a button that jumps to the exact second of the original video where the plate appears. ONNX Runtime only, no network
-> at runtime, SQLCipher + AES-GCM at rest. Built with spec-driven development: 55 specs written and reviewed by Claude,
+> at runtime, SQLCipher + AES-GCM at rest; also runs with `docker compose`. Built with spec-driven development: 76 specs written and reviewed by Claude,
 > implemented by AI coding agents (see [How it was built](#15-cómo-se-construyó)). Honest results below: it works, but on
 > real street video most errors come from image quality, not from the software.
 
@@ -128,6 +128,22 @@ archivo no coincide con el hash de `config/models.yaml`, no se carga.
 
 Crea la carpeta **`videos/`** (`mkdir -p videos`) y pon ahí tus videos. Por seguridad solo se aceptan videos dentro de esa carpeta, con extensión `.mp4`,
 `.mov`, `.mkv`, `.avi`, `.m4v` o `.webm` y hasta 4 GB.
+
+---
+
+## 3b. Con Docker (sin instalar uv, Python ni Node)
+
+```bash
+mkdir -m 700 -p secrets videos data logs
+docker compose build             # imagen de ~10 GB en disco (incluye las bibliotecas CUDA); descarga los modelos al construir
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/secrets:/secrets" -v "$PWD/logs:/app/logs" \
+  lector-placas:local lector key init-file /secrets/lector_key   # clave maestra en un archivo 0400 (una vez)
+env UID=$(id -u) GID=$(id -g) docker compose up
+```
+
+Abre la dirección `Abra: http://127.0.0.1:8765/auth?token=…` que aparece en la salida. El puerto se publica solo en
+`127.0.0.1` del equipo; `videos/` se monta en solo lectura y `data/` y `logs/` quedan en tu carpeta. Probado en CPU; el
+perfil `gpu` (`docker compose --profile gpu up lector-gpu`) necesita el NVIDIA Container Toolkit y **no está verificado**.
 
 ---
 
@@ -475,13 +491,13 @@ Plan de mejora y diagnóstico completo: **`docs/07-plan-mejora-lectura.md`**.
 
 ## 15. Cómo se construyó
 
-El proyecto se hizo con **spec-driven development asistido por IA**, en unos pocos días de septiembre de 2026:
+El proyecto se hizo con **spec-driven development asistido por IA**, entre septiembre y octubre de 2026:
 
-- **Diseño y revisión: Claude (Anthropic).** Escribió los requisitos, la arquitectura, los 15 ADRs y las **55 specs**
-  (`specs/000`–`054`), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
+- **Diseño y revisión: Claude (Anthropic).** Escribió los requisitos, la arquitectura, los 17 ADRs y las specs
+  (**76 implementadas** de `specs/000`–`077`; la 058 y la 065 esperan una decisión o datos), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
   `reglas-seguridad.md`.
 - **Implementación: agentes de código.** Cada spec la implementó un agente en su propia rama y worktree: subagentes
-  Claude Sonnet y modelos DeepSeek, según la dificultad de cada spec. Los agentes no podían modificar
+  Claude Sonnet y Haiku y modelos DeepSeek, según la dificultad de cada spec. Los agentes no podían modificar
   specs ni documentos rectores.
 - **Dirección, datos y validación: el autor.** Decidió el alcance, procesó videos reales y revisó a mano más de 1 100
   avistamientos, entrenó y evaluó los modelos con las herramientas de `training/` y aceptó o rechazó cada resultado.
@@ -491,7 +507,8 @@ El proyecto se hizo con **spec-driven development asistido por IA**, en unos poc
 - **Regla de trabajo:** no inventar datos técnicos (versiones, formatos de placa, hashes). Lo que no se pudo
   verificar está marcado `NO VERIFICADO` en el repositorio.
 
-Tamaño aproximado: ~14 000 líneas de Python en `src/`, ~10 000 de tests (663 tests) y ~3 500 en `training/`.
+Tamaño (2026-10-04): 14 740 líneas de Python en `src/`, 12 055 de tests (749 tests), 5 123 en `training/` y
+1 890 de TypeScript en `frontend/` (interfaz y sus pruebas: 14 de Vitest y 5 de Playwright).
 Las instrucciones operativas de los agentes (`CLAUDE.md`, `CONTEXT.md` y el plan de orquestación) son archivos locales
 que no se publican. Por eso algunos documentos los mencionan sin que estén en el repositorio. Las specs, ADRs, contratos
 y tests sí están completos.
