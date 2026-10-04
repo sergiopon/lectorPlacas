@@ -69,13 +69,23 @@ CREATE TABLE IF NOT EXISTS sightings (
                                                    AND crop_ref NOT GLOB '*[^0-9a-f]*')),
     created_at    TEXT    NOT NULL,
     reviewed_at   TEXT,
-    UNIQUE (run_id, track_id, first_seen_ms)
+    plate_width_px  INTEGER CHECK (plate_width_px IS NULL OR plate_width_px >= 1),     -- v3 (spec 059)
+    plate_height_px INTEGER CHECK (plate_height_px IS NULL OR plate_height_px >= 1),
+    sharpness       REAL    CHECK (sharpness IS NULL OR sharpness >= 0.0),
+    contrast        REAL    CHECK (contrast IS NULL OR contrast >= 0.0),
+    duplicate_of    INTEGER REFERENCES sightings(sighting_id) ON DELETE SET NULL
+                            CHECK (duplicate_of IS NULL OR duplicate_of <> sighting_id),
+    UNIQUE (run_id, track_id, first_seen_ms),
+    CHECK ((plate_width_px IS NULL) = (plate_height_px IS NULL)
+           AND (plate_width_px IS NULL) = (sharpness IS NULL)
+           AND (plate_width_px IS NULL) = (contrast IS NULL))
 );
 
 CREATE INDEX IF NOT EXISTS idx_sightings_status     ON sightings(status);
 CREATE INDEX IF NOT EXISTS idx_sightings_created_at ON sightings(created_at);
 CREATE INDEX IF NOT EXISTS idx_sightings_plate_id   ON sightings(plate_id);
 CREATE INDEX IF NOT EXISTS idx_sightings_crop_ref   ON sightings(crop_ref) WHERE crop_ref IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_sightings_duplicate_of ON sightings(duplicate_of) WHERE duplicate_of IS NOT NULL;  -- v3
 CREATE INDEX IF NOT EXISTS idx_runs_started_at      ON runs(started_at);
 
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -86,7 +96,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 ```
 
-Versión de esquema: `2` (spec 052). Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
+Versión de esquema: `3` (spec 059: calidad del mejor recorte y `duplicate_of`; `migrate_v2_to_v3` sigue la misma receta, y una BD v1 se migra a v2 y luego a v3). Historia: `2` (spec 052). Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
 (`adapters/persistence/migrations.py`: en una transacción `BEGIN IMMEDIATE` se recrea `sightings` con el `CHECK` de
 `status` que admite `'illegible'`, se copian las filas con su `sighting_id`, se recrean sus índices y se pone la versión
 a 2; si algo falla, `ROLLBACK` y la BD queda en v1); cualquier otro valor → `RepositoryError("versión de esquema no

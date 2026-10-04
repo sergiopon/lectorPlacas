@@ -63,6 +63,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 055 | [Exportar el dataset de legibilidad](055-exportar-dataset-legibilidad.md) | 035, 052 | Implementada |
 | 056 | [Modos de cámara en la configuración](056-modos-de-camara.md) | 006, 016, 028 | Lista |
 | 057 | [Filtro de cercanía antes de leer](057-filtro-cercania.md) | 051, 056 | Lista |
+| 059 | [Calidad del mejor recorte, `duplicate_of` y esquema v3](059-calidad-y-esquema-v3.md) | 052, 055, 057 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 

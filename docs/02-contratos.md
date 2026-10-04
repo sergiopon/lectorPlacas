@@ -159,6 +159,14 @@ class Sighting:
     plate: ConsolidatedPlate
     crop_ref: str | None                 # None o CROP_REF_REGEX
     created_at: datetime                 # con tzinfo, UTC
+    quality: CropQuality | None = None   # spec 059
+
+@dataclass(frozen=True, slots=True)
+class CropQuality:                       # spec 059: medidas del mejor recorte
+    plate_width_px: int                  # >= 1
+    plate_height_px: int                 # >= 1
+    sharpness: float                     # finito, >= 0 (varianza del Laplaciano, ImageQualityScorer)
+    contrast: float                      # finito, >= 0 (rms_contrast: std de la luminancia 0.114B+0.587G+0.299R)
 
 @dataclass(frozen=True, slots=True)
 class SightingRecord:
@@ -179,6 +187,8 @@ class SightingRecord:
     crop_ref: str | None
     created_at: datetime
     reviewed_at: datetime | None
+    quality: CropQuality | None = None   # spec 059
+    duplicate_of: int | None = None      # spec 059 (columna) / 061 (lógica); >= 1 y != sighting_id
 ```
 
 `BoundingBox.clip` recorta a `[0, frame_width] × [0, frame_height]` y devuelve `None` si queda vacía.
@@ -355,6 +365,7 @@ class PlateRepository(Protocol):
     def delete_records_before(self, cutoff: datetime) -> RecordPurge: ...
     def log_event(self, event: AuditEvent, occurred_at: datetime, detail: str) -> None: ...
     def run_video_hashes(self) -> dict[int, str]: ...   # spec 055: run_id → video_sha256 de todas las corridas
+    def run_frame_sizes(self) -> dict[int, tuple[int, int]]: ...   # spec 059: run_id → (width, height) ya rotados
     def close(self) -> None: ...
 
 class CropStore(Protocol):
@@ -391,6 +402,12 @@ class LegibilitySample:            # sin texto de placa (SEG-07)
     agreement: float
     num_readings: int
     reasons: tuple[UnverifiedReason, ...]
+    plate_width_px: int | None = None    # spec 059 (las seis)
+    plate_height_px: int | None = None
+    sharpness: float | None = None
+    contrast: float | None = None
+    frame_width: int | None = None
+    frame_height: int | None = None
 
 class LegibilityExportStore(Protocol):
     def write_samples(self, samples: Sequence[LegibilitySample], created_at: datetime) -> Path: ...
