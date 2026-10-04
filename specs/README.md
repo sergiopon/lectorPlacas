@@ -80,7 +80,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 072 | [Publicación: capturas del demo y nivel F de la web](072-publicacion-web.md) | 068, 069, 071 | Implementada |
 | 073 | [Retirar la GUI PySide6](073-retirar-gui-pyside6.md) | 071 | Implementada |
 | 074 | [Clave maestra desde un archivo (Docker secrets)](074-clave-desde-archivo.md) | 008, 028 | Implementada |
-| 075 | [Imagen Docker y compose](075-docker.md) | 068, 070, 074 | Lista |
+| 075 | [Imagen Docker y compose](075-docker.md) | 068, 070, 074 | Implementada |
 | 076 | [Web: video original, fotograma completo, conteos y ajustes](076-web-video-fotograma.md) | 066, 067, 068 | Implementada |
 | 077 | [Frontend: escalas de métricas y capturas estables](077-frontend-escalas-capturas.md) | 070, 071, 072 | Implementada |
 
