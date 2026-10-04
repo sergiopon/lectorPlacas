@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Protocol, TypeAlias
+from typing import Literal, Protocol, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -32,6 +32,7 @@ from lector_placas.domain.errors import InvalidEntityError
 # `ImageBGR` es (alto, ancho, 3) en BGR. La forma la fija docs/02-contratos.md §4, que usa
 # `TypeAlias`; por eso UP040 (que preferiría el `type` de PEP 695) queda silenciada a propósito.
 ImageBGR: TypeAlias = npt.NDArray[np.uint8]  # noqa: UP040
+LowQualityFilter: TypeAlias = Literal["include", "exclude", "only"]  # noqa: UP040
 SHA256_REGEX = re.compile(r"^[0-9a-f]{64}$")
 ROTATIONS_DEG = (0, 90, 180, 270)
 IMAGE_NDIM = 3
@@ -926,6 +927,7 @@ class SightingQuery:
     created_from: datetime | None = None
     created_to: datetime | None = None
     include_duplicates: bool = False
+    low_quality: LowQualityFilter = "include"
 
     def __post_init__(self) -> None:
         """Valida el prefijo, el identificador de corrida y el rango de fechas.
@@ -947,6 +949,8 @@ class SightingQuery:
             and self.created_to <= self.created_from
         ):
             raise InvalidEntityError("created_to debe ser posterior a created_from")
+        if self.low_quality not in ("include", "exclude", "only"):
+            raise InvalidEntityError("low_quality inválido")
 
 
 class SightingBrowser(Protocol):

@@ -7,13 +7,16 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final
 
-from lector_placas.domain.entities import ReviewStatus, SightingRecord
+from lector_placas.domain.entities import ReviewStatus, SightingRecord, UnverifiedReason
 from lector_placas.domain.errors import EvaluationError
 from lector_placas.evaluation.cer import character_error_rate, exact_match_rate
 
 EMPTY_MESSAGE: Final[str] = "no hay avistamientos para evaluar"
 VERDICT_STATUSES: Final[frozenset[ReviewStatus]] = frozenset(
     {ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED}
+)
+PREDICTED_REASONS: Final[frozenset[UnverifiedReason]] = frozenset(
+    {UnverifiedReason.PREDICTED_ILLEGIBLE, UnverifiedReason.PREDICTED_NOT_PLATE}
 )
 
 
@@ -38,6 +41,10 @@ class ReviewMetrics:
     exact_match_rate: float | None
     confirmed_illegible: int
     unverified_illegible: int
+    hidden_total: int = 0
+    hidden_legible: int = 0
+    hidden_unusable: int = 0
+    hidden_pending: int = 0
 
 
 def compute_review_metrics(records: Sequence[SightingRecord]) -> ReviewMetrics:
@@ -59,6 +66,11 @@ def compute_review_metrics(records: Sequence[SightingRecord]) -> ReviewMetrics:
     audited = [record for record in confirmed if record.reviewed_at is not None]
     pairs = _verdict_pairs(records)
     kept = _count(audited, ReviewStatus.CONFIRMED)
+    hidden = [
+        record
+        for record in records
+        if any(reason in PREDICTED_REASONS for reason in record.reasons)
+    ]
     return ReviewMetrics(
         confirmed_total=len(confirmed),
         confirmed_audited=len(audited),
@@ -77,6 +89,16 @@ def compute_review_metrics(records: Sequence[SightingRecord]) -> ReviewMetrics:
         exact_match_rate=exact_match_rate(pairs) if pairs else None,
         confirmed_illegible=_count(audited, ReviewStatus.ILLEGIBLE),
         unverified_illegible=_count(unverified, ReviewStatus.ILLEGIBLE),
+        hidden_total=len(hidden),
+        hidden_legible=sum(
+            1
+            for record in hidden
+            if record.reviewed_at is not None
+            and record.status in (ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED)
+        ),
+        hidden_unusable=_count(hidden, ReviewStatus.REJECTED)
+        + _count(hidden, ReviewStatus.ILLEGIBLE),
+        hidden_pending=_count(hidden, ReviewStatus.UNVERIFIED),
     )
 
 

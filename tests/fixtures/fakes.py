@@ -16,7 +16,7 @@ from lector_placas.application.ports import (
     RunStatus,
     SightingQuery,
 )
-from lector_placas.domain.entities import ReviewStatus, Sighting, SightingRecord
+from lector_placas.domain.entities import ReviewStatus, Sighting, SightingRecord, VehicleType
 from lector_placas.domain.errors import (
     CropNotFoundError,
     RepositoryError,
@@ -267,6 +267,14 @@ def _require_page(limit: int, offset: int) -> None:
 
 def _matches(record: SightingRecord, query: SightingQuery) -> bool:
     prefix = query.plate_prefix
+    if query.low_quality == "exclude":
+        has_predicted = any(reason.value.startswith("predicted_") for reason in record.reasons)
+        if has_predicted:
+            return False
+    elif query.low_quality == "only":
+        has_predicted = any(reason.value.startswith("predicted_") for reason in record.reasons)
+        if not has_predicted:
+            return False
     return (
         (query.status is None or record.status is query.status)
         and (prefix is None or record.plate_text.startswith(prefix))
@@ -281,3 +289,29 @@ def _run_status(run: StoredRun) -> RunStatus:
     if run.finished_at is None or run.succeeded is None:
         return RunStatus.RUNNING
     return RunStatus.COMPLETED if run.succeeded else RunStatus.FAILED
+
+
+def fake_sighting_record(**kwargs: object) -> SightingRecord:
+    """Crea un SightingRecord para tests usando reemplazo de campos."""
+    default = SightingRecord(
+        sighting_id=1,
+        run_id=1,
+        track_id=1,
+        first_seen_ms=1000,
+        last_seen_ms=2000,
+        vehicle_type=VehicleType.CAR,
+        ocr_text="ABC123",
+        plate_text="ABC123",
+        confidence=0.95,
+        agreement=1.0,
+        num_readings=1,
+        status=ReviewStatus.CONFIRMED,
+        reasons=(),
+        format_ids=("LLL-DDD",),
+        crop_ref=None,
+        created_at=START,
+        reviewed_at=None,
+        quality=None,
+        duplicate_of=None,
+    )
+    return replace(default, **kwargs)
