@@ -7,6 +7,7 @@ import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
 
+from lector_placas.application.duplicates import DuplicateCandidate, find_duplicates
 from lector_placas.application.image_ops import crop_image, rms_contrast
 from lector_placas.application.ports import (
     Clock,
@@ -61,6 +62,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 MIN_VEHICLE_CROP_PX: Final[int] = 16
+DEDUP_WINDOW_MS_MAX: Final[int] = 600_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +80,7 @@ class ProcessingSettings:
     max_plate_vehicle_ratio: float = 1.0
     roi: tuple[float, float, float, float] = FULL_FRAME_ROI
     early_stop: bool = False
+    dedup_window_ms: int = 0
 
     def __post_init__(self) -> None:
         """Valida los umbrales y límites del perfil.
@@ -88,6 +91,10 @@ class ProcessingSettings:
         """
         self._validate_core_settings()
         self._validate_proximity_settings()
+        if not 0 <= self.dedup_window_ms <= DEDUP_WINDOW_MS_MAX:
+            raise InvalidEntityError(
+                f"dedup_window_ms debe estar en [0, 600000]: {self.dedup_window_ms}"
+            )
 
     def _validate_core_settings(self) -> None:
         """Valida los umbrales básicos (compatibles con versiones anteriores)."""
@@ -160,6 +167,7 @@ class _Counters:
     sightings_unverified: int = 0
     tracks_without_reading: int = 0
     proximity: ProximityCounters = field(default_factory=ProximityCounters)
+    saved: list[DuplicateCandidate] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -227,6 +235,10 @@ class ProcessVideo:
         try:
             self._process_all_frames(source, registry, counters, run_id, progress, info.duration_ms)
             self._finalize(registry.pop_all(), run_id, counters)
+            if self._settings.dedup_window_ms != 0:
+                pairs = find_duplicates(counters.saved, self._settings.dedup_window_ms)
+                deps.repository.mark_duplicates(pairs)
+                logger.info("duplicados run_id=%d marcados=%d", run_id, len(pairs))
         except LectorPlacasError as error:
             self._fail_run(run_id, counters, started, info.duration_ms, error)
             raise
@@ -433,7 +445,17 @@ class ProcessVideo:
             deps.clock.now(),
             quality,
         )
-        deps.repository.save_sighting(sighting)
+        sighting_id = deps.repository.save_sighting(sighting)
+        counters.saved.append(
+            DuplicateCandidate(
+                sighting_id,
+                plate.text,
+                plate.status,
+                plate.confidence,
+                track.first_seen_ms,
+                track.last_seen_ms,
+            )
+        )
         if plate.status is ReviewStatus.CONFIRMED:
             counters.sightings_confirmed += 1
         else:

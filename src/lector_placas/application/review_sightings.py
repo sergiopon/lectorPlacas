@@ -119,7 +119,8 @@ class ReviewSightings:
     def _select(self, limit: int, status: ReviewStatus) -> list[SightingRecord]:
         """Recupera los avistamientos a revisar según el estado pedido."""
         if status is ReviewStatus.UNVERIFIED:
-            return self._repository.list_sightings(status, limit, 0)
+            records = self._repository.list_sightings(status, limit, 0)
+            return [r for r in records if r.duplicate_of is None]
         return self._unreviewed_confirmed(limit)
 
     def _unreviewed_confirmed(self, limit: int) -> list[SightingRecord]:
@@ -128,7 +129,11 @@ class ReviewSightings:
         offset = 0
         while len(pending) < limit:
             page = self._repository.list_sightings(ReviewStatus.CONFIRMED, AUDIT_PAGE_SIZE, offset)
-            pending.extend(record for record in page if record.reviewed_at is None)
+            pending.extend(
+                record
+                for record in page
+                if record.reviewed_at is None and record.duplicate_of is None
+            )
             if len(page) < AUDIT_PAGE_SIZE:
                 break
             offset += AUDIT_PAGE_SIZE

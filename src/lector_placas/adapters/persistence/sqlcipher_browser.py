@@ -30,6 +30,7 @@ _SEARCH_SQL: Final[str] = (
     "AND (? IS NULL OR run_id = ?) "
     "AND (? IS NULL OR created_at >= ?) "
     "AND (? IS NULL OR created_at < ?) "
+    "AND (? = 1 OR duplicate_of IS NULL) "
     "ORDER BY sighting_id DESC LIMIT ? OFFSET ?"
 )
 _COUNT_SQL: Final[str] = (
@@ -38,7 +39,8 @@ _COUNT_SQL: Final[str] = (
     "AND (? IS NULL OR substr(plate_text, 1, length(?)) = ?) "
     "AND (? IS NULL OR run_id = ?) "
     "AND (? IS NULL OR created_at >= ?) "
-    "AND (? IS NULL OR created_at < ?)"
+    "AND (? IS NULL OR created_at < ?) "
+    "AND (? = 1 OR duplicate_of IS NULL)"
 )
 _LIST_RUNS_SQL: Final[str] = (
     "SELECT run_id, profile, status, started_at, finished_at, duration_ms, frames_processed, "
@@ -146,6 +148,7 @@ def _filter_params(query: SightingQuery) -> tuple[object, ...]:
         from_text,
         to_text,
         to_text,
+        1 if query.include_duplicates else 0,
     )
 
 

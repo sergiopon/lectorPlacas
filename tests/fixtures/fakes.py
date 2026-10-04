@@ -210,6 +210,10 @@ class InMemoryPlateRepository:
             for run_id, run in self.runs.items()
         }
 
+    def mark_duplicates(self, pairs: Sequence[tuple[int, int]]) -> None:
+        for duplicate, kept in pairs:
+            self.records[duplicate] = replace(self.records[duplicate], duplicate_of=kept)
+
     def close(self) -> None:
         self.closed = True
 
@@ -269,6 +273,7 @@ def _matches(record: SightingRecord, query: SightingQuery) -> bool:
         and (query.run_id is None or record.run_id == query.run_id)
         and (query.created_from is None or record.created_at >= query.created_from)
         and (query.created_to is None or record.created_at < query.created_to)
+        and (query.include_duplicates or record.duplicate_of is None)
     )
 
 
