@@ -15,7 +15,7 @@ Todo es sintético (SEG-10): fondo gris, un rectángulo de vehículo y la placa 
 ## Archivos a crear/modificar
 - `src/lector_placas/web/demo.py`
 - `tests/unit/web/test_demo.py`
-- `frontend/e2e/demo.spec.ts` (solo la prueba 3)
+- `frontend/e2e/demo.spec.ts` (la prueba 3 y, en la 4, el nombre del video) y `frontend/e2e/capturas.spec.ts` (nombre del video)
 - `frontend/e2e/medios.spec.ts` (nuevo)
 - `scripts/demo_gif.sh` (nuevo, ejecutable)
 - `docs/img/demo.gif` y `docs/img/web-video.png` (los genera el script; no se dibujan a mano)
@@ -66,6 +66,8 @@ El título pasa a `ir al video`. Con una tarjeta seleccionada, pulsar `v`:
 - `expect.poll` sobre `video.readyState` llega a un valor `>= 1` en menos de 10 s;
 - no aparece el texto `El video original no está disponible`.
 Después, `Escape`; pulsar `f`: el `img` del diálogo tiene `naturalWidth > 0` (con `expect.poll`); `Escape`.
+
+En la prueba 4 de `demo.spec.ts` y en `capturas.spec.ts`, `demo_entrada.mp4` pasa a `demo_parqueadero.webm`.
 
 ### 3. `frontend/e2e/medios.spec.ts`
 - `test.skip(!process.env.LECTOR_MEDIOS, "solo con LECTOR_MEDIOS=1")`.

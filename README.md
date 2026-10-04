@@ -1,454 +1,99 @@
-# lectorPlacas
+<h1 align="center">lectorPlacas</h1>
 
-Lector local de placas colombianas (ALPR) a partir de video, con una interfaz web que corre solo en tu equipo. Detecta los vehículos, los
-sigue entre frames, lee su placa varias veces y vota el resultado. Lo que no puede asegurar lo deja para que una
-persona lo revise en una galería. Todo corre en tu equipo: **no se conecta a internet mientras procesa**, y la base de
-datos y los recortes de placa se guardan cifrados.
+<p align="center"><b>Lee las placas colombianas de tus videos, en tu equipo y sin internet.</b><br>
+Detecta, sigue y lee cada vehículo; lo dudoso te lo deja para revisar, con un botón que te lleva al segundo exacto del
+video en que aparece la placa.</p>
 
-> **English summary.** Local, privacy-first license-plate reader for Colombian plates (video → vehicle detection with
-> YOLO26n → BoT-SORT tracking → plate detection inside each vehicle → fast-plate-ocr → per-character voting against
-> the Colombian plate formats). Uncertain reads go to a human-review gallery in a local web UI (FastAPI on 127.0.0.1 + React, designed in Figma Make), with a button that jumps to the exact second of the original video where the plate appears. ONNX Runtime only, no network
-> at runtime, SQLCipher + AES-GCM at rest; also runs with `docker compose`. Built with spec-driven development: 76 specs written and reviewed by Claude,
-> implemented by AI coding agents (see [How it was built](#15-cómo-se-construyó)). Honest results below: it works, but on
-> real street video most errors come from image quality, not from the software.
+<p align="center">
+<img alt="Licencia AGPL-3.0" src="https://img.shields.io/badge/licencia-AGPL--3.0-blue">
+<img alt="Python 3.13" src="https://img.shields.io/badge/python-3.13-3776AB">
+<img alt="ONNX Runtime" src="https://img.shields.io/badge/inferencia-ONNX%20Runtime-555">
+<img alt="Linux" src="https://img.shields.io/badge/plataforma-Linux-333">
+<img alt="Sin red en ejecución" src="https://img.shields.io/badge/red%20en%20ejecuci%C3%B3n-ninguna-2ea44f">
+</p>
 
-Licencia: AGPL-3.0 (ver `LICENSE` y `docs/adr/ADR-008-licencia-agpl.md`). Atribuciones de datos y modelos:
-`docs/datasets/ATRIBUCIONES.md`.
+<p align="center"><a href="README.en.md">English</a> · <a href="docs/guia.md">Guía completa</a> ·
+<a href="#pruébalo-en-2-minutos">Pruébalo</a></p>
 
----
+<p align="center"><img src="docs/img/demo.gif" alt="Recorrido: procesar un video, revisar una placa con el teclado e ir al segundo del video donde aparece" width="900"></p>
+<p align="center"><sub>Modo demo: todas las placas son inventadas.</sub></p>
 
-## Inicio rápido
+## Qué hace
 
-Requisitos: Linux (probado en Fedora 44), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12
-o posterior (solo para compilar la interfaz) y un llavero del sistema (GNOME Keyring o KWallet). La GPU NVIDIA es
-opcional (§2). Sin instalar nada de eso, también funciona con Docker (§3b).
+- 🎥 **Procesa tus videos** de cámara fija (parqueadero, calle) o de cámara en un vehículo (patrulla).
+- 🔎 **Lee cada placa varias veces y vota** el resultado contra los formatos de placa colombianos.
+- ✅ **Confirma solo lo seguro.** Lo dudoso queda *por revisar*, con el motivo ("las lecturas no coinciden", "formato
+  poco común"…), y se revisa con una tecla.
+- ⏱️ **Te lleva al momento exacto.** Desde cada lectura abres el video original un segundo antes de que aparezca la
+  placa, o ves el fotograma completo.
+- 🔒 **Todo queda en tu equipo**: sin red mientras procesa y con la base de datos y los recortes cifrados.
 
-```bash
-git clone https://github.com/sergiopon/lectorPlacas.git
-cd lectorPlacas
-uv sync --locked                 # instala Python 3.13 y las dependencias (descarga grande: incluye CUDA)
-uv run lector key init           # crea la clave maestra en el llavero
-uv run lector models fetch       # descarga y verifica por SHA-256 los 6 modelos (~33 MB)
-(cd frontend && npm ci && npm run build)   # compila la interfaz web
-mkdir -p videos                  # copia aquí tus videos (.mp4, .mov, .mkv…)
-uv run lector-web                # abre la interfaz en el navegador (solo en 127.0.0.1)
+## Cómo funciona
+
+```mermaid
+flowchart LR
+    A[🎥 Video] --> B[Vehículos<br/>YOLO26n]
+    B --> C[Seguimiento<br/>BoT-SORT]
+    C --> D[Solo placas cercanas<br/>y legibles]
+    D --> E[Placa dentro<br/>del vehículo]
+    E --> F[OCR<br/>fast-plate-ocr]
+    F --> G{Voto por carácter<br/>+ formatos colombianos}
+    G -->|seguro| H[✅ Confirmada]
+    G -->|dudoso| I[🕵️ Por revisar]
+    H --> J[(BD cifrada<br/>SQLCipher)]
+    I --> J
+    J --> K[🌐 Interfaz web local<br/>revisar · ir al video · métricas]
 ```
 
-En la interfaz: **Procesar** → elige un video de `videos/` y el escenario → al terminar, **Lecturas** para revisar.
-Para verla sin videos propios: `uv run lector-web --demo` (datos inventados en una carpeta temporal que se borra al salir).
-Por terminal: `uv run lector process videos/<video>.mp4` y `uv run lector review`.
+Cada vehículo se sigue entre fotogramas y su placa se lee muchas veces. Las lecturas se votan carácter a carácter y se
+corrigen las confusiones típicas (0↔O, 8↔B) según la posición en el formato colombiano. Si algo no cuadra, no se adivina:
+queda para una persona. Todo corre con modelos ONNX verificados por SHA-256.
 
-> El repositorio no incluye videos de ejemplo: las placas son datos personales. Usa un video tuyo.
+## La interfaz
 
----
-
-## Índice
-1. [Qué hace, en una imagen](#1-qué-hace-en-una-imagen)
-2. [Requisitos](#2-requisitos)
-3. [Instalación y primer uso](#3-instalación-y-primer-uso)
-4. [Uso diario con la interfaz web](#4-uso-diario-con-la-interfaz-web)
-5. [Uso desde la terminal (CLI)](#5-uso-desde-la-terminal-cli)
-6. [Cómo decide el sistema](#6-cómo-decide-el-sistema)
-7. [Configuración](#7-configuración)
-8. [Dónde queda cada cosa](#8-dónde-queda-cada-cosa)
-9. [Medir la calidad](#9-medir-la-calidad)
-10. [Entrenar los modelos](#10-entrenar-los-modelos)
-11. [Seguridad y privacidad](#11-seguridad-y-privacidad)
-12. [Desarrollo](#12-desarrollo)
-13. [Problemas frecuentes](#13-problemas-frecuentes)
-14. [Resultados y limitaciones (honestos)](#14-resultados-y-limitaciones-honestos)
-15. [Cómo se construyó](#15-cómo-se-construyó)
-
----
-
-## 1. Qué hace, en una imagen
-
-```
-video ──► decodificar (PyAV) ──► muestrear frames según el perfil
-      ──► detectar vehículos (YOLO26n)  ──► seguirlos (BoT-SORT)
-      ──► detectar la placa DENTRO del recorte del vehículo
-      ──► leer la placa (fast-plate-ocr)   × varias veces por vehículo
-      ──► al salir el vehículo de cámara: votar las lecturas y validar el formato colombiano
-      ──► guardar el avistamiento (SQLCipher) + el mejor recorte cifrado (AES-GCM)
-      ──► confirmado  ó  "por revisar" con sus motivos
-```
-
-Cada vehículo que pasa produce un **avistamiento**, que queda en uno de estos estados:
-
-| Estado | Quién lo pone | Significado |
-|---|---|---|
-| Confirmada | el sistema o el revisor | La lectura es correcta |
-| Por revisar | el sistema | Hay dudas; se muestran los motivos |
-| Corregida | el revisor | El texto estaba mal y se corrigió |
-| Descartada | el revisor | No es una placa (detección falsa, fragmento) |
-| Borrosa | el revisor | Es una placa, pero ni una persona puede leerla |
-
-La filosofía es **precisión primero**: el sistema prefiere dejar algo por revisar antes que confirmar una placa
-equivocada.
-
----
-
-## 2. Requisitos
-
-- **Linux** (probado en Fedora 44).
-- **GPU NVIDIA** opcional (probado con una RTX 5050). No hace falta instalar CUDA: las bibliotecas vienen en los paquetes
-  `nvidia-*` que instala `uv sync`; basta el driver de NVIDIA.
-- **Sin GPU también funciona**, en CPU y bastante más lento. ONNX Runtime imprime un bloque `EP Error ... no
-  CUDA-capable device is detected ... Falling back to ['CPUExecutionProvider']` por cada modelo: es un aviso, no un
-  fallo. Para quitarlo, pon `inference.execution_provider: cpu` en `config/lector.yaml`.
-- **[uv](https://docs.astral.sh/uv/)** en `~/.local/bin/uv`. uv instala Python 3.13 y todas las dependencias; no
-  hace falta instalar Python a mano.
-- Un **llavero del sistema** (GNOME Keyring o KWallet) para guardar la clave maestra (o un archivo de clave, §3b).
-- **Node.js 22.12 o posterior** y npm, solo para compilar la interfaz web (`frontend/`). No se usa en ejecución.
-- Opcional: `strace`, para los chequeos no funcionales (`scripts/nivel_f.py`).
-
-> ⚠️ **Hay otro programa llamado `lector`** (un lector de ebooks en `/usr/bin/lector`). Ejecuta siempre este
-> proyecto con `uv run lector ...` desde la carpeta del repo, o activa el entorno (`source .venv/bin/activate`).
-
----
-
-## 3. Instalación y primer uso
-
-```bash
-cd lectorPlacas
-export PATH=~/.local/bin:$PATH        # si uv está en ~/.local/bin; conviene añadirlo a ~/.bashrc
-
-uv sync --locked                      # crea .venv con Python 3.13 y todo lo necesario
-uv run python scripts/verify_gpu.py   # opcional: comprueba que ONNX Runtime ve la GPU
-
-uv run lector key init                # crea la clave maestra en el llavero (una sola vez; no pisa una existente)
-uv run lector models fetch            # descarga los modelos (única orden con red, además de los datasets)
-uv run lector models verify           # comprueba el hash SHA-256 de todos los modelos
-```
-
-`models fetch` descarga tres modelos de sus autores (open-image-models y fast-plate-ocr) y tres de este proyecto,
-publicados en el Release [`models-v1`](https://github.com/sergiopon/lectorPlacas/releases/tag/models-v1):
-`yolo26n-coco` (exportado a ONNX), `yolo26n-plates` y `fpo-cct-xs-v2-colombia` (entrenados con `training/`). Si un
-archivo no coincide con el hash de `config/models.yaml`, no se carga.
-
-Crea la carpeta **`videos/`** (`mkdir -p videos`) y pon ahí tus videos. Por seguridad solo se aceptan videos dentro de esa carpeta, con extensión `.mp4`,
-`.mov`, `.mkv`, `.avi`, `.m4v` o `.webm` y hasta 4 GB.
-
----
-
-## 3b. Con Docker (sin instalar uv, Python ni Node)
-
-```bash
-mkdir -m 700 -p secrets videos data logs
-docker compose build             # imagen de ~10 GB en disco (incluye las bibliotecas CUDA); descarga los modelos al construir
-docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/secrets:/secrets" -v "$PWD/logs:/app/logs" \
-  lector-placas:local lector key init-file /secrets/lector_key   # clave maestra en un archivo 0400 (una vez)
-env UID=$(id -u) GID=$(id -g) docker compose up
-```
-
-Abre la dirección `Abra: http://127.0.0.1:8765/auth?token=…` que aparece en la salida. El puerto se publica solo en
-`127.0.0.1` del equipo; `videos/` se monta en solo lectura y `data/` y `logs/` quedan en tu carpeta. Probado en CPU; el
-perfil `gpu` (`docker compose --profile gpu up lector-gpu`) necesita el NVIDIA Container Toolkit y **no está verificado**.
-
----
-
-## 4. Uso diario con la interfaz web
-
-```bash
-uv run lector-web                # abre el navegador; --no-browser solo imprime la dirección
-```
-
-`lector-web` escucha solo en `127.0.0.1` (nadie más en la red puede entrar), en un puerto libre, y abre el navegador
-con un enlace de un solo uso que inicia la sesión. Si cierras la pestaña, reinicia `lector-web` para obtener otro.
-
-![Lecturas: galería de placas por revisar y panel de revisión](docs/img/web-lecturas.png)
-
-**Procesar**: elige un video de `videos/` y el escenario (*Parqueadero o entrada*, *Calle con tráfico lento*, *Vía
-rápida* o *Patrulla*, ver §7) y pulsa *Procesar*. Se ve el avance en vivo y se puede cancelar. Al terminar, *Revisar N
-placas* lleva directo a sus lecturas.
-
-**Lecturas**: una tarjeta por placa (recorte + texto), con pestañas *Por revisar*, *Confirmadas*, *Corregidas*,
-*Descartadas*, *Borrosas* y *Todas*, búsqueda por placa y filtro por video. Las que el filtro de legibilidad considera
-inservibles van aparte, en *Ocultas por baja calidad*. El panel derecho muestra la placa en grande, lo que leyó el
-sistema, su seguridad y **por qué hay que revisarla**:
-
-| Tecla | Acción |
+| Revisar con el teclado | Ir al segundo exacto del video |
 |---|---|
-| `C` | Es correcta |
-| `E` | Corregir el texto (`Enter` guarda, `Esc` cancela) |
-| `R` | No es una placa |
-| `B` | Placa borrosa: es una placa, pero no se lee |
-| `S` | Saltar |
-| `V` | **Ir al video**: abre el video original un segundo antes de que aparezca la placa |
-| `F` | Captura completa: el fotograma entero de ese momento |
+| ![Galería de lecturas y panel de revisión](docs/img/web-lecturas.png) | ![Diálogo con el video original abierto en el momento de la placa](docs/img/web-video.png) |
+| **Procesar un video** | **Métricas de calidad** |
+| ![Elegir video y escenario](docs/img/web-procesar.png) | ![Precisión, error por carácter y resultados por video](docs/img/web-metricas.png) |
 
-Tras decidir, pasa sola a la siguiente pendiente. El video se encuentra por su huella SHA-256 dentro de `videos/` (la
-base no guarda nombres ni rutas); si lo borraste o lo moviste fuera de `videos/`, la interfaz lo indica.
+Teclas: `C` correcta · `E` corregir · `R` no es placa · `B` borrosa · `S` saltar · `V` ir al video · `F` fotograma completo.
 
-**Métricas**: precisión de las confirmadas auditadas, lecturas completas, error por carácter y tasa de confirmación
-automática, con gráficos por video. **Historial**: los videos procesados. **Ajustes**: retención, exportar CSV (a
-`data/exports/`) y purgar datos vencidos.
+## Pruébalo en 2 minutos
 
-| | |
-|---|---|
-| ![Procesar](docs/img/web-procesar.png) | ![Métricas](docs/img/web-metricas.png) |
+Sin videos propios, con datos inventados:
 
-Las capturas son del modo demo (`lector-web --demo`): placas inventadas, ningún dato real.
-
----
-
-## 5. Uso desde la terminal (CLI)
-
-Casi todo lo que hace la interfaz web se puede hacer por terminal. Siempre con `uv run lector ...`.
-
-| Orden | Para qué |
-|---|---|
-| `lector key init` | Crear la clave maestra en el llavero (primera vez) |
-| `lector key init-file <ruta>` / `key export-file <ruta>` | Crear la clave en un archivo 0400, o copiar ahí la del llavero (para Docker; se usa con `LECTOR_KEY_FILE`) |
-| `lector models fetch` / `verify` | Descargar / verificar modelos |
-| `lector process videos/<v>.mp4 [--profile calle_lenta]` | Procesar un video |
-| `lector review [--limit N] [--status unverified\|confirmed]` | Revisar en una ventana OpenCV. Teclas: `C` confirmar, `E` editar, `R` rechazar, `B` borrosa, `S` saltar, `Q` salir. Con `--status confirmed` se **auditan** las confirmadas automáticas |
-| `lector export [--status ...]` | Exportar avistamientos a CSV (`data/exports/`) |
-| `lector purge` | Borrar lo que venció según la retención (también corre sola al iniciar cada orden) |
-| `lector evaluate --video <v> --ground-truth <gt.json> [--profile p]` | Medir precisión y recall contra una anotación manual (§9) |
-| `lector evaluate-review` | Métricas a partir de tus revisiones: precisión de confirmadas, CER real, etc. |
-| `lector evaluate-ocr --crops <csv>` | CER del OCR sobre recortes anotados |
-| `lector evaluate-detector [--dataset d] [--split val]` | Precisión/recall del detector de placas |
-| `lector dataset download` / `prepare` | Descargar y preparar datasets de Roboflow (requiere `ROBOFLOW_API_KEY`) |
-| `lector dataset merge-detection` / `chars-to-ocr` | Pasos intermedios de `prepare` |
-| `lector dataset export-reviewed` | Exportar tus recortes revisados para reentrenar el OCR |
-
-Opción global: `lector --config config/<otro>.yaml ...`. La config alternativa **debe estar dentro de `config/`**.
-
----
-
-## 6. Cómo decide el sistema
-
-Por cada vehículo se guardan hasta `max_readings_per_track` lecturas (8 en *calle lenta*): **las de mejor calidad**,
-es decir, la placa más ancha en pantalla y, con el mismo ancho, la más nítida. Al salir el vehículo de cámara se
-consolidan (algoritmo en `docs/adr/ADR-007-votacion.md`):
-
-1. Se vota carácter por carácter, ponderando por la confianza del OCR.
-2. Se prueban los formatos colombianos del catálogo (`config/lector.yaml`), p. ej. `ABC123` (carro), `ABC12D` (moto
-   nueva), `ABC12` (moto antigua) y `123ABC` (motocarro). Se corrigen confusiones típicas (0↔O, 1↔I, 8↔B, 5↔S).
-3. Si esa corrección cambiaría una lectura que ya era una placa válida por otra, gana la lectura original y queda
-   **por revisar** ("Podría ser otra placa").
-4. Se confirma solo si no hay ningún motivo de duda.
-
-Motivos de "por revisar":
-
-| Motivo (en la interfaz) | Código |
-|---|---|
-| Se leyó pocas veces | `insufficient_readings` |
-| El lector no estaba seguro | `low_confidence` |
-| Las lecturas no coinciden entre sí | `low_agreement` |
-| No parece una placa colombiana | `unrecognized_format` |
-| Formato de placa poco común | `unverified_format` |
-| El formato no corresponde al tipo de vehículo | `vehicle_format_mismatch` |
-| Encaja en más de un formato | `ambiguous_format` |
-| Podría ser otra placa: una letra o un número dudoso | `correction_conflict` |
-| Parece borrosa (filtro automático; desactivado hasta aceptar un modelo) | `predicted_illegible` |
-| Parece que no es una placa (filtro automático; desactivado hasta aceptar un modelo) | `predicted_not_plate` |
-
-En la base de datos, `ocr_text` es lo que leyó el sistema (no cambia nunca) y `plate_text` es el texto vigente (la
-revisión lo sobrescribe).
-
----
-
-## 7. Configuración
-
-Archivo principal: **`config/lector.yaml`** (esquema en `docs/03-modelo-datos.md`).
-
-- `models`: qué detector de vehículos, detector de placas y OCR se usan. El OCR en uso es `fpo-cct-xs-v2-colombia`.
-  Para probar el detector de placas propio:
-  `plate_detector: {backend: yolo, model_id: yolo26n-plates, input_size: 640}`.
-- `profiles`: un perfil por escenario:
-
-| Parámetro | parqueadero | calle_lenta | calle_rapida |
-|---|---|---|---|
-| `target_fps` (frames analizados por segundo) | 10 | 15 | 30 |
-| `max_readings_per_track` (lecturas que se votan) | 8 | 8 | 6 |
-| `track_finalize_after_ms` (cuándo se da por ido un vehículo) | 3000 | 2000 | 1000 |
-| `min_readings` / `confirm_threshold` / `min_agreement` | 3 / 0.90 / 0.60 | 3 / 0.90 / 0.60 | 2 / 0.90 / 0.60 |
-| `min_plate_width_px` (ancho mínimo para intentar leer) | 20 | 20 | 20 |
-| `min_sharpness` (0 = sin filtro) | 0.0 | 0.0 | 0.0 |
-
-  Estos valores son **provisionales**: se calibran en la Fase 2 de `docs/07-plan-mejora-lectura.md`.
-- `plate_formats`: catálogo de formatos con su fuente normativa. Los que tienen `verified: false` nunca se confirman
-  solos.
-- `retention`: recortes 90 días (temporalmente; el valor normal es 30, ver `docs/08-plan-legibilidad-y-web.md` §2.2), registros 90 días y exportaciones de entrenamiento 180 días.
-
-**`config/models.yaml`** es el manifiesto de modelos: archivo, URL y hash SHA-256. Si un `.onnx` no coincide con su
-hash, no se carga.
-
----
-
-## 8. Dónde queda cada cosa
-
-```
-config/            lector.yaml (configuración), models.yaml (manifiesto de modelos), datasets.yaml (Roboflow)
-videos/            tus videos de entrada (única carpeta permitida)
-data/lector.db     base de datos cifrada (SQLCipher)             ← haz copia antes de actualizar versiones
-data/crops/        recortes de placa cifrados (AES-GCM)
-data/exports/      CSV exportados
-data/eval/         anotaciones (ground_truth/) y reportes de evaluación (reports/)
-logs/lector.log    registro, sin textos de placa en claro
-models/            modelos ONNX verificados por hash
-training/detector  entrenamiento del detector de placas (proyecto uv aparte)
-training/ocr       entrenamiento del OCR colombiano (proyecto uv aparte)
-src/lector_placas  código (ver §12)
-docs/              requisitos, contratos, modelo de datos, evaluación, ADRs y plan de mejora
-frontend/          interfaz web (React + Vite); `npm run build` genera frontend/dist, que sirve lector-web
-specs/             especificaciones numeradas (000–077) y su estado en specs/README.md
-```
-
-La clave maestra **no** está en disco: vive en el llavero del sistema. Sin ella no se pueden leer ni la base ni los
-recortes.
-
----
-
-## 9. Medir la calidad
-
-Criterios completos en `docs/04-evaluacion.md`. Métricas principales:
-
-| Métrica | Qué mide | Meta |
-|---|---|---|
-| M-01 | Precisión de las confirmadas | ≥ 98 % |
-| M-02 | Recall total (placas legibles encontradas) | ≥ 90 % |
-| M-03 | Recall de confirmadas | ≥ 75 % |
-| M-04 | CER del OCR (errores por carácter) | ≤ 3 % |
-| M-05 | Velocidad (duración del video / tiempo de proceso) | ≥ 1,0 |
-
-**Sin anotar nada** (a partir de tus revisiones):
 ```bash
-uv run lector review --status confirmed   # audita confirmadas automáticas
-uv run lector evaluate-review              # precisión estimada, CER real, desglose de motivos
+git clone https://github.com/sergiopon/lectorPlacas.git && cd lectorPlacas
+uv sync --locked
+(cd frontend && npm ci && npm run build)
+uv run lector-web --demo          # abre el navegador; la carpeta temporal se borra al salir
 ```
 
-**Con anotación manual** (lo más fiable): crea `data/eval/ground_truth/<sha256 del video>.json` siguiendo el formato
-de `docs/04-evaluacion.md` §2 (placas, tipo de vehículo, tiempos) y ejecuta:
+Con tus videos (Linux, [uv](https://docs.astral.sh/uv/), Node.js ≥ 22.12 solo para compilar la interfaz; GPU NVIDIA
+opcional):
+
 ```bash
-uv run lector evaluate --video videos/<v>.mp4 --ground-truth data/eval/ground_truth/<sha>.json --profile calle_lenta
-```
-Nota: `evaluate` procesa el video de verdad, así que sus avistamientos aparecen también en la galería.
-
----
-
-## 10. Entrenar los modelos
-
-Cada carpeta de `training/` es un proyecto uv independiente, con su propio lock y torch/CUDA. Se ejecuta **desde su
-carpeta**. Los datos (`datasets/`) y los resultados (`runs/`) no se versionan.
-
-**Datasets de Roboflow** (desde la raíz):
-```bash
-export ROBOFLOW_API_KEY=...
-uv run lector dataset prepare     # descarga, fusiona para el detector y genera recortes para el OCR
+uv run lector key init            # clave maestra en el llavero del sistema
+uv run lector models fetch        # 6 modelos (~33 MB), verificados por SHA-256
+mkdir -p videos                   # copia aquí tus videos
+uv run lector-web
 ```
 
-**Detector de placas** (desde `training/detector`):
-```bash
-uv run python -m detector_training.fetch_base_weights
-uv run python -m detector_training.train_plates --data merged/data.yaml --name <run>
-```
-Publica en `models/yolo26n-plates/` e imprime el hash, que se copia a `config/models.yaml`.
+O con Docker, sin instalar nada más: [instrucciones](docs/guia.md#3b-con-docker-sin-instalar-uv-python-ni-node).
+La CLI (`lector process`, `lector review`, `lector export`…) también está: [guía](docs/guia.md#5-uso-desde-la-terminal-cli).
 
-**OCR colombiano** (desde `training/ocr`), receta de ADR-014:
-```bash
-uv run python -m ocr_training.fetch_assets
-uv run python -m ocr_training.synthetic_plates --output syn_v1 --count 1500 --val-fraction 0 --seed 1
-uv run python -m ocr_training.mix_dataset --real ocr_colombia --synthetic syn_v1 --output mix_v1 --seed 0
-uv run python -m ocr_training.train --train mix_v1/train/annotations.csv --val mix_v1/val/annotations.csv \
-    --epochs 150 --batch-size 64 --patience 40 --seed 0 --name colombia_v1
-uv run python -m ocr_training.evaluate_ocr --crops mix_v1/test/annotations.csv --candidate runs/colombia_v1/<fecha>/best.onnx
-```
-- El `test` de `mix_v1` está **congelado**: nunca entrena y sirve para comparar todas las versiones.
-- `train.py` **sobrescribe** `models/fpo-cct-xs-v2-colombia/` aunque el modelo salga peor. Guarda antes una copia del
-  `.onnx` en uso.
+## Privacidad por diseño
 
-**Reentrenar con tus revisiones** (spec 054):
-```bash
-uv run lector dataset export-reviewed                        # desde la raíz → training/ocr/datasets/own/reviewed-<fecha>
-cd training/ocr
-uv run python -m ocr_training.mix_dataset --frozen-from mix_v1 --real own/reviewed-<fecha> \
-    --synthetic syn_v1 --output mix_v2 --seed 0
-uv run python -m ocr_training.train --train mix_v2/train/annotations.csv --val mix_v2/val/annotations.csv \
-    --epochs 150 --batch-size 64 --patience 40 --seed 0 --name colombia_v2
-uv run python -m ocr_training.evaluate_ocr --crops mix_v2/test/annotations.csv --candidate runs/colombia_v2/<fecha>/best.onnx
-uv run python -m ocr_training.evaluate_ocr --crops mix_v2/test_video/annotations.csv \
-    --candidate runs/colombia_v2/<fecha>/best.onnx --baseline runs/colombia_v1/<fecha>/best.onnx
-```
-Con menos de 100 recortes en `test_video`, la decisión dirá RECHAZAR por muestra insuficiente. Es lo esperado: allí
-se compara el CER de v2 con el de v1.
+- **Sin red en ejecución**: un bloqueo en el propio proceso lo impide; solo la descarga de modelos y datasets usa internet.
+- **Cifrado en reposo**: base de datos SQLCipher y recortes AES-GCM, con la clave en el llavero del sistema.
+- **Web solo local**: escucha en `127.0.0.1`, enlace de un solo uso y cookie de sesión, sin CDN ni analítica.
+- **Sin placas en claro** en logs ni mensajes; la base no guarda nombres ni rutas de los videos.
+- **Retención**: los datos vencidos se purgan solos.
 
----
+Reglas completas: [`reglas-seguridad.md`](reglas-seguridad.md).
 
-## 11. Seguridad y privacidad
-
-Reglas completas en `reglas-seguridad.md` (SEG-01..SEG-29). Lo esencial:
-- **Sin red en ejecución.** Todas las órdenes bloquean la red, salvo `models fetch`, `dataset download` y
-  `dataset prepare`.
-- **Cifrado en reposo.** La base va en SQLCipher y los recortes en AES-GCM, con subclaves derivadas de la clave maestra
-  del llavero.
-- **Sin placas en claro** en logs, reportes, auditoría ni mensajes de error.
-- **Web solo local.** `lector-web` escucha en `127.0.0.1`, rechaza cualquier `Host` ajeno, exige una cookie de sesión
-  obtenida con un enlace de un solo uso y envía una CSP sin orígenes externos: sin CDN, sin fuentes remotas, sin
-  analítica. El video y los fotogramas se sirven solo con sesión y nunca se escriben a disco.
-- **Retención.** Los datos vencidos se purgan solos al iniciar cada orden.
-- **Modelos verificados** por SHA-256 en cada carga. Solo ONNX, nunca pickles de PyTorch.
-- **Entradas acotadas.** Solo videos de `videos/`, con extensión y tamaño permitidos. Las rutas se resuelven dentro
-  del proyecto.
-
----
-
-## 12. Desarrollo
-
-Arquitectura limpia (`ARQUITECTURA.md`). Regla de dependencia verificada por `tests/architecture`:
-
-```
-domain  ←  application  ←  infrastructure / adapters  ←  evaluation / datasets  ←  cli  (composition root)
-                                                                                  ←  web  (2.º composition root, FastAPI)
-```
-
-| Capa | Contenido |
-|---|---|
-| `domain` | Entidades, catálogo de formatos, corrección posicional, consolidación (solo stdlib) |
-| `application` | Casos de uso (`ProcessVideo`, `ReviewSightings`, `DecideSighting`, exportar, purgar) y puertos (Protocols) |
-| `adapters` | ONNX (detectores, OCR), BoT-SORT, PyAV, SQLCipher, recortes cifrados, ventana OpenCV |
-| `infrastructure` | Configuración, claves, registro de modelos, red controlada |
-| `evaluation` / `datasets` | Métricas y herramientas de datasets |
-| `cli` / `web` | Puntos de entrada (`lector`, `lector-web`) |
-| `frontend/` | Interfaz React + TypeScript (diseño de Figma Make), solo habla con `/api` |
-
-Comandos:
-```bash
-uv run pytest                                  # toda la suite (marcadores: -m gpu, -m integration)
-(cd frontend && npm test && npm run e2e)       # Vitest y Playwright (Chromium) contra lector-web --demo
-uv run ruff check . && uv run ruff format --check .
-uv run mypy src                                # modo strict
-uv run pre-commit run --all-files
-uv run python scripts/nivel_f.py               # red (strace), permisos, cifrado, placas en claro, web solo en loopback, velocidad, VRAM
-```
-
-Cómo se trabaja: **spec-driven development**. Cada cambio se describe primero en una spec de `specs/` y se implementa en
-una rama `feature/NNN-*` con merge `--no-ff`. El estado de cada spec y el registro de correcciones están en
-`specs/README.md`. Las firmas exactas están en `docs/02-contratos.md` y las decisiones, en `docs/adr/`.
-
----
-
-## 13. Problemas frecuentes
-
-| Síntoma | Causa y solución |
-|---|---|
-| `ModuleNotFoundError: No module named 'imghdr'` al ejecutar `lector` | Se ejecutó el lector de ebooks del sistema. Usa `uv run lector` |
-| "manifiesto de modelos inválido" con `--config` | La config alternativa debe estar dentro de `config/` |
-| Bloque `EP Error ... no CUDA-capable device ... Falling back to CPUExecutionProvider` | No hay GPU NVIDIA usable. Funciona en CPU; para quitar el aviso, `inference.execution_provider: cpu` |
-| `lector models fetch` falla | Revisa la conexión y que el Release `models-v1` exista. Los archivos a medias se borran solos |
-| Va muy lento / "cae a CPU" | Revisa `scripts/verify_gpu.py` y que `inference.execution_provider` sea `cuda` |
-| Error de clave o del llavero | Ejecuta `lector key init` en una sesión de escritorio con llavero desbloqueado. Sin la clave original, los datos cifrados no se recuperan |
-| Un modelo "no verificado" tras entrenar | `train.py` sobrescribió el `.onnx`. Restaura tu copia o registra el hash nuevo en `config/models.yaml` |
-| La interfaz dice "Frontend no compilado" | Ejecuta `npm ci && npm run build` en `frontend/` y reinicia `lector-web` |
-| "El video original no está disponible" | El video ya no está en `videos/` con el mismo contenido. Vuelve a copiarlo ahí |
-| `token inválido` al abrir el enlace | El enlace es de un solo uso. Reinicia `lector-web` |
-| "versión de esquema no soportada" | La base es de una versión más nueva que el código. Actualiza el repo; no la borres |
-
----
-
-## 14. Resultados y limitaciones (honestos)
+## Resultados honestos
 
 Cifras medidas en este proyecto, con su tamaño de muestra. Ninguna está redondeada a favor.
 
@@ -481,15 +126,13 @@ truth.
 **Limitaciones conocidas:**
 - Solo placas colombianas; formatos en `config/lector.yaml`.
 - Probado solo en Linux (Fedora 44) con una GPU. Sin GPU funciona, pero no se midió la velocidad.
-- Requiere un llavero del sistema: no funciona tal cual en un servidor sin sesión gráfica.
+- Sin llavero del sistema hace falta un archivo de clave (`LECTOR_KEY_FILE`, como en Docker).
 - El detector de vehículos a veces confunde carros con motos, y eso genera dudas de formato.
 - Sin video de ejemplo en el repositorio, por privacidad.
 
-Plan de mejora y diagnóstico completo: **`docs/07-plan-mejora-lectura.md`**.
+Plan de mejora y diagnóstico completo: [`docs/07-plan-mejora-lectura.md`](docs/07-plan-mejora-lectura.md).
 
----
-
-## 15. Cómo se construyó
+## Cómo se construyó
 
 El proyecto se hizo con **spec-driven development asistido por IA**, entre septiembre y octubre de 2026:
 
@@ -512,3 +155,9 @@ Tamaño (2026-10-04): 14 740 líneas de Python en `src/`, 12 055 de tests (749 t
 Las instrucciones operativas de los agentes (`CLAUDE.md`, `CONTEXT.md` y el plan de orquestación) son archivos locales
 que no se publican. Por eso algunos documentos los mencionan sin que estén en el repositorio. Las specs, ADRs, contratos
 y tests sí están completos.
+
+---
+
+**Documentación:** [guía de uso y desarrollo](docs/guia.md) · [arquitectura](ARQUITECTURA.md) · [decisiones (ADR)](docs/adr/) ·
+[specs](specs/README.md).
+Licencia AGPL-3.0 ([`LICENSE`](LICENSE)). Atribuciones de datos y modelos: [`docs/datasets/ATRIBUCIONES.md`](docs/datasets/ATRIBUCIONES.md).
