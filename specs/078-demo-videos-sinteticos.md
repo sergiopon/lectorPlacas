@@ -75,7 +75,7 @@ En la prueba 4 de `demo.spec.ts` y en `capturas.spec.ts`, `demo_entrada.mp4` pas
 - Una sola prueba `recorrido para el README`, con `await page.waitForTimeout(…)` entre pasos para que se vea:
   1. `/` → "Procesar" (navegación) → elegir `demo_parqueadero.webm` → pulsar el botón "Procesar" → esperar "Resultado"
      (pausa de 1200 ms).
-  2. Pulsar "Revisar … placas" → esperar tarjetas (pausa de 1000 ms) → pulsar la primera → pausa de 800 ms → `c` →
+  2. Pulsar "Lecturas" en la navegación (la corrida simulada de la demo no crea avistamientos) → esperar tarjetas (pausa de 1000 ms) → pulsar la primera → pausa de 800 ms → `c` →
      pausa de 1000 ms.
   3. `v` → esperar `readyState >= 2` → pausa de 3000 ms, con el video reproduciéndose → captura
      `page.screenshot({ path: "../docs/img/web-video.png", animations: "disabled" })` → `Escape` → pausa de 500 ms.
