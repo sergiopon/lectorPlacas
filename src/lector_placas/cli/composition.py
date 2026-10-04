@@ -222,6 +222,7 @@ def build_processing_settings(name: str, profile: ProfileConfig) -> ProcessingSe
         near_min_width_frac=profile.near_min_width_frac,
         max_plate_vehicle_ratio=profile.max_plate_vehicle_ratio,
         roi=profile.roi,
+        early_stop=profile.early_stop,
     )
 
 

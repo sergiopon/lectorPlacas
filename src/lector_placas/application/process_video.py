@@ -77,6 +77,7 @@ class ProcessingSettings:
     near_min_width_frac: float = 0.0
     max_plate_vehicle_ratio: float = 1.0
     roi: tuple[float, float, float, float] = FULL_FRAME_ROI
+    early_stop: bool = False
 
     def __post_init__(self) -> None:
         """Valida los umbrales y límites del perfil.
@@ -387,6 +388,17 @@ class ProcessVideo:
                 candidate.sharpness,
             )
             registry.add_reading(reading, candidate.crop)
+            self._check_early_stop(registry, reading.track_id)
+
+    def _check_early_stop(self, registry: TrackRegistry, track_id: int) -> None:
+        """Marca el track como resuelto si está lleno y sus lecturas actuales se confirmarían."""
+        if not self._settings.early_stop or not registry.is_full(track_id):
+            return
+        plate = self._deps.consolidator.consolidate(
+            registry.readings(track_id), registry.vehicle_type(track_id)
+        )
+        if plate.status is ReviewStatus.CONFIRMED:
+            registry.mark_resolved(track_id)
 
     def _finalize(self, tracks: list[FinalizedTrack], run_id: int, counters: _Counters) -> None:
         """Consolida y persiste los tracks finalizados; descarta los que no tuvieron lecturas."""

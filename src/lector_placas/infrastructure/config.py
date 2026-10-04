@@ -274,6 +274,7 @@ class ProfileConfig(StrictModel):
     near_min_width_frac: float
     max_plate_vehicle_ratio: float
     roi: tuple[float, float, float, float]
+    early_stop: bool
 
     @field_validator("target_fps")
     @classmethod

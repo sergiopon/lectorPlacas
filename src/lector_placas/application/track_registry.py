@@ -38,6 +38,7 @@ class _TrackState:
     readings: list[PlateReading]
     best_crop: ImageBGR | None
     best_score: float
+    resolved: bool
 
 
 class TrackRegistry:
@@ -91,10 +92,59 @@ class TrackRegistry:
             track_id: identificador del track consultado.
 
         Returns:
-            `True` si y solo si el track está activo en el registro, tenga o no ya el máximo
-            de lecturas: una lectura nueva puede reemplazar a la peor guardada.
+            `True` si y solo si el track está activo en el registro y no está resuelto,
+            tenga o no ya el máximo de lecturas: una lectura nueva puede reemplazar a la peor
+            guardada.
         """
-        return track_id in self._tracks
+        state = self._tracks.get(track_id)
+        return state is not None and not state.resolved
+
+    def readings(self, track_id: int) -> tuple[PlateReading, ...]:
+        """Devuelve las lecturas actuales del track ordenadas por tiempo y frame.
+
+        Args:
+            track_id: identificador del track consultado.
+
+        Returns:
+            Lecturas ordenadas por `(timestamp_ms, frame_index)`.
+
+        Raises:
+            InvalidEntityError: Si el track no existe.
+        """
+        state = self._state(track_id)
+        return tuple(sorted(state.readings, key=lambda r: (r.timestamp_ms, r.frame_index)))
+
+    def vehicle_type(self, track_id: int) -> VehicleType:
+        """Devuelve el tipo de vehículo dominante actual del track.
+
+        Args:
+            track_id: identificador del track consultado.
+
+        Returns:
+            Tipo dominante según `_dominant_type`.
+
+        Raises:
+            InvalidEntityError: Si el track no existe.
+        """
+        return _dominant_type(self._state(track_id))
+
+    def mark_resolved(self, track_id: int) -> None:
+        """Marca el track como resuelto: ya no pide más lecturas.
+
+        Args:
+            track_id: identificador del track.
+
+        Raises:
+            InvalidEntityError: Si el track no existe.
+        """
+        self._state(track_id).resolved = True
+
+    def _state(self, track_id: int) -> _TrackState:
+        """Devuelve el estado del track o lanza `InvalidEntityError` si no existe."""
+        state = self._tracks.get(track_id)
+        if state is None:
+            raise InvalidEntityError(f"track inexistente: {track_id}")
+        return state
 
     def is_full(self, track_id: int) -> bool:
         """Indica si el track existe y ya alcanzó el máximo de lecturas guardadas.
@@ -199,6 +249,7 @@ def _new_state(timestamp_ms: int) -> _TrackState:
         readings=[],
         best_crop=None,
         best_score=0.0,
+        resolved=False,
     )
 
 
