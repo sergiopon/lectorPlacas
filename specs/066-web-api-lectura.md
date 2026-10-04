@@ -61,7 +61,7 @@ sin duplicados no aparecen en el dict.
 - `@dataclass(slots=True) class WebSession` con `config: AppConfig`, `keys: KeyProvider`, `clock: Clock`,
   `repository: PlateRepository`, `browser: SightingBrowser`, `crop_store: CropStore`, `export_store: ExportStore` y
   `def close(self) -> None` (cierra el repositorio).
-- `SessionFactory: TypeAlias = Callable[[AppConfig, KeyProvider], WebSession]`.
+- `type SessionFactory = Callable[[AppConfig, KeyProvider], WebSession]` (sentencia `type` de PEP 695; ruff UP040).
 - `def open_web_session(config: AppConfig, keys: KeyProvider) -> WebSession`: igual que `gui/session.py::open_session`
   (repositorio, almacén de recortes, de exportaciones, purga inicial con `composition.build_purge(...).execute()` y
   `repository.browser()`), pero devuelve solo la sesión. Si falla un paso tras abrir el repositorio, lo cierra y
@@ -119,10 +119,10 @@ Para cada petición, en este orden:
    empieza por `/api/`, además `Cache-Control: no-store`.
 
 `SessionAuth`:
-- `exchange(token)`: si el token de arranque aún no se ha usado y `secrets.compare_digest(token, launch_token)`, lo
+- `exchange(token)`: si el token de arranque aún no se ha usado y `secrets.compare_digest(token.encode("utf-8"), launch_token.encode("utf-8"))`, lo
   marca como usado, genera `session = secrets.token_urlsafe(32)`, la guarda y la devuelve; en cualquier otro caso
   devuelve `None`.
-- `is_valid(cookie)`: `True` si `cookie` no es `None`, ya se generó una sesión y `secrets.compare_digest(cookie, session)`.
+- `is_valid(cookie)`: `True` si `cookie` no es `None`, ya se generó una sesión y `secrets.compare_digest(cookie.encode("utf-8"), session.encode("utf-8"))`.
 
 `GET /auth?token=<t>` (`async def`, fuera de `/api`): si `auth.exchange(t)` devuelve una sesión → `RedirectResponse("/",
 status_code=303)` con `set_cookie(SESSION_COOKIE, session, httponly=True, samesite="strict", path="/", secure=False)`;
@@ -193,6 +193,7 @@ BD); `mode` = `config.profiles[profile].mode` si el perfil existe en la configur
 - Segundo uso del mismo token de arranque → 403, aunque el primero haya funcionado.
 - Cookie de otra sesión o vacía → 401 en `/api/*`. `/auth` no exige cookie.
 - `Host` ausente → 400.
+- Token o cookie con caracteres no ASCII (p. ej. `é`): se comparan como bytes UTF-8, así que dan 403 / 401, nunca 500.
 - El JSON de las respuestas puede contener texto de placa (es la interfaz); los logs y los `detail`, nunca.
 
 ## Tests de aceptación (en prosa)
