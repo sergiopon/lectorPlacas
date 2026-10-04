@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getMetrics, type Metrics } from '@/api'
 import { Card, PageHeader, Stat } from '@/components/ui'
 import { fmtPct } from '@/lib/format'
+import { lowerBound, upperBound } from '@/lib/chart'
 
 const noData = { value: null, sub: 'Sin datos todavía' }
 const emptyMetrics: Metrics = { auditedAccuracy: noData, fullPlateReads: noData, charErrorRate: noData, autoConfirmRate: noData, perVideo: [] }
@@ -111,12 +112,14 @@ function Lines({ data }: { data: Row[] }) {
       </g>
     )
   }
+  const accuracies = data.map((d) => d.accuracy)
+  const errors = data.map((d) => d.cer)
   return (
     <>
       <Legend items={[{ label: 'Precisión', color: 'var(--accent)' }, { label: 'Error por carácter', color: 'var(--st-amber)' }]} />
       <svg viewBox={`0 0 ${W} 300`} className="w-full" role="img" aria-label="Precisión y error por carácter a lo largo de los videos">
-        {panel(data.map((d) => d.accuracy), 0.8, 1, 'var(--accent)', 'Precisión', 20)}
-        {panel(data.map((d) => d.cer), 0, 0.08, 'var(--st-amber)', 'Error por carácter', 160)}
+        {panel(accuracies, lowerBound(accuracies, 0.8, 0.1), 1, 'var(--accent)', 'Precisión', 20)}
+        {panel(errors, 0, upperBound(errors, 0.08, 0.05), 'var(--st-amber)', 'Error por carácter', 160)}
         {data.map((_, i) => <text key={i} x={x(i)} y={292} textAnchor="middle" fontSize="10" fill="var(--ink-2)">V{i + 1}</text>)}
       </svg>
     </>
