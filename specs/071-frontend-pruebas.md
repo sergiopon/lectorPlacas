@@ -34,6 +34,9 @@ No cambia ningún archivo de `frontend/src/` ni de `src/`.
 `devDependencies` nuevas, versiones exactas: `vitest` 5.0.3, `jsdom` 30.1.2, `@testing-library/react` 16.3.3,
 `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7, `@testing-library/jest-dom` 7.0.1,
 `@playwright/test` 1.63.0.
+- `vite` pasa de 8.0.5 a **8.0.16**: `npm audit` (incluidas las de desarrollo) marca 8.0.0–8.0.15 con una vulnerabilidad
+  alta del servidor de desarrollo (GHSA-v6wh-96g9-6wx3, GHSA-fx2h-pf6j-xcff); 8.0.16 exige el mismo Node y cumple los
+  `peerDependencies` de `@vitejs/plugin-react` 6.0.1 (`^8.0.0`), `@tailwindcss/vite` 4.2.2 y Vitest 5.0.3.
 - Vitest 5.0.3 admite Vite 8 y exige Node `^22.12.0 || ^24.0.0 || >=26.0.0`; `@testing-library/react` 16.3.3 pide
   `@testing-library/dom` ^10. `@testing-library/jest-dom` 7.0.1 exporta `./vitest`.
 - Comprobado en este equipo (Fedora 44): `vitest run` con `environment: "jsdom"`, React 19.2.4 y Testing Library pasa;
@@ -63,7 +66,7 @@ No cambia ningún archivo de `frontend/src/` ni de `src/`.
 ### 2. `e2e/global-setup.ts`
 `export default async function globalSetup(): Promise<() => Promise<void>>`:
 1. Lanza con `child_process.spawn` el comando `uv run lector-web --demo --no-browser --port <E2E_PORT>` con
-   `cwd` = la raíz del repositorio (`path.resolve(__dirname, "..", "..")`) y `stdio: ["ignore", "pipe", "pipe"]`.
+   `cwd` = la raíz del repositorio (`path.resolve(__dirname, "..", "..")`, con `const __dirname = path.dirname(fileURLToPath(import.meta.url))` porque el paquete es ESM) y `stdio: ["ignore", "pipe", "pipe"]`.
 2. Lee `stdout` hasta encontrar una línea que empiece por `Abra: ` (máximo 30 s; si no, mata el proceso y lanza
    `Error("lector-web no arrancó")` con lo leído de `stderr`). La URL es el resto de la línea.
 3. Abre Chromium (`chromium.launch()`), un contexto nuevo, navega a esa URL (canjea el token y fija la cookie), guarda
@@ -133,6 +136,6 @@ se registran los mensajes de consola de tipo `error` y, al final, ninguno contie
 - [ ] En `frontend/`: `npm install` (regenera el lock; si cambia alguna versión directa ya fijada, **detente y
       reporta**), `npm ci`, `npm run typecheck`, `npm test` y `npm run build` en verde.
 - [ ] `npx playwright install chromium` y `npm run e2e` en verde (pegar el resumen de `line`).
-- [ ] `npm audit --omit=dev` sin vulnerabilidades altas o críticas.
+- [ ] `npm audit` (también dependencias de desarrollo) sin vulnerabilidades altas o críticas.
 - [ ] `uv run pytest -q` (incluye `test_frontend_policy.py`), `uv run ruff check .`, `uv run ruff format --check .` y
       `uv run mypy src` limpios.
