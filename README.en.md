@@ -9,6 +9,7 @@ the exact second of the video where the plate appears.</p>
 <img alt="Python 3.13" src="https://img.shields.io/badge/python-3.13-3776AB">
 <img alt="ONNX Runtime" src="https://img.shields.io/badge/inference-ONNX%20Runtime-555">
 <img alt="Linux" src="https://img.shields.io/badge/platform-Linux-333">
+<img alt="Docker" src="https://img.shields.io/badge/Docker-available-2496ED">
 <img alt="No network at runtime" src="https://img.shields.io/badge/network%20at%20runtime-none-2ea44f">
 </p>
 

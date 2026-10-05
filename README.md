@@ -9,6 +9,7 @@ video en que aparece la placa.</p>
 <img alt="Python 3.13" src="https://img.shields.io/badge/python-3.13-3776AB">
 <img alt="ONNX Runtime" src="https://img.shields.io/badge/inferencia-ONNX%20Runtime-555">
 <img alt="Linux" src="https://img.shields.io/badge/plataforma-Linux-333">
+<img alt="Docker" src="https://img.shields.io/badge/Docker-disponible-2496ED">
 <img alt="Sin red en ejecución" src="https://img.shields.io/badge/red%20en%20ejecuci%C3%B3n-ninguna-2ea44f">
 </p>
 
