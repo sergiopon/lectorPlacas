@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 028 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren un caso borde que la spec no enumera explícitamente: con la red realmente
 bloqueada (`block_network()` sin sustituir), un intento de conexión en un adaptador

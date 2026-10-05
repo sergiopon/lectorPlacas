@@ -1,7 +1,7 @@
-"""Tests de revisión de la spec 033 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Viven en `training/ocr/tests/` y no en `tests/review/` porque `training/ocr` es un
-proyecto uv independiente que el pytest de la raíz no recoge (ver docs/06-plan-pruebas.md).
+proyecto uv independiente que el pytest de la raíz no recoge.
 
 Cubren lo que el test de aceptación no fija: el redondeo de `val_fraction`, el reparto
 por índice, la forma por estilo y que un fallo de fuente no deje una salida a medias.

@@ -1,4 +1,4 @@
-"""Subcomandos `evaluate` y `evaluate-ocr` de la CLI `lector` (spec 029)."""
+"""Subcomandos `evaluate` y `evaluate-ocr` de la CLI `lector`."""
 
 from __future__ import annotations
 

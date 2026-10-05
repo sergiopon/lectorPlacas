@@ -124,7 +124,7 @@ class ProcessingSettings:
             raise InvalidEntityError("profile_name no puede estar vacío")
 
     def _validate_proximity_settings(self) -> None:
-        """Valida los parámetros de filtro de proximidad (spec 057)."""
+        """Valida los parámetros de filtro de proximidad."""
         if not 0.0 <= self.near_min_width_frac <= NEAR_MIN_WIDTH_FRAC_MAX:
             msg = f"near_min_width_frac debe estar en [0, {NEAR_MIN_WIDTH_FRAC_MAX}]: "
             msg += f"{self.near_min_width_frac}"

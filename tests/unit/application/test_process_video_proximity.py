@@ -1,4 +1,4 @@
-"""Tests de aceptación para filtros de proximidad en ProcessVideo (spec 057)."""
+"""Tests de aceptación para filtros de proximidad en ProcessVideo."""
 
 from __future__ import annotations
 

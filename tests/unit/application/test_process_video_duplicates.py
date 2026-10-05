@@ -1,4 +1,4 @@
-"""Tests de aceptación del marcado de duplicados en `ProcessVideo` (spec 061)."""
+"""Tests de aceptación del marcado de duplicados en `ProcessVideo`."""
 
 from __future__ import annotations
 

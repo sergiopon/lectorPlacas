@@ -1,7 +1,7 @@
-"""Tests de revisión de la spec 032 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Viven en `training/ocr/tests/` y no en `tests/review/` porque `training/ocr` es un
-proyecto uv independiente que el pytest de la raíz no recoge (ver docs/06-plan-pruebas.md).
+proyecto uv independiente que el pytest de la raíz no recoge.
 
 Cubren lo que el test de aceptación solo mira por índices: la lista de argumentos
 completa de `train`, la estrictura de `validate_annotations`, los rechazos de

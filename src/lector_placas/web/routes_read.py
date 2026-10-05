@@ -1,4 +1,4 @@
-"""Endpoints de lectura de la API web (spec 066)."""
+"""Endpoints de lectura de la API web."""
 
 from __future__ import annotations
 

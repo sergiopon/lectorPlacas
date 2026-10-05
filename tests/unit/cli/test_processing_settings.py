@@ -1,4 +1,4 @@
-"""Tests de aceptación para `build_processing_settings` (spec 057)."""
+"""Tests de aceptación para `build_processing_settings`."""
 
 from __future__ import annotations
 

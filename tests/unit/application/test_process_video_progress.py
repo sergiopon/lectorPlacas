@@ -1,4 +1,4 @@
-"""Progreso y cancelación cooperativa de `ProcessVideo` (spec 040)."""
+"""Progreso y cancelación cooperativa de `ProcessVideo`."""
 
 from __future__ import annotations
 

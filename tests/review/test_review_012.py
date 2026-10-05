@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 012 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren casos borde que la spec no enumera explícitamente: scores no finitos (NaN) y
 cajas completamente fuera del lienzo letterbox, que deben descartarse sin romper el

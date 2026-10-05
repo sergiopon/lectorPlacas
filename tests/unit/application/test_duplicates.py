@@ -1,4 +1,4 @@
-"""Tests de aceptación de `find_duplicates` (spec 061)."""
+"""Tests de aceptación de `find_duplicates`."""
 
 from __future__ import annotations
 

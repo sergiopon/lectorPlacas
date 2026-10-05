@@ -1,4 +1,4 @@
-"""Endpoints de video, fotograma, conteos, métricas por corrida y ajustes (spec 076)."""
+"""Endpoints de video, fotograma, conteos, métricas por corrida y ajustes."""
 
 from __future__ import annotations
 

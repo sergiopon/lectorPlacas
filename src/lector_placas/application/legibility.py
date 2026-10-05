@@ -1,4 +1,4 @@
-"""Filtro de legibilidad (spec 063): regresión softmax sobre características del avistamiento."""
+"""Filtro de legibilidad: regresión softmax sobre características del avistamiento."""
 
 from __future__ import annotations
 

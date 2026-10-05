@@ -135,7 +135,7 @@ def build_training_store(config: AppConfig) -> FilesystemTrainingExportStore:
 
 
 def build_legibility_store(config: AppConfig) -> FilesystemLegibilityExportStore:
-    """Construye el almacén del dataset de legibilidad (SEG-07, spec 055)."""
+    """Construye el almacén del dataset de legibilidad (SEG-07)."""
     return FilesystemLegibilityExportStore(resolve_within(config.root_dir, LEGIBILITY_EXPORT_DIR))
 
 

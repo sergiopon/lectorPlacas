@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 025 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren un caso borde que la spec no enumera explícitamente: una segunda ejecución de la
 purga sobre datos ya purgados no debe borrar nada.

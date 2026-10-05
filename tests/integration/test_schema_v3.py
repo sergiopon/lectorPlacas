@@ -1,4 +1,4 @@
-"""Tests de integración para el esquema v3 de SQLCipher (spec 059)."""
+"""Tests de integración para el esquema v3 de SQLCipher."""
 
 from __future__ import annotations
 
@@ -290,7 +290,7 @@ def _raw_connect(db_path: Path, key_provider: FakeKeyProvider) -> sqlcipher.Conn
 
 
 def _create_v2_db(db_path: Path, key_provider: FakeKeyProvider | None = None) -> None:
-    """Crea una BD en esquema v2 (sin las columnas de spec 059)."""
+    """Crea una BD en esquema v2 (sin las columnas del esquema v3)."""
     from lector_placas.infrastructure.crypto import KeyPurpose, derive_key
 
     if key_provider is None:

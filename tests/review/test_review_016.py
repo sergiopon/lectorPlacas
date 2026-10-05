@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 016 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren un caso borde que la spec no enumera explícitamente: una detección con confianza
 por debajo de `track_activation_threshold` no debe activar un track nuevo, aunque

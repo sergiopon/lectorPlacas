@@ -65,7 +65,7 @@ def _mount_frontend(app: FastAPI, static_dir: Path | None) -> None:
             return HTMLResponse(NO_FRONTEND_HTML)
 
 
-def create_app(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 068
+def create_app(  # noqa: PLR0913, PLR0917 — firma fijada por el contrato público
     config: AppConfig,
     keys: KeyProvider,
     auth: SessionAuth,

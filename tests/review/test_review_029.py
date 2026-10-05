@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 029 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren casos borde que la spec no enumera explícitamente: qué estados entran en el
 emparejamiento, la frontera exacta de la tolerancia temporal, el uso único de cada

@@ -63,7 +63,7 @@ class PurgeExpiredData:
     borra las exportaciones vencidas, dejando constancia en el registro de auditoría.
     """
 
-    def __init__(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 055
+    def __init__(  # noqa: PLR0913, PLR0917 — firma fijada por el contrato público
         self,
         repository: PlateRepository,
         crop_store: CropStore,

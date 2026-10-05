@@ -1,4 +1,4 @@
-"""Métricas de calidad derivadas de las decisiones de revisión humana (spec 038)."""
+"""Métricas de calidad derivadas de las decisiones de revisión humana."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Métricas de precisión, recall y F1 del detector de placas (spec 037)."""
+"""Métricas de precisión, recall y F1 del detector de placas."""
 
 from __future__ import annotations
 

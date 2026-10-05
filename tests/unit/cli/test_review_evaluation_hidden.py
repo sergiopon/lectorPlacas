@@ -1,4 +1,4 @@
-"""Tests del resumen oculto en review_evaluation_commands (spec 064)."""
+"""Tests del resumen oculto en review_evaluation_commands."""
 
 from __future__ import annotations
 

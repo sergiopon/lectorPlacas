@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 023 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren un caso borde que la spec no enumera explícitamente: un track observado pero sin
 lecturas, finalizado por inactividad, se reabre como un track nuevo si el mismo

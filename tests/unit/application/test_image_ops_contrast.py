@@ -1,4 +1,4 @@
-"""Tests de aceptación para `rms_contrast` (spec 059)."""
+"""Tests de aceptación para `rms_contrast`."""
 
 from __future__ import annotations
 

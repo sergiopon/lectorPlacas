@@ -1,4 +1,4 @@
-"""Carga, escritura y CLI de la mezcla real + sintético del OCR (spec 039).
+"""Carga, escritura y CLI de la mezcla real + sintético del OCR.
 
 Reparte los recortes reales en train/val/test agrupando por texto de placa o
 imagen de origen, añade sintéticos solo a `train` con cuota de motos y escribe
@@ -193,7 +193,7 @@ def build_mix(
     Reparte los reales por componente, selecciona los sintéticos para `train`
     según la cuota y escribe las particiones y el manifiesto. Si la escritura
     falla, borra la salida parcial y relanza el error. Con `frozen_dir` hereda el
-    test congelado de esa mezcla y añade `test_video` (spec 054).
+    test congelado de esa mezcla y añade `test_video`.
     """
     if frozen_dir is not None:
         # Import diferido: `mix_frozen` importa de este módulo (evita el ciclo).

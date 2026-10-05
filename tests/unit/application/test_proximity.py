@@ -1,4 +1,4 @@
-"""Tests de aceptación para las funciones de filtro de proximidad (spec 057)."""
+"""Tests de aceptación para las funciones de filtro de proximidad."""
 
 from __future__ import annotations
 

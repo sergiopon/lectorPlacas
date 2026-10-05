@@ -5,7 +5,7 @@ modificar un `CHECK` con `ALTER TABLE`, así que la tabla se recrea dentro de un
 explícita, conservando `sighting_id` y el resto de columnas sin cambios.
 
 La versión 2 a 3 agrega columnas de calidad (`plate_width_px`, `plate_height_px`, `sharpness`,
-`contrast`) y `duplicate_of` a la tabla `sightings` con restricciones de integridad (spec 059).
+`contrast`) y `duplicate_of` a la tabla `sightings` con restricciones de integridad.
 """
 
 from __future__ import annotations

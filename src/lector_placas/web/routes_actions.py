@@ -1,4 +1,4 @@
-"""Endpoints de acciones de la API web (spec 067)."""
+"""Endpoints de acciones de la API web."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Detección de avistamientos duplicados de la misma placa dentro de una corrida (spec 061)."""
+"""Detección de avistamientos duplicados de la misma placa dentro de una corrida."""
 
 from __future__ import annotations
 

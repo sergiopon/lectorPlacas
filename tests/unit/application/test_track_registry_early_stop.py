@@ -1,4 +1,4 @@
-"""Tests de aceptación de la parada temprana en `TrackRegistry` (spec 060)."""
+"""Tests de aceptación de la parada temprana en `TrackRegistry`."""
 
 from __future__ import annotations
 

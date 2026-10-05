@@ -1,4 +1,4 @@
-"""Chequeos no funcionales de nivel F (docs/06-plan-pruebas.md §3).
+"""Chequeos no funcionales de nivel F.
 
 Corre el pipeline sobre un video sintético 1080p30 de 60 s (o uno provisto) y verifica:
   1. red bloqueada     → 0 llamadas `connect` a la red (AF_INET/AF_INET6) con strace
