@@ -35,8 +35,28 @@ Un archivo JSON por video: `data/eval/ground_truth/<video_sha256>.json`, validad
 }
 ```
 
-Reglas: `subset` ∈ {`street_day`, `street_night`, `parking`, `fast`}; `camera` ∈ {`fixed`, `handheld`};
+Reglas: `version` ∈ {1, 2}. `subset` ∈ {`street_day`, `street_night`, `parking`, `fast`, `patrol`};
+`camera` ∈ {`fixed`, `handheld`, `vehicle_mounted`}; `patrol` y `vehicle_mounted` exigen la versión 2.
+`max_plate_width_px` (entero ≥ 1) solo existe en la versión 2, donde es obligatorio en toda placa legible y opcional
+en las ilegibles. Es el ancho en píxeles de la caja de la placa ajustada a su borde exterior (el mismo criterio que
+el §5.4 para el detector), en el frame a resolución original y ya rotado (como se ve en el reproductor), en el frame
+donde la placa se ve más ancha.
 `text` cumple `^[A-Z0-9]{1,10}$` si `legible = true` y es `""` si `false`; `0 ≤ first_seen_ms ≤ last_seen_ms`.
+Ejemplo de versión 2 (cámara en vehículo):
+
+```json
+{
+  "version": 2,
+  "video_sha256": "<64 hex del archivo de video>",
+  "subset": "patrol",
+  "camera": "vehicle_mounted",
+  "plates": [
+    {"text": "ABC123", "vehicle_type": "car", "first_seen_ms": 1200, "last_seen_ms": 4300, "legible": true, "max_plate_width_px": 60},
+    {"text": "",       "vehicle_type": "truck", "first_seen_ms": 7000, "last_seen_ms": 7900, "legible": false}
+  ]
+}
+```
+
 Un vehículo que pasa dos veces genera dos entradas. **Legible** = un humano puede leer los 6 (o 5)
 caracteres en al menos un frame del video original.
 
@@ -52,8 +72,8 @@ Formato de `ocr_crops`: `data/eval/ocr_crops/annotations.csv` con columnas `imag
 | ID | Métrica | Definición | Meta (aprobada) |
 |---|---|---|---|
 | M-01 | Precisión de confirmadas | Avistamientos `confirmed` emparejados con una placa GT legible de igual texto / total `confirmed` | ≥ 98 % |
-| M-02 | Recall total | Placas GT legibles emparejadas con algún avistamiento (`confirmed` o `unverified`) de igual texto / placas GT legibles | ≥ 90 % |
-| M-03 | Recall confirmadas | Placas GT legibles emparejadas con un `confirmed` de igual texto / placas GT legibles | ≥ 75 % |
+| M-02 | Recall total | Placas GT legibles **cercanas** emparejadas con algún avistamiento (`confirmed` o `unverified`) de igual texto / placas GT legibles cercanas | ≥ 90 % |
+| M-03 | Recall confirmadas | Placas GT legibles **cercanas** emparejadas con un `confirmed` de igual texto / placas GT legibles cercanas | ≥ 75 % |
 | M-04 | CER | Σ distancia de Levenshtein(pred, gt) / Σ len(gt) sobre `ocr_crops` | ≤ 3 % tras fine-tuning |
 | M-05 | Velocidad | `video_duration_ms / processing_ms` (`RunStats.speed_factor`) por video ≤ 1080p30 | ≥ 1.0 en cada video |
 | M-06 | VRAM pico | Máximo de `memory.used` (MiB) muestreado cada 200 ms durante la corrida menos la línea base previa | ≤ 4096 MiB |
@@ -64,7 +84,18 @@ Formato de `ocr_crops`: `data/eval/ocr_crops/annotations.csv` con columnas `imag
 orden de `first_seen_ms` del avistamiento. Los avistamientos `rejected` se ignoran; los `corrected`
 cuentan con su texto corregido pero se reportan aparte (no deben existir en una evaluación limpia).
 
-Reporte por subconjunto y global, más desglose `car` vs `motorcycle` y `fixed` vs `handheld`.
+**Cercana (ground truth versión 2):** `max_plate_width_px` ≥ ancho mínimo efectivo del perfil usado en la corrida,
+`ceil(max(min_plate_width_px, near_min_width_frac × lado mayor del frame))`, con el frame ya rotado
+(`runs.width`/`runs.height`) y calculado con `application/proximity.py:effective_min_width` (ADR-017). Con ground truth
+versión 1, todas las legibles son cercanas. M-01 no cambia (contra todas las legibles).
+
+En el reporte, `gt_legible` = placas GT legibles cercanas; `gt_far_excluded` = legibles no cercanas. Para declarar
+cumplidas M-02 y M-03, `min_plate_width_px` y `near_min_width_frac` del perfil deben ser los versionados en
+`config/lector.yaml`; el reporte publica siempre `min_plate_width`, `gt_far_excluded` y `gt_legible` junto a las tasas.
+Una corrida con otro umbral es exploratoria y no acredita las metas.
+
+Reporte por subconjunto y global, más desglose `car` vs `motorcycle` y por `camera` (`fixed`, `handheld`,
+`vehicle_mounted`); hoy el reporte es por video y lleva su `camera`.
 
 **Métricas sin ground truth manual (decisión del usuario 2026-09-26):**
 - Detector de placas sobre dataset (spec 037): precisión, recall y F1 a IoU ≥ 0,5 en el split `val` del dataset unificado.

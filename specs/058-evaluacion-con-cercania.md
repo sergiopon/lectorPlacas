@@ -1,8 +1,6 @@
 # 058 - Evaluación con cercanía: ground truth versión 2
 
-> **Estado: bloqueada hasta aprobar el cambio de docs/04.** Cambia la definición de M-02 y M-03 ("placas cercanas").
-> Antes de implementarla, un revisor Opus independiente debe aprobar el texto del §3 de docs/04 propuesto aquí y el
-> usuario debe confirmarlo (docs/09 §4.5 y §8). Hasta entonces el orquestador no la lanza.
+> **Estado: aprobada** (revisión Opus y confirmación del usuario, 2026-10-04). El texto de docs/04 §2 y §3 ya está aplicado.
 
 ## Objetivo
 Que `lector evaluate` mida M-02 y M-03 solo sobre las placas **cercanas** (las que el sistema debe leer tras la spec
@@ -97,14 +95,26 @@ GT versión 2 con tres legibles: `ABC123` (0–1000 ms, ancho 60), `DEF456` (200
   confirmed_matched_near=1, min_plate_width=48)`, `speed_factor=1.5`, `peak_mib=None` y `"r.json"` escribe una primera
   línea que contiene `gt_far_excluded=1 min_plate_width=48 speed_factor=` y ninguna placa.
 
-## Texto propuesto para docs/04 §3 (lo aplica el orquestador tras la aprobación)
+## Texto propuesto para docs/04 §2 y §3 (lo aplica el orquestador tras la aprobación; revisado por Opus el 2026-10-04)
+- §2, línea de reglas: "`version` ∈ {1, 2}. `subset` ∈ {`street_day`, `street_night`, `parking`, `fast`, `patrol`};
+  `camera` ∈ {`fixed`, `handheld`, `vehicle_mounted`}; `patrol` y `vehicle_mounted` exigen la versión 2.
+  `max_plate_width_px` (entero ≥ 1) solo existe en la versión 2, donde es obligatorio en toda placa legible y opcional
+  en las ilegibles." Más un ejemplo JSON de la versión 2.
+- §2: "`max_plate_width_px` = ancho en píxeles de la caja de la placa ajustada a su borde exterior (el mismo criterio que
+  el §5.4 para el detector), en el frame a resolución original y ya rotado (como se ve en el reproductor), en el frame
+  donde la placa se ve más ancha."
 - M-02: "Placas GT legibles **cercanas** emparejadas con algún avistamiento (`confirmed` o `unverified`) de igual texto /
-  placas GT legibles cercanas." M-03: igual con `confirmed`. M-01 no cambia.
+  placas GT legibles cercanas." M-03: igual con `confirmed`. M-01 no cambia (contra todas las legibles).
 - "Cercana (ground truth versión 2): `max_plate_width_px` ≥ ancho mínimo efectivo del perfil usado en la corrida,
-  `ceil(max(min_plate_width_px, near_min_width_frac × lado mayor del frame))` (ADR-017). Con ground truth versión 1,
-  todas las legibles son cercanas."
-- §2: formato versión 2 (`max_plate_width_px` por placa legible, medido como el ancho en píxeles de la placa en el frame
-  donde se ve más grande; `camera` añade `vehicle_mounted`; `subset` añade `patrol`). Desglose del reporte por `camera`.
+  `ceil(max(min_plate_width_px, near_min_width_frac × lado mayor del frame))`, con el frame ya rotado
+  (`runs.width`/`runs.height`) y calculado con `application/proximity.py:effective_min_width` (ADR-017). Con ground
+  truth versión 1, todas las legibles son cercanas."
+- "En el reporte, `gt_legible` = placas GT legibles cercanas; `gt_far_excluded` = legibles no cercanas. Para declarar
+  cumplidas M-02 y M-03, `min_plate_width_px` y `near_min_width_frac` del perfil deben ser los versionados en
+  `config/lector.yaml`; el reporte publica siempre `min_plate_width`, `gt_far_excluded` y `gt_legible` junto a las tasas.
+  Una corrida con otro umbral es exploratoria y no acredita las metas."
+- §3, línea del reporte: "…desglose `car` vs `motorcycle` y por `camera` (`fixed`, `handheld`, `vehicle_mounted`); hoy
+  el reporte es por video y lleva su `camera`."
 
 ## Fuera de alcance
 - Anotar videos (operador). Cambiar las metas numéricas de M-01..M-03.
