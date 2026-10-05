@@ -4,8 +4,9 @@ services:
     image: lector-placas:local
     environment:
       LECTOR_EXECUTION_PROVIDER: cpu
+      LECTOR_PUBLIC_PORT: "${LECTOR_PORT:-8765}"
     ports:
-      - "127.0.0.1:8765:8765"
+      - "127.0.0.1:${LECTOR_PORT:-8765}:8765"
     volumes:
       - "${LECTOR_VIDEOS_DIR:-./videos}:/app/videos:ro"
       - "lector-data:/app/data"
