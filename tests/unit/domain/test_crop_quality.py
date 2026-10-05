@@ -1,4 +1,4 @@
-"""Tests de aceptación para `CropQuality` (spec 059)."""
+"""Tests de aceptación para `CropQuality`."""
 
 from __future__ import annotations
 

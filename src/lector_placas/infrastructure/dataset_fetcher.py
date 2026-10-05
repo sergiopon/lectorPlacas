@@ -119,7 +119,7 @@ def latest_version(http_get: HttpGet, api_key: str, workspace: str, project: str
         raise DatasetError(f"formato de versiones inesperado: {workspace}/{project}") from error
 
 
-def export_link(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 036
+def export_link(  # noqa: PLR0913, PLR0917 — firma fijada por el contrato público
     http_get: HttpGet,
     api_key: str,
     workspace: str,
@@ -179,7 +179,7 @@ def extract_zip(data: bytes, destination: Path) -> None:
         archive.extractall(destination)
 
 
-def download_dataset(  # noqa: PLR0913, PLR0917 — firma fijada por la spec 036
+def download_dataset(  # noqa: PLR0913, PLR0917 — firma fijada por el contrato público
     http_get: HttpGet,
     api_key: str,
     workspace: str,

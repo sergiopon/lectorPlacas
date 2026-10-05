@@ -1,4 +1,4 @@
-// Módulo único de datos: cliente de la API real de lector-web (specs 066, 067 y 076).
+// Módulo único de datos: cliente de la API real de lector-web.
 import { ApiError, getJson, postJson, qs } from './http'
 import type {
   Decision,

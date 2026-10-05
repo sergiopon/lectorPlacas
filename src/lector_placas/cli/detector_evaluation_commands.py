@@ -1,4 +1,4 @@
-"""Subcomando `evaluate-detector` de la CLI `lector` (spec 037)."""
+"""Subcomando `evaluate-detector` de la CLI `lector`."""
 
 from __future__ import annotations
 

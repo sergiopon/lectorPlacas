@@ -3,8 +3,8 @@
 Genera recortes (carro amarillo/blanco, moto y motocarro) con su texto en el
 formato CSV de fast-plate-ocr, para complementar el fine-tuning del OCR.
 
-Las medidas declaradas como aproximadas en `specs/033` (tipografía oficial,
-alto de caracteres de la placa de carro estándar y colores RGB exactos) se
+Las medidas de la placa son aproximadas (tipografía oficial,
+alto de caracteres de la placa de carro estándar y colores RGB exactos) y se
 tratan aquí como aproximaciones visuales, no como valores oficiales.
 """
 

@@ -117,7 +117,7 @@ def test_bind_socket_is_loopback() -> None:
 
 def test_bind_host_container(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LECTOR_IN_CONTAINER", "1")
-    assert bind_host() == "0.0.0.0"  # noqa: S104 — excepción de contenedor de SEG-28 (spec 075)
+    assert bind_host() == "0.0.0.0"  # noqa: S104 — excepción de contenedor de SEG-28
     monkeypatch.setenv("LECTOR_IN_CONTAINER", "true")
     assert bind_host() == "127.0.0.1"
     monkeypatch.delenv("LECTOR_IN_CONTAINER")

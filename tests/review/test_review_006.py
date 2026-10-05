@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 006 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren casos borde que la spec no enumera explícitamente: claves extra dentro de un
 perfil (el esquema de perfiles es cerrado), letras minúsculas en el mapa de confusiones

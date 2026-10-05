@@ -1,4 +1,4 @@
-"""Filtros de proximidad para descartar vehículos y placas lejanas (spec 057)."""
+"""Filtros de proximidad para descartar vehículos y placas lejanas."""
 
 from __future__ import annotations
 

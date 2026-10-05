@@ -1,4 +1,4 @@
-"""Caso de uso: exportar el dataset de legibilidad (spec 055, SEG-07)."""
+"""Caso de uso: exportar el dataset de legibilidad (SEG-07)."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ class ExportLegibilityDataset:
     Recorre los estados `confirmed`, `corrected`, `illegible` y `rejected` —nunca
     `unverified`— y escribe una muestra por avistamiento con su recorte, su clase de
     legibilidad y las métricas del consolidador. Las corridas del mismo video comparten
-    un grupo, de modo que la spec 057 puede repartir por video sin exponer su hash.
+    un grupo, de modo que el filtro de proximidad puede repartir por video sin exponer su hash.
     """
 
     def __init__(

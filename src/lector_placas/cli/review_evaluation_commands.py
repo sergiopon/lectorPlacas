@@ -1,4 +1,4 @@
-"""Subcomando `evaluate-review` de la CLI `lector` (spec 038)."""
+"""Subcomando `evaluate-review` de la CLI `lector`."""
 
 from __future__ import annotations
 

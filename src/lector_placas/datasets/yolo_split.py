@@ -1,4 +1,4 @@
-"""Iteración de un split de dataset YOLO con sus etiquetas en píxeles (spec 037)."""
+"""Iteración de un split de dataset YOLO con sus etiquetas en píxeles."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Integración con SQLCipher para filtro low_quality (spec 064)."""
+"""Integración con SQLCipher para filtro low_quality."""
 
 from __future__ import annotations
 

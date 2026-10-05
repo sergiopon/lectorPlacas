@@ -1,4 +1,4 @@
-"""Tests de aceptación para la calidad de recorte en ProcessVideo (spec 059)."""
+"""Tests de aceptación para la calidad de recorte en ProcessVideo."""
 
 from __future__ import annotations
 

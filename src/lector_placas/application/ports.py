@@ -252,7 +252,7 @@ class VideoSourceFactory(Protocol):
         """Abre el archivo de video indicado.
 
         Precondiciones:
-            `path` ya validado (spec 007).
+            `path` ya validado.
 
         Postcondiciones:
             Fuente abierta; `info()` disponible.
@@ -753,7 +753,7 @@ class TrainingExportStore(Protocol):
 
 
 class LegibilityLabel(StrEnum):
-    """Clase de legibilidad de un recorte para el filtro de la spec 057."""
+    """Clase de legibilidad de un recorte para el filtro de proximidad."""
 
     LEGIBLE = "legible"
     BLURRY = "borrosa"
@@ -762,7 +762,7 @@ class LegibilityLabel(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class LegibilitySample:
-    """Recorte etiquetado por legibilidad, sin texto de placa (SEG-07, spec 055)."""
+    """Recorte etiquetado por legibilidad, sin texto de placa (SEG-07)."""
 
     image: ImageBGR
     label: LegibilityLabel

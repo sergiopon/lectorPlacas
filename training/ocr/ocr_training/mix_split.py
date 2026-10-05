@@ -1,7 +1,7 @@
 """Lógica pura de agrupación, reparto y cuota de la mezcla real + sintético del OCR.
 
 Sin entrada/salida: recibe y devuelve `Sample` en memoria. El reparto agrupa los
-recortes reales por texto de placa o por imagen de origen (spec 039) para que el
+recortes reales por texto de placa o por imagen de origen para que el
 mismo vehículo no quede repartido entre particiones, y la selección de sintéticos
 respeta una cuota de motos sobre el `train` resultante.
 """

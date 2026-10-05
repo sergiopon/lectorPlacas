@@ -1,4 +1,4 @@
-"""Tests de la consulta low_quality (spec 064)."""
+"""Tests de la consulta low_quality."""
 
 from __future__ import annotations
 

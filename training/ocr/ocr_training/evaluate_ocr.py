@@ -68,7 +68,7 @@ def levenshtein(a: str, b: str) -> int:
 
 
 def normalize_prediction(text: str) -> str:
-    """Normaliza un texto predicho igual que el adaptador de runtime (spec 017)."""
+    """Normaliza un texto predicho igual que el adaptador de runtime."""
     if "_" in text or _PREDICTION_REGEX.fullmatch(text) is None:
         return ""
     return text

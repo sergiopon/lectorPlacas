@@ -1,4 +1,4 @@
-"""Migración del esquema de `sightings` de v1 a v2 (spec 052)."""
+"""Migración del esquema de `sightings` de v1 a v2."""
 
 from __future__ import annotations
 

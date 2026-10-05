@@ -373,7 +373,7 @@ class RetentionConfig(StrictModel):
 
 
 class LegibilityConfig(StrictModel):
-    """Modelo de legibilidad (spec 063): coeficientes copiados de `model.json` (spec 062)."""
+    """Modelo de legibilidad: coeficientes copiados de `model.json`."""
 
     enabled: bool
     threshold: float | None = None

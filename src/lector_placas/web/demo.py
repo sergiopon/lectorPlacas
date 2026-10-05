@@ -285,7 +285,7 @@ def seed_demo(config: AppConfig, keys: KeyProvider) -> None:
         config: configuración con la raíz de demo.
         keys: proveedor de la clave de demo.
     """
-    rng = random.Random(DEMO_SEED)  # noqa: S311 — datos de demo deterministas, no criptográficos (spec 069)
+    rng = random.Random(DEMO_SEED)  # noqa: S311 — datos de demo deterministas, no criptográficos
     start = demo_start(datetime.now(UTC))
     repository = composition.build_repository(config, keys)
     crop_store = composition.build_crop_store(config, keys)

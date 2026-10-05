@@ -1,4 +1,4 @@
-"""Mezcla congelada: hereda el test de una mezcla previa y añade `test_video` (spec 054).
+"""Mezcla congelada: hereda el test de una mezcla previa y añade `test_video`.
 
 Carga una salida de `mix_dataset` (el test congelado de ADR-014), ancla los
 componentes nuevos cuyos textos ya vieron los splits congelados y escribe cuatro
@@ -250,7 +250,7 @@ def build_frozen_mix(
     val_fraction: float, test_fraction: float, synthetic_ratio: float, min_moto_fraction: float,
     seed: int,
 ) -> dict[str, object]:
-    """Mezcla que hereda el test congelado y añade `test_video` (spec 054).
+    """Mezcla que hereda el test congelado y añade `test_video`.
 
     Reparte los componentes de las fuentes nuevas, escribe los cuatro splits y el
     manifiesto. Si algo falla, borra la salida parcial y relanza el error.

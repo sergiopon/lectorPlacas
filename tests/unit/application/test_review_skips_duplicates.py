@@ -1,4 +1,4 @@
-"""Tests de aceptación: la revisión y el navegador omiten duplicados (spec 061)."""
+"""Tests de aceptación: la revisión y el navegador omiten duplicados."""
 
 from __future__ import annotations
 

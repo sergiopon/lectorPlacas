@@ -1,4 +1,4 @@
-"""Caso de uso: exportar los recortes revisados para reentrenar el OCR (spec 035)."""
+"""Caso de uso: exportar los recortes revisados para reentrenar el OCR."""
 
 from __future__ import annotations
 

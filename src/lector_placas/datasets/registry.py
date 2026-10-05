@@ -1,4 +1,4 @@
-"""Registro de los datasets públicos que descarga `lector dataset download` (spec 036).
+"""Registro de los datasets públicos que descarga `lector dataset download`.
 
 El registro (`config/datasets.yaml`) declara, por dataset, su proyecto de Roboflow, su
 destino (detector u OCR), las clases que contienen placas y su licencia. De aquí salen

@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 010 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren casos borde que la spec no enumera explícitamente: un video con un único frame
 (no debe duplicarse por el frame predecodificado en el constructor) y el cierre antes de

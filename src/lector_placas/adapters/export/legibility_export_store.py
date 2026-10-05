@@ -1,4 +1,4 @@
-"""Adaptador de exportación del dataset de legibilidad (SEG-07, spec 055)."""
+"""Adaptador de exportación del dataset de legibilidad (SEG-07)."""
 
 from __future__ import annotations
 

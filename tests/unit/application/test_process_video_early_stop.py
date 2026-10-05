@@ -1,4 +1,4 @@
-"""Tests de aceptación de la parada temprana en `ProcessVideo` (spec 060)."""
+"""Tests de aceptación de la parada temprana en `ProcessVideo`."""
 
 from __future__ import annotations
 

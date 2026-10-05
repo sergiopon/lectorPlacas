@@ -1,4 +1,4 @@
-"""Tests de revisión de la spec 031 (ocultos al implementador).
+"""Tests de aceptación adicionales.
 
 Cubren casos borde que la spec no enumera: recorte de cajas al borde de la imagen,
 estrictura del formato YOLO y del manifiesto de fuentes, qué se considera duplicado

@@ -1,4 +1,4 @@
-"""Tests de integración de `count_duplicates` en SQLCipher (spec 066)."""
+"""Tests de integración de `count_duplicates` en SQLCipher."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Tests de las métricas ocultas en review_metrics (spec 064)."""
+"""Tests de las métricas ocultas en review_metrics."""
 
 from __future__ import annotations
 
