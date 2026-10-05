@@ -58,5 +58,5 @@ Podman sin root el archivo montado aparece con otro dueño o con modo 0777, y `F
 vive en el volumen con nombre `lector-keys`, montado en `/app/keys`, y se crea una sola vez dentro del contenedor con
 `lector key init-file /app/keys/lector_key` (0400, dueño `lector`, UID 10001). Siguen las mismas garantías: fuera del
 repo, de la imagen (el directorio de la imagen está vacío) y de `data/` (otro volumen); la variable lleva la ruta, nunca
-la clave. Para usar en Docker la misma clave del llavero del anfitrión hay que copiarla con `lector key export-file`
-y `docker compose cp`.
+la clave. Los datos de Docker (volumen `lector-data`) son independientes de los del anfitrión, así que la clave
+también lo es.
