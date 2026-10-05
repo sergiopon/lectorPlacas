@@ -57,3 +57,7 @@ El Docker multiplataforma no cambia la exposición: el puerto sigue publicado so
 
 Spec 081: el puerto publicado en el anfitrión es configurable (`LECTOR_PORT`); dentro del contenedor `LECTOR_PUBLIC_PORT`
 fija qué puerto se acepta en la cabecera `Host` y se muestra en el enlace. Sigue publicado solo en `127.0.0.1`.
+
+Spec 082: `lector review` (ventana OpenCV) funciona en Docker con el servicio `lector-review`, que comparte el
+socket X11 del anfitrión solo con UID 10001 (ACL temporales) y no tiene red ni puertos. Coste aceptado por el usuario:
+mientras corre, ese contenedor accede a la pantalla y al teclado del escritorio.
