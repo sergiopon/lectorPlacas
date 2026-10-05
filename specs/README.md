@@ -87,7 +87,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 078 | [Demo con videos sintéticos reales y GIF del README](078-demo-videos-sinteticos.md) | 069, 071, 076, 077 | Implementada |
 | 079 | [Limpieza de código sin uso](079-limpieza-codigo.md) | 073, 078 | Implementada |
 | 080 | [Docker multiplataforma](080-docker-multiplataforma.md) | 074, 075, 079 | Implementada |
-| 081 | [Puerto configurable en Docker](081-puerto-publicado-docker.md) | 075, 080 | Lista |
+| 081 | [Puerto configurable en Docker](081-puerto-publicado-docker.md) | 075, 080 | Implementada |
 
 ## Reglas de redacción de las specs (cero ambigüedad)
 

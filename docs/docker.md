@@ -42,7 +42,9 @@ Copia los videos a la carpeta `videos/` del proyecto. El contenedor la ve en sol
 - Para usar otra carpeta, define `LECTOR_VIDEOS_DIR` antes de arrancar:
   - bash: `export LECTOR_VIDEOS_DIR=/ruta/a/mis/videos`
   - PowerShell: `$env:LECTOR_VIDEOS_DIR="D:\videos"`
-- En Linux, los archivos deben ser legibles por otros usuarios (modo 644), porque el contenedor no usa tu usuario.
+- En Linux, el contenedor no usa tu usuario: la carpeta debe ser legible por otros (modo 755) y los videos también
+  (modo 644). Si no lo son, `lector-web` lo avisa al arrancar y esos videos no aparecen en la lista. Para arreglarlo:
+  `chmod 755 videos && chmod 644 videos/*`.
 
 ## 4. Abrir la interfaz web
 
@@ -130,7 +132,7 @@ docker compose cp lector:/app/data/lector.db ./lector.db.bak
 | Síntoma | Causa y solución |
 |---|---|
 | `archivo de clave no encontrado` | Falta el paso 2 (crear la clave). |
-| `Permission denied` al leer un video (Linux) | El archivo no es legible por otros: `chmod 644 videos/*`. Con SELinux o Podman, añade `,z` al montaje de videos en `compose.yaml` (`…:/app/videos:ro,z`). |
+| Aviso `hay videos que no se pueden leer` o la lista de videos vacía (Linux) | `chmod 755 videos && chmod 644 videos/*`. Con SELinux o Podman, añade además `,z` al montaje de videos en `compose.yaml` (`…:/app/videos:ro,z`). |
 | `CUDA no disponible en ONNX Runtime` | Se arrancó `lector-gpu` sin GPU accesible. Usa el servicio `lector` (CPU) o instala lo del paso 7. |
 | El puerto 8765 está ocupado | Usa otro con `LECTOR_PORT` (paso 4). No edites el puerto en `compose.yaml` a mano: la variable también le dice al servidor qué puerto aceptar. |
 | `400` al abrir la página | Entra por `127.0.0.1` o `localhost`, no por otra dirección del equipo. |
