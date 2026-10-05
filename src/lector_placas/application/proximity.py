@@ -75,6 +75,21 @@ def touches_frame_edge(box: BoundingBox, frame_width: int, frame_height: int) ->
     )
 
 
+def center_in_box(inner: BoundingBox, outer: BoundingBox) -> bool:
+    """Comprueba si el centro de una caja está dentro de otra.
+
+    Args:
+        inner: caja cuyo centro se evalúa (su tamaño no importa).
+        outer: caja contenedora.
+
+    Returns:
+        `True` si el centro de `inner` está dentro de `outer` (bordes incluidos).
+    """
+    cx = (inner.x1 + inner.x2) / 2
+    cy = (inner.y1 + inner.y2) / 2
+    return outer.x1 <= cx <= outer.x2 and outer.y1 <= cy <= outer.y2
+
+
 def validate_roi(roi: tuple[float, float, float, float]) -> None:
     """Valida que una región de interés sea válida.
 
@@ -98,3 +113,4 @@ class ProximityCounters:
     plate_at_edge: int = 0
     narrow_plate: int = 0
     blurry: int = 0
+    plate_outside_vehicle: int = 0

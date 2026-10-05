@@ -39,6 +39,7 @@ from lector_placas.application.proximity import (
     FULL_FRAME_ROI,
     NEAR_MIN_WIDTH_FRAC_MAX,
     ProximityCounters,
+    center_in_box,
     center_in_roi,
     effective_min_width,
     touches_frame_edge,
@@ -364,7 +365,7 @@ class ProcessVideo:
         else:
             vehicle_crop = crop_image(frame.image, vbox)
             plates = deps.plate_detector.detect(vehicle_crop)
-            found = _best_plate_box(plates, vbox, frame)
+            found = _best_plate_box(plates, vbox, frame, tracked_vehicle.box)
             if found is not None:
                 best_confidence, pbox = found
                 if self._plate_is_near(pbox, frame, min_width, counters):
@@ -375,6 +376,8 @@ class ProcessVideo:
                             tracked_vehicle, pbox, best_confidence, plate_crop, sharp
                         )
                     counters.proximity.blurry += 1
+            elif plates:
+                counters.proximity.plate_outside_vehicle += 1
             else:
                 counters.proximity.no_plate += 1
         return None
@@ -529,7 +532,8 @@ class ProcessVideo:
         p = counters.proximity
         logger.info(
             "cercania run_id=%d fuera_roi=%d vehiculo_pequeno=%d sin_placa=%d"
-            " placa_en_borde=%d placa_estrecha=%d borrosa=%d",
+            " placa_en_borde=%d placa_estrecha=%d borrosa=%d"
+            " placa_fuera_vehiculo=%d",
             run_id,
             p.outside_roi,
             p.small_vehicle,
@@ -537,6 +541,7 @@ class ProcessVideo:
             p.plate_at_edge,
             p.narrow_plate,
             p.blurry,
+            p.plate_outside_vehicle,
         )
         logger.info(
             "corrida terminada run_id=%d frames_procesados=%d confirmados=%d"
@@ -592,15 +597,16 @@ def _plate_location(reading: PlateReading | None) -> PlateLocation | None:
 
 
 def _best_plate_box(
-    plates: list[PlateDetection], vbox: BoundingBox, frame: Frame
+    plates: list[PlateDetection], vbox: BoundingBox, frame: Frame, vehicle_box: BoundingBox
 ) -> tuple[float, BoundingBox] | None:
-    """Elige la placa de mayor confianza y la traslada al frame."""
-    if not plates:
-        return None
-    best = max(plates, key=lambda plate: plate.confidence)
-    pbox = best.box.translate(math.floor(vbox.x1), math.floor(vbox.y1)).clip(
-        frame.width, frame.height
-    )
-    if pbox is None:
-        return None
-    return best.confidence, pbox
+    """Elige la placa de mayor confianza cuyo centro está dentro del vehículo."""
+    best: tuple[float, BoundingBox] | None = None
+    for plate in plates:
+        pbox = plate.box.translate(math.floor(vbox.x1), math.floor(vbox.y1)).clip(
+            frame.width, frame.height
+        )
+        if pbox is None or not center_in_box(pbox, vehicle_box):
+            continue
+        if best is None or plate.confidence > best[0]:
+            best = (plate.confidence, pbox)
+    return best

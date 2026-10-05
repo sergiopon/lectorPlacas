@@ -114,7 +114,7 @@ class TwoTrackTracker:
 
     def update(self, detections, image, timestamp_ms):  # type: ignore[no-untyped-def]
         big = BoundingBox(100, 100, 400, 300)
-        small = BoundingBox(450, 100, 550, 200)
+        small = BoundingBox(450, 100, 550, 230)
         return [
             TrackedVehicle(1, small, 0.9, VehicleType.CAR),
             TrackedVehicle(2, big, 0.9, VehicleType.CAR),

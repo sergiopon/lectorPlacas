@@ -236,17 +236,20 @@ def test_roi_filter_runs_before_ocr_cap() -> None:
         (
             {"roi": (0.5, 0.0, 1.0, 1.0)},
             "cercania run_id=1 fuera_roi=3 vehiculo_pequeno=0 sin_placa=0"
-            " placa_en_borde=0 placa_estrecha=0 borrosa=0",
+            " placa_en_borde=0 placa_estrecha=0 borrosa=0"
+            " placa_fuera_vehiculo=0",
         ),
         (
             {"plates": FixedPlateDetector(found=False)},
             "cercania run_id=1 fuera_roi=0 vehiculo_pequeno=0 sin_placa=3"
-            " placa_en_borde=0 placa_estrecha=0 borrosa=0",
+            " placa_en_borde=0 placa_estrecha=0 borrosa=0"
+            " placa_fuera_vehiculo=0",
         ),
         (
             {"min_sharpness": 60.0},
             "cercania run_id=1 fuera_roi=0 vehiculo_pequeno=0 sin_placa=0"
-            " placa_en_borde=0 placa_estrecha=0 borrosa=3",
+            " placa_en_borde=0 placa_estrecha=0 borrosa=3"
+            " placa_fuera_vehiculo=0",
         ),
     ],
 )
