@@ -394,6 +394,13 @@ No depende del modo. El filtro de cercanía la favorece (placas más grandes, pr
 hasta verificar las dimensiones oficiales de las placas de carro y de moto en la normativa (Res. 4923/1994 y Ficha Técnica
 MT 001, PENDIENTE DE VALIDAR). Las mismas dimensiones afinarían la distancia orientativa del §1.2.
 
+**Dimensiones aportadas por el usuario (2026-10-04, a partir de dos planos; NO contrastadas con la Res. 4923/1994 ni la
+Ficha MT 001):** placa de carro 33,0 × 16,0 cm (proporción ancho/alto 2,06); placa de moto, la que lleva "COLOMBIA",
+23,5 × 10,5 cm (proporción 2,24). Las proporciones difieren solo un 8,5 %, y la perspectiva (placa girada respecto de la
+cámara) acorta el ancho aparente y baja la proporción: una moto vista de lado parece una placa de carro, pero una placa
+de carro nunca parece más ancha de lo que es. Por eso la proporción solo sirve como indicio de moto (valor alto), no como
+prueba de carro. Antes de redactar la 065 hay que medir la distribución real de proporciones de cajas de placa anotadas.
+
 ### 4.5 Documentos rectores y de requisitos que cambian (los redacta Claude, antes de la 056)
 
 - `docs/00-requisitos.md`: RF-03 añade el perfil `patrulla`. RF-04 pasa a: "El sistema procesa video de cámara fija o
@@ -534,5 +541,5 @@ Se aplican las 10 reglas de `specs/README.md` ("Reglas de redacción de las spec
 | Frontera de "cercana" (0,025 o 0,020) | Nada (la 057 sale con 0,025); ajuste posterior por configuración | E1 |
 | Material grabado desde un vehículo con GT | Declarar validado el modo móvil | E6 |
 | Base legal del uso por una entidad (Ley 1581 art. 2, Ley 1843 de 2017 u otras) | Publicar el modo móvil como apto para ese uso; cualquier cotejo con listas | Asesoría jurídica y normativa oficial: PENDIENTE DE VALIDAR |
-| Dimensiones oficiales de las placas | 065 y la distancia orientativa del §1.2 | Res. 4923/1994 y Ficha Técnica MT 001 |
+| Dimensiones oficiales de las placas | 065 y la distancia orientativa del §1.2 | Aportadas por el usuario (§4.4); falta contrastarlas con la Res. 4923/1994 y la Ficha MT 001, y medir la proporción en datos reales |
 | Cambio de M-02/M-03 a "placas cercanas" en docs/04 | 058 | Revisor Opus independiente y aprobación del usuario |
