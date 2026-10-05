@@ -16,8 +16,8 @@ Los comandos son los mismos en Linux (bash) y en Windows (PowerShell). Todos se 
 ## 1. Construir la imagen
 
 ```bash
-git clone https://github.com/sergiopon/lectorPlacas.git
-cd lectorPlacas
+git clone https://github.com/sergiopon/lectorPlacasColombia.git
+cd lectorPlacasColombia
 docker compose build
 ```
 

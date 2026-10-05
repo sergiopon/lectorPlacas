@@ -65,7 +65,7 @@ Teclas: `C` correcta · `E` corregir · `R` no es placa · `B` borrosa · `S` sa
 Sin videos propios, con datos inventados:
 
 ```bash
-git clone https://github.com/sergiopon/lectorPlacas.git && cd lectorPlacas
+git clone https://github.com/sergiopon/lectorPlacasColombia.git && cd lectorPlacasColombia
 uv sync --locked
 (cd frontend && npm ci && npm run build)
 uv run lector-web --demo          # abre el navegador; la carpeta temporal se borra al salir

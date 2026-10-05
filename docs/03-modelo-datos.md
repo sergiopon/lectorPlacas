@@ -345,13 +345,13 @@ models:
      url: "https://github.com/ankandrew/cnn-ocr-lp/releases/download/arg-plates/cct_xs_v2_global_plate_config.yaml",
      sha256: 0335c74a305173bb6f393efed0fde03cadeaa0b649ed8e19f431016d8232d0a6, size_bytes: 1725,
      license: MIT, source: fast-plate-ocr 1.1.0}
-  - {model_id: yolo26n-coco, filename: yolo26n-coco.onnx, url: "https://github.com/sergiopon/lectorPlacas/releases/download/models-v1/yolo26n-coco.onnx",
+  - {model_id: yolo26n-coco, filename: yolo26n-coco.onnx, url: "https://github.com/sergiopon/lectorPlacasColombia/releases/download/models-v1/yolo26n-coco.onnx",
      sha256: 28d570970b867a53a4c5c7787db0c22372882bbbcc1d68d3c0a657ea97cf7b64, size_bytes: 9942097,
      license: AGPL-3.0, source: "exportado localmente desde yolo26n.pt"}
-  - {model_id: yolo26n-plates, filename: yolo26n-plates.onnx, url: "https://github.com/sergiopon/lectorPlacas/releases/download/models-v1/yolo26n-plates.onnx",
+  - {model_id: yolo26n-plates, filename: yolo26n-plates.onnx, url: "https://github.com/sergiopon/lectorPlacasColombia/releases/download/models-v1/yolo26n-plates.onnx",
      sha256: 8676a19b5388ce852b0a71fcb6ced841efce33bbc2fa638fbf2a76484f4ea770, size_bytes: 9804866,
      license: AGPL-3.0, source: "YOLO26n fine-tuneado con placas colombianas"}
-  - {model_id: fpo-cct-xs-v2-colombia, filename: fpo-cct-xs-v2-colombia.onnx, url: "https://github.com/sergiopon/lectorPlacas/releases/download/models-v1/fpo-cct-xs-v2-colombia.onnx",
+  - {model_id: fpo-cct-xs-v2-colombia, filename: fpo-cct-xs-v2-colombia.onnx, url: "https://github.com/sergiopon/lectorPlacasColombia/releases/download/models-v1/fpo-cct-xs-v2-colombia.onnx",
      sha256: 2a057dd8922cd5267fe6fe66c3d09dee6119bacc8929b36a26c06c70f2a327e8, size_bytes: 3080105,
      license: MIT, source: "cct-xs-v2-global fine-tuneado con placas colombianas (ADR-014 v1, PROVISIONAL: no cumple M-04: CER 0,0373 > 0,03 y cota IC 95 % 0,0667 > 0,05 sobre mix_v1/test, n=215)"}
 ```

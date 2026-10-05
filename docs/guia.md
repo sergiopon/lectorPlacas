@@ -40,7 +40,7 @@ Manual completo. La presentación del proyecto está en el [README](../README.md
 ## 3. Instalación y primer uso
 
 ```bash
-cd lectorPlacas
+cd lectorPlacasColombia
 export PATH=~/.local/bin:$PATH        # si uv está en ~/.local/bin; conviene añadirlo a ~/.bashrc
 
 uv sync --locked                      # crea .venv con Python 3.13 y todo lo necesario
@@ -52,7 +52,7 @@ uv run lector models verify           # comprueba el hash SHA-256 de todos los m
 ```
 
 `models fetch` descarga tres modelos de sus autores (open-image-models y fast-plate-ocr) y tres de este proyecto,
-publicados en el Release [`models-v1`](https://github.com/sergiopon/lectorPlacas/releases/tag/models-v1):
+publicados en el Release [`models-v1`](https://github.com/sergiopon/lectorPlacasColombia/releases/tag/models-v1):
 `yolo26n-coco` (exportado a ONNX), `yolo26n-plates` y `fpo-cct-xs-v2-colombia` (entrenados con `training/`). Si un
 archivo no coincide con el hash de `config/models.yaml`, no se carga.
 

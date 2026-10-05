@@ -65,7 +65,7 @@ Keys: `C` correct · `E` edit · `R` not a plate · `B` blurry · `S` skip · `V
 No videos of your own, made-up data:
 
 ```bash
-git clone https://github.com/sergiopon/lectorPlacas.git && cd lectorPlacas
+git clone https://github.com/sergiopon/lectorPlacasColombia.git && cd lectorPlacasColombia
 uv sync --locked
 (cd frontend && npm ci && npm run build)
 uv run lector-web --demo          # opens the browser; the temporary folder is deleted on exit
