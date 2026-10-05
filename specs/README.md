@@ -85,7 +85,7 @@ Estados: **Lista** (redactada, pendiente de implementar) · **Por redactar** · 
 | 076 | [Web: video original, fotograma completo, conteos y ajustes](076-web-video-fotograma.md) | 066, 067, 068 | Implementada |
 | 077 | [Frontend: escalas de métricas y capturas estables](077-frontend-escalas-capturas.md) | 070, 071, 072 | Implementada |
 | 078 | [Demo con videos sintéticos reales y GIF del README](078-demo-videos-sinteticos.md) | 069, 071, 076, 077 | Implementada |
-| 079 | [Limpieza de código sin uso](079-limpieza-codigo.md) | 073, 078 | Lista |
+| 079 | [Limpieza de código sin uso](079-limpieza-codigo.md) | 073, 078 | Implementada |
 | 080 | [Docker multiplataforma](080-docker-multiplataforma.md) | 074, 075, 079 | Lista |
 
 ## Reglas de redacción de las specs (cero ambigüedad)

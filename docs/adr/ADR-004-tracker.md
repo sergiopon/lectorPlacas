@@ -27,7 +27,7 @@ Resto de parámetros: los valores por defecto de la librería, expuestos en conf
 
 ## Consecuencias
 - (+) Funciona con cámara fija y móvil sin configuración; tiempo real con VFR.
-- (−) Añade `supervision`, `scipy`, `opencv-python`, `requests` como dependencias transitivas.
+- (−) Añade `supervision`, `scipy`, `opencv-python`, `requests` como dependencias transitivas (desde la spec 079, `scipy` ya no se declara en `pyproject.toml`).
   `requests` no se usa en runtime (guardia de red, ADR-012).
 - (−) CMC tiene costo por frame; se mide en Fase 5.
 
