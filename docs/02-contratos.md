@@ -723,7 +723,7 @@ class ManifestModelRegistry:
 def fetch_models(manifest_path: Path, models_dir: Path, opener: UrlOpener) -> list[str]: ...
 
 # infrastructure/config.py
-def load_config(path: Path) -> AppConfig: ...
+def load_config(path: Path) -> AppConfig: ...   # spec 080: LECTOR_EXECUTION_PROVIDER (cpu|cuda) sustituye inference.execution_provider
 ```
 
 ## 7. Estrategia de errores

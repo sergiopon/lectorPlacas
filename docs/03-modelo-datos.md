@@ -159,7 +159,7 @@ input:
   max_file_size_mb: 4096
 
 inference:
-  execution_provider: cuda            # cuda | cpu
+  execution_provider: cuda            # cuda | cpu; la variable LECTOR_EXECUTION_PROVIDER (cpu|cuda) lo sustituye (spec 080)
 
 models:
   vehicle_detector:

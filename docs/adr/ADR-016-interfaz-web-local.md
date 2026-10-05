@@ -50,3 +50,7 @@ Verificado en el JSON de PyPI el 2026-10-03:
 - (−) Se añade Node.js como requisito para compilar el frontend (decisión del usuario) y una superficie HTTP local que
   SEG-28 acota.
 - (−) Las llamadas a la BD bloquean el bucle de eventos mientras duran; aceptable para un solo operador local.
+
+## Actualización 2026-10-04 (spec 080)
+El Docker multiplataforma no cambia la exposición: el puerto sigue publicado solo en `127.0.0.1` del anfitrión y el
+`0.0.0.0` interno sigue condicionado a `LECTOR_IN_CONTAINER=1`.

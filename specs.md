@@ -142,6 +142,7 @@ en `/api/sightings`; el Anexo A de docs/historial/08 ya está actualizado.
 | 077 | Escalas del gráfico de métricas ajustadas a los datos; capturas sin esqueletos ni transiciones | 070, 071, 072 | Implementada |
 | 078 | Demo con videos WebM sintéticos (Ir al video funciona en la demo) y script del GIF del README | 069, 071, 076, 077 | Implementada |
 | 079 | Limpieza de código sin uso: test de la GUI, símbolos muertos, `scipy` directa fuera y `starlette` declarada, hooks del frontend | 073, 078 | Lista |
+| 080 | Docker multiplataforma: usuario fijo sin root, volúmenes con nombre, `LECTOR_EXECUTION_PROVIDER`, `.gitattributes` | 074, 075, 079 | Lista |
 
 ---
 

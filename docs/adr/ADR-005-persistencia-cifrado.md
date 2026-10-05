@@ -51,3 +51,12 @@ archivo (64 hex y salto de línea opcional, archivo regular del usuario del proc
 `lector key export-file <ruta>` copia la clave del keyring (mismos datos dentro y fuera de Docker) y
 `lector key init-file <ruta>` genera una nueva. El archivo se monta como Docker secret (spec 075) y nunca entra en el
 repo ni en la imagen.
+
+## Actualización 2026-10-04 (spec 080)
+En Docker la clave deja de llegar como Docker secret desde `./secrets/` del anfitrión: en Windows (NTFS) y en Docker o
+Podman sin root el archivo montado aparece con otro dueño o con modo 0777, y `FileKeyProvider` lo rechaza con razón. Ahora
+vive en el volumen con nombre `lector-keys`, montado en `/app/keys`, y se crea una sola vez dentro del contenedor con
+`lector key init-file /app/keys/lector_key` (0400, dueño `lector`, UID 10001). Siguen las mismas garantías: fuera del
+repo, de la imagen (el directorio de la imagen está vacío) y de `data/` (otro volumen); la variable lleva la ruta, nunca
+la clave. Para usar en Docker la misma clave del llavero del anfitrión hay que copiarla con `lector key export-file`
+y `docker compose cp`.
