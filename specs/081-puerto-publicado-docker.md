@@ -15,6 +15,10 @@ Diseño:
 También se corrige la pista que se imprime cuando falta la clave. Con `LECTOR_KEY_FILE` definida, que es el caso de
 Docker, la pista debe indicar `key init-file`, no `key init`.
 
+**Corrección 2026-10-04 (prueba en Docker):** si la carpeta de videos del anfitrión no es legible por el usuario del
+contenedor (UID 10001), por ejemplo con modo 0700, `/api/videos` responde 500 (`PermissionError` en `iterdir`). Ahora la
+lista omite lo que no se puede leer y `lector-web` avisa al arrancar de cómo arreglarlo.
+
 ## Depende de
 075, 080.
 
@@ -27,6 +31,8 @@ Docker, la pista debe indicar `key init-file`, no `key init`.
 - `compose.yaml`
 - `tests/unit/web/test_app.py`
 - `tests/unit/test_docker_files.py`
+- `src/lector_placas/web/media.py`
+- `tests/unit/web/test_media_permissions.py` (nuevo)
 
 ## Dependencias externas
 Ninguna nueva.
@@ -44,6 +50,22 @@ Ninguna nueva.
   `lector_placas.adapters.security.file_key_provider` (cli ya importa adaptadores; web puede importar adaptadores).
 
 ## Comportamiento esperado
+
+### `web/media.py`: videos sin permiso de lectura
+- Constante nueva `VIDEO_DIR_HINT: Final[str] = "lector-web: aviso: hay videos que no se pueden leer en '{directory}' (en Docker: chmod 755 en la carpeta y chmod 644 en los videos)"`.
+- `VideoLocator.candidates()`: para cada carpeta que existe, si `os.access(folder, os.R_OK | os.X_OK)` es falso, la
+  omite (sin excepción). Dentro de una carpeta legible, un archivo con extensión permitida solo se añade si además
+  `os.access(file, os.R_OK)` es verdadero.
+- Función nueva `def unreadable_video_dirs(config: AppConfig) -> list[str]`. Devuelve, en el orden de
+  `config.input.allowed_dirs`, cada `directory` (la cadena de la config, no la ruta absoluta) cuya carpeta existe y
+  cumple una de dos condiciones:
+  - `os.access(folder, os.R_OK | os.X_OK)` es falso;
+  - contiene al menos un archivo regular con extensión permitida para el que `os.access(file, os.R_OK)` es falso.
+
+  Las carpetas que no existen no se incluyen.
+- En `web/app.py`, `main`: justo después de `configure_logging(...)`, dentro del mismo `try`, y solo si no es
+  `args.demo`, por cada `directory` de `unreadable_video_dirs(config)` se escribe en `sys.stderr`
+  `VIDEO_DIR_HINT.format(directory=directory)` seguido de `"\n"`. Es un aviso: el arranque continúa.
 
 ### `public_port(listen_port)`
 1. Si `os.environ.get(CONTAINER_ENV) != "1"`, devuelve `listen_port`. Fuera de Docker la variable se ignora.
@@ -106,6 +128,23 @@ Después de `port = sock.getsockname()[1]`, añadir `shown_port = public_port(po
   - la salida estándar contiene `http://127.0.0.1:9000/auth?token=`.
 
   Los dobles son mínimos y se definen dentro del test.
+
+`tests/unit/web/test_media_permissions.py`:
+- Cada test usa `cfg = config.model_copy(update={"root_dir": tmp_path})`, con la fixture `config` de
+  `tests/unit/web/conftest.py`, y crea `tmp_path / "videos"`.
+- Si `os.geteuid() == 0`, se omiten con `pytest.skip("root ignora los permisos")`.
+- Al terminar restauran los permisos con `chmod 0o700` en un `finally`, para que `tmp_path` se pueda borrar.
+
+Tests:
+- `test_candidates_skip_unreadable_dir`:
+  - con `videos/a.mp4` y la carpeta en `0o000`, `VideoLocator(cfg).candidates() == []` y no lanza;
+  - `unreadable_video_dirs(cfg) == ["videos"]`.
+- `test_candidates_skip_unreadable_file`:
+  - con `videos/a.mp4` en `0o644` y `videos/b.mp4` en `0o000`, `candidates()` devuelve solo la ruta de `a.mp4`;
+  - `unreadable_video_dirs(cfg) == ["videos"]`.
+- `test_readable_videos_no_warning`:
+  - con `videos/a.mp4` en `0o644`, `unreadable_video_dirs(cfg) == []`;
+  - sin la carpeta `videos/`, también `[]`.
 
 `tests/unit/test_docker_files.py`: en `test_compose_execution_provider` cambia solo la expectativa de `lector`, que
 pasa a `{"LECTOR_EXECUTION_PROVIDER": "cpu", "LECTOR_PUBLIC_PORT": "${LECTOR_PORT:-8765}"}`. Se añade:
