@@ -143,6 +143,7 @@ en `/api/sightings`; el Anexo A de docs/historial/08 ya está actualizado.
 | 078 | Demo con videos WebM sintéticos (Ir al video funciona en la demo) y script del GIF del README | 069, 071, 076, 077 | Implementada |
 | 079 | Limpieza de código sin uso: test de la GUI, símbolos muertos, `scipy` directa fuera y `starlette` declarada, hooks del frontend | 073, 078 | Implementada |
 | 080 | Docker multiplataforma: usuario fijo sin root, volúmenes con nombre, `LECTOR_EXECUTION_PROVIDER`, `.gitattributes` | 074, 075, 079 | Implementada |
+| 081 | Puerto configurable en Docker (`LECTOR_PORT` / `LECTOR_PUBLIC_PORT`) y pista de clave para `key init-file` | 075, 080 | Lista |
 
 ---
 

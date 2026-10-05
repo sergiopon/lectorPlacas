@@ -54,3 +54,6 @@ Verificado en el JSON de PyPI el 2026-10-03:
 ## Actualización 2026-10-04 (spec 080)
 El Docker multiplataforma no cambia la exposición: el puerto sigue publicado solo en `127.0.0.1` del anfitrión y el
 `0.0.0.0` interno sigue condicionado a `LECTOR_IN_CONTAINER=1`.
+
+Spec 081: el puerto publicado en el anfitrión es configurable (`LECTOR_PORT`); dentro del contenedor `LECTOR_PUBLIC_PORT`
+fija qué puerto se acepta en la cabecera `Host` y se muestra en el enlace. Sigue publicado solo en `127.0.0.1`.
