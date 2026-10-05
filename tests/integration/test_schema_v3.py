@@ -24,8 +24,8 @@ from tests.fixtures.fakes import FakeKeyProvider
 pytestmark = pytest.mark.integration
 
 
-def test_new_database_is_v3(tmp_path: Path) -> None:
-    """Una BD nueva tiene esquema v3 con las columnas de calidad."""
+def test_new_database_is_current_version(tmp_path: Path) -> None:
+    """Una BD nueva tiene el esquema vigente con las columnas de calidad y de ubicación."""
     db_path = tmp_path / "test.db"
     key_provider = FakeKeyProvider()
     repo = SqlCipherPlateRepository(db_path, key_provider)
@@ -38,7 +38,7 @@ def test_new_database_is_v3(tmp_path: Path) -> None:
     connection = sqlcipher.connect(str(db_path))
     connection.execute(f"PRAGMA key = \"x'{key_hex}'\"")
     version = connection.execute("SELECT version FROM schema_version").fetchone()[0]
-    assert version == 3
+    assert version == 4
 
     # Verificar que las columnas existen
     pragma = connection.execute("PRAGMA table_info(sightings)").fetchall()
@@ -136,8 +136,8 @@ def test_quality_roundtrip(tmp_path: Path) -> None:
     repo.close()
 
 
-def test_v2_database_is_migrated_to_v3(tmp_path: Path) -> None:
-    """Una BD v2 se migra a v3 automáticamente."""
+def test_v2_database_is_migrated_to_current(tmp_path: Path) -> None:
+    """Una BD v2 se migra al esquema vigente automáticamente."""
     db_path = tmp_path / "test.db"
     key_provider = FakeKeyProvider()
 
@@ -151,7 +151,7 @@ def test_v2_database_is_migrated_to_v3(tmp_path: Path) -> None:
     # Verificar versión
     connection = _raw_connect(db_path, key_provider)
     version = connection.execute("SELECT version FROM schema_version").fetchone()[0]
-    assert version == 3
+    assert version == 4
     connection.close()
 
 

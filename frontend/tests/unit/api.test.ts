@@ -1,5 +1,6 @@
 import { expect, test, vi } from 'vitest'
-import { exportCsv, getMetrics, listProfiles, listSightings, subscribeRunProgress } from '@/api'
+import { exportCsv, getMetrics, getSightingFrame, listProfiles, listSightings, subscribeRunProgress } from '@/api'
+import type { Sighting } from '@/api'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -105,4 +106,15 @@ test('subscribeRunProgress mapea eventos', () => {
   FakeEventSource.last.emit('done', { state: 'cancelled' })
   expect(events[1]).toEqual({ type: 'cancelled' })
   expect(FakeEventSource.last.closed).toBe(true)
+})
+
+test('getSightingFrame prefiere frameMs', () => {
+  const s = {
+    id: 7, runId: 1, vehicleType: 'car', plateText: 'ABC123', ocrText: 'ABC123', confidence: 0.9, agreement: 1,
+    numReadings: 3, status: 'unverified', reasons: [], hiddenLowQuality: false, duplicates: 0, firstSeenMs: 1000,
+    lastSeenMs: 3000, frameMs: null, cropUrl: null, duplicateOf: null, reviewedAt: null,
+  } as Sighting
+  expect(getSightingFrame({ ...s, frameMs: 1200 }).timestampMs).toBe(1200)
+  expect(getSightingFrame(s).timestampMs).toBe(2000)
+  expect(getSightingFrame(s).frameUrl).toBe('/api/sightings/7/frame')
 })

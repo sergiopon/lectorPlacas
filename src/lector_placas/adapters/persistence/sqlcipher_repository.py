@@ -10,7 +10,11 @@ from typing import TYPE_CHECKING, Final
 
 import sqlcipher3.dbapi2 as sqlcipher
 
-from lector_placas.adapters.persistence.migrations import migrate_v1_to_v2, migrate_v2_to_v3
+from lector_placas.adapters.persistence.migrations import (
+    migrate_v1_to_v2,
+    migrate_v2_to_v3,
+    migrate_v3_to_v4,
+)
 from lector_placas.adapters.persistence.rows import (
     SIGHTING_COLUMNS,
     from_db_time,
@@ -36,8 +40,9 @@ if TYPE_CHECKING:
 
 __all__ = ["SIGHTING_COLUMNS", "SqlCipherPlateRepository", "from_db_time", "to_db_time"]
 
-SCHEMA_VERSION: Final[int] = 3
+SCHEMA_VERSION: Final[int] = 4
 SCHEMA_VERSION_V2: Final[int] = 2
+SCHEMA_VERSION_V3: Final[int] = 3
 MAX_PAGE: Final[int] = 10_000
 HEX_KEY_REGEX: Final[re.Pattern[str]] = re.compile(r"^[0-9a-f]{64}$")
 
@@ -47,14 +52,15 @@ _SELECT_SIGHTINGS_PAGE = (
     "SELECT sighting_id, run_id, track_id, first_seen_ms, last_seen_ms, vehicle_type, "
     "ocr_text, plate_text, confidence, agreement, num_readings, status, reasons, "
     "format_ids, crop_ref, created_at, reviewed_at, plate_width_px, plate_height_px, "
-    "sharpness, contrast, duplicate_of FROM sightings "
+    "sharpness, contrast, duplicate_of, frame_ms, box_x, box_y, box_w, box_h FROM sightings "
     "WHERE (? IS NULL OR status = ?) ORDER BY sighting_id LIMIT ? OFFSET ?"
 )
 _SELECT_SIGHTING_BY_ID = (
     "SELECT sighting_id, run_id, track_id, first_seen_ms, last_seen_ms, vehicle_type, "
     "ocr_text, plate_text, confidence, agreement, num_readings, status, reasons, "
     "format_ids, crop_ref, created_at, reviewed_at, plate_width_px, plate_height_px, "
-    "sharpness, contrast, duplicate_of FROM sightings WHERE sighting_id = ?"
+    "sharpness, contrast, duplicate_of, frame_ms, box_x, box_y, box_w, box_h "
+    "FROM sightings WHERE sighting_id = ?"
 )
 
 _REVIEWABLE_STATUSES = (
@@ -123,7 +129,7 @@ class SqlCipherPlateRepository:
         self._connection.executescript(schema)
 
     def _check_schema_version(self) -> None:
-        """Inserta la versión inicial del esquema, migra desde v1 o v2, o valida la existente."""
+        """Inserta la versión inicial, migra desde v1, v2 o v3, o valida la existente."""
         with self._connection:
             row = self._connection.execute("SELECT version FROM schema_version").fetchone()
             if row is None:
@@ -134,14 +140,17 @@ class SqlCipherPlateRepository:
             version = row[0]
         if version == 1:
             self._migrate_to_v2()
-            # Ahora en v2, migrar a v3
+            version = SCHEMA_VERSION_V2
+        if version == SCHEMA_VERSION_V2:
             self._migrate_to_v3()
-        elif version == SCHEMA_VERSION_V2:
-            self._migrate_to_v3()
-        elif version != SCHEMA_VERSION:
+            version = SCHEMA_VERSION_V3
+        if version == SCHEMA_VERSION_V3:
+            self._migrate_to_v4()
+            version = SCHEMA_VERSION
+        if version != SCHEMA_VERSION:
             self._connection.close()
             raise RepositoryError("versión de esquema no soportada")
-        # Crear índice de duplicate_of después de asegurar v3
+        # Crear índice de duplicate_of después de asegurar el esquema vigente
         with self._connection:
             self._connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_sightings_duplicate_of "
@@ -160,6 +169,14 @@ class SqlCipherPlateRepository:
         """Migra la base de datos de v2 a v3, cerrando la conexión si la migración falla."""
         try:
             migrate_v2_to_v3(self._connection)
+        except RepositoryError:
+            self._connection.close()
+            raise
+
+    def _migrate_to_v4(self) -> None:
+        """Migra la base de datos de v3 a v4, cerrando la conexión si la migración falla."""
+        try:
+            migrate_v3_to_v4(self._connection)
         except RepositoryError:
             self._connection.close()
             raise
@@ -267,8 +284,10 @@ class SqlCipherPlateRepository:
                     "INSERT INTO sightings (run_id, plate_id, track_id, first_seen_ms, "
                     "last_seen_ms, vehicle_type, ocr_text, plate_text, confidence, agreement, "
                     "num_readings, status, reasons, format_ids, crop_ref, created_at, "
-                    "reviewed_at, plate_width_px, plate_height_px, sharpness, contrast) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)",
+                    "reviewed_at, plate_width_px, plate_height_px, sharpness, contrast, "
+                    "frame_ms, box_x, box_y, box_w, box_h) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, "
+                    "?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         sighting.run_id,
                         plate_id,
@@ -290,6 +309,11 @@ class SqlCipherPlateRepository:
                         sighting.quality.plate_height_px if sighting.quality is not None else None,
                         sighting.quality.sharpness if sighting.quality is not None else None,
                         sighting.quality.contrast if sighting.quality is not None else None,
+                        sighting.location.frame_ms if sighting.location is not None else None,
+                        sighting.location.x if sighting.location is not None else None,
+                        sighting.location.y if sighting.location is not None else None,
+                        sighting.location.width if sighting.location is not None else None,
+                        sighting.location.height if sighting.location is not None else None,
                     ),
                 )
                 sighting_id = cursor.lastrowid

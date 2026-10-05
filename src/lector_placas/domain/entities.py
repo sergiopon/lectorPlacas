@@ -283,6 +283,30 @@ class CropQuality:
 
 
 @dataclass(frozen=True, slots=True)
+class PlateLocation:
+    """Instante y rectángulo (en píxeles del fotograma) donde se tomó el mejor recorte."""
+
+    frame_ms: int
+    x: int
+    y: int
+    width: int
+    height: int
+
+    def __post_init__(self) -> None:
+        """Valida el instante y el rectángulo."""
+        if self.frame_ms < 0:
+            raise InvalidEntityError(f"frame_ms debe ser >= 0: {self.frame_ms}")
+        if self.x < 0:
+            raise InvalidEntityError(f"x debe ser >= 0: {self.x}")
+        if self.y < 0:
+            raise InvalidEntityError(f"y debe ser >= 0: {self.y}")
+        if self.width < 1:
+            raise InvalidEntityError(f"width debe ser >= 1: {self.width}")
+        if self.height < 1:
+            raise InvalidEntityError(f"height debe ser >= 1: {self.height}")
+
+
+@dataclass(frozen=True, slots=True)
 class ConsolidatedPlate:
     """Resultado consolidado de las lecturas de la placa de un track."""
 
@@ -331,6 +355,7 @@ class Sighting:
     crop_ref: str | None
     created_at: datetime
     quality: CropQuality | None = None
+    location: PlateLocation | None = None
 
     def __post_init__(self) -> None:
         """Valida identificadores, tiempos, recorte y fecha de creación."""
@@ -368,6 +393,7 @@ class SightingRecord:
     reviewed_at: datetime | None
     quality: CropQuality | None = None
     duplicate_of: int | None = None
+    location: PlateLocation | None = None
 
     def __post_init__(self) -> None:
         """Valida identificadores, textos, métricas, recorte y fechas."""

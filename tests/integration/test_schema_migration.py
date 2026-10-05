@@ -140,7 +140,7 @@ def test_v1_database_is_migrated_preserving_rows(tmp_path: Path) -> None:
     records_before = _build_v1_database(tmp_path, key_provider)
     repo = SqlCipherPlateRepository(tmp_path / "lector.db", key_provider)
     version = repo._connection.execute("SELECT version FROM schema_version").fetchone()[0]
-    assert version == 3
+    assert version == 4
     records_after = repo.list_sightings(None, 10, 0)
     assert records_after == records_before
     repo.close()

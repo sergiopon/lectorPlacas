@@ -108,6 +108,7 @@ def _sighting_out(record: SightingRecord, duplicates: int) -> SightingOut:
         duplicate_of=record.duplicate_of,
         first_seen_ms=record.first_seen_ms,
         last_seen_ms=record.last_seen_ms,
+        frame_ms=None if record.location is None else record.location.frame_ms,
         crop_url=None if record.crop_ref is None else f"/api/sightings/{record.sighting_id}/crop",
         created_at=record.created_at,
         reviewed_at=record.reviewed_at,

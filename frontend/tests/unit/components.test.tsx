@@ -22,6 +22,7 @@ function makeSighting(over: Partial<Sighting> = {}): Sighting {
     duplicates: 0,
     firstSeenMs: 42_000,
     lastSeenMs: 45_000,
+    frameMs: null,
     cropUrl: null,
     duplicateOf: null,
     reviewedAt: null,
@@ -65,4 +66,12 @@ test('FrameViewer sin video', () => {
   const video = container.querySelector('video')!
   fireEvent.error(video)
   expect(screen.getByText('El video original no está disponible')).toBeInTheDocument()
+})
+
+test('FrameViewer usa el instante de la lectura', () => {
+  HTMLDialogElement.prototype.showModal = vi.fn()
+  render(
+    <FrameViewer s={makeSighting({ frameMs: 43_500 })} videoName="v.mp4" initial="frame" onClose={() => {}} />,
+  )
+  expect(screen.getByText('Fotograma en 0:43')).toBeInTheDocument()
 })

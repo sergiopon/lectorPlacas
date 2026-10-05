@@ -141,6 +141,7 @@ class InMemoryPlateRepository:
             None,
             sighting.quality,
             None,
+            sighting.location,
         )
         if plate.status is ReviewStatus.CONFIRMED:
             self.plates.add(plate.text)

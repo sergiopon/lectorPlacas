@@ -6,6 +6,7 @@ explícita, conservando `sighting_id` y el resto de columnas sin cambios.
 
 La versión 2 a 3 agrega columnas de calidad (`plate_width_px`, `plate_height_px`, `sharpness`,
 `contrast`) y `duplicate_of` a la tabla `sightings` con restricciones de integridad.
+La versión 3 a 4 añade `frame_ms` y `box_x/box_y/box_w/box_h`.
 """
 
 from __future__ import annotations
@@ -134,6 +135,14 @@ _RECREATE_INDEXES_V3: Final[tuple[str, ...]] = (
     "WHERE duplicate_of IS NOT NULL",
 )
 
+_ADD_COLUMNS_V4: Final[tuple[str, ...]] = (
+    "ALTER TABLE sightings ADD COLUMN frame_ms INTEGER CHECK (frame_ms IS NULL OR frame_ms >= 0)",
+    "ALTER TABLE sightings ADD COLUMN box_x INTEGER CHECK (box_x IS NULL OR box_x >= 0)",
+    "ALTER TABLE sightings ADD COLUMN box_y INTEGER CHECK (box_y IS NULL OR box_y >= 0)",
+    "ALTER TABLE sightings ADD COLUMN box_w INTEGER CHECK (box_w IS NULL OR box_w >= 1)",
+    "ALTER TABLE sightings ADD COLUMN box_h INTEGER CHECK (box_h IS NULL OR box_h >= 1)",
+)
+
 
 def migrate_v1_to_v2(connection: sqlcipher.Connection) -> None:
     """Migra el esquema de avistamientos de la versión 1 a la 2.
@@ -238,6 +247,45 @@ def _migrate_sightings_table_v3(connection: sqlcipher.Connection) -> int:
             connection.execute("ROLLBACK")
         raise RepositoryError(_MIGRATION_FAILED) from e
     return int(count)
+
+
+def migrate_v3_to_v4(connection: sqlcipher.Connection) -> None:
+    """Migra el esquema de avistamientos de la versión 3 a la 4.
+
+    Añade `frame_ms` y `box_x`, `box_y`, `box_w`, `box_h` a `sightings`; las filas existentes
+    quedan con `NULL` en las cinco columnas.
+
+    Args:
+        connection: conexión SQLCipher abierta sobre una base de datos en esquema v3.
+
+    Raises:
+        RepositoryError: si la migración falla. La base de datos queda en v3 intacta (el DDL de
+            SQLite es transaccional).
+    """
+    original_isolation_level = connection.isolation_level
+    connection.isolation_level = None
+    try:
+        _migrate_sightings_table_v4(connection)
+    finally:
+        connection.isolation_level = original_isolation_level
+    logger.info("esquema migrado de v3 a v4")
+
+
+def _migrate_sightings_table_v4(connection: sqlcipher.Connection) -> None:
+    """Añade las columnas de ubicación a `sightings` dentro de una transacción explícita."""
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+    except sqlcipher.Error as e:
+        raise RepositoryError(_MIGRATION_FAILED) from e
+    try:
+        for statement in _ADD_COLUMNS_V4:
+            connection.execute(statement)
+        connection.execute("UPDATE schema_version SET version = 4")
+        connection.execute("COMMIT")
+    except sqlcipher.Error as e:
+        with contextlib.suppress(sqlcipher.Error):
+            connection.execute("ROLLBACK")
+        raise RepositoryError(_MIGRATION_FAILED) from e
 
 
 def _check_foreign_keys(connection: sqlcipher.Connection) -> None:

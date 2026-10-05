@@ -100,6 +100,24 @@ def test_best_crop_can_come_from_discarded_reading() -> None:
     assert finalized.best_crop is not None and int(finalized.best_crop[0, 0, 0]) == 2
 
 
+def test_best_reading_matches_best_crop() -> None:
+    registry = TrackRegistry(1)
+    registry.observe([tv(1)], 0)
+    registry.add_reading(reading(1, 0.5, 1.0, ts=0, width=40), crop(1))
+    registry.add_reading(reading(1, 0.9, 50.0, ts=100, width=20), crop(2))
+    finalized = registry.pop_all()[0]
+    assert [r.timestamp_ms for r in finalized.readings] == [0]
+    assert finalized.best_reading is not None
+    assert finalized.best_reading.timestamp_ms == 100
+    assert finalized.best_reading.plate_box.width == 20
+
+
+def test_track_without_readings_has_no_best_reading() -> None:
+    registry = TrackRegistry(1)
+    registry.observe([tv(1)], 0)
+    assert registry.pop_all()[0].best_reading is None
+
+
 def test_is_full_for_unknown_and_partial_tracks() -> None:
     registry = TrackRegistry(2)
     assert not registry.is_full(9)
