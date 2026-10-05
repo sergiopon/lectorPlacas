@@ -75,6 +75,11 @@ CREATE TABLE IF NOT EXISTS sightings (
     contrast        REAL    CHECK (contrast IS NULL OR contrast >= 0.0),
     duplicate_of    INTEGER REFERENCES sightings(sighting_id) ON DELETE SET NULL
                             CHECK (duplicate_of IS NULL OR duplicate_of <> sighting_id),
+    frame_ms        INTEGER CHECK (frame_ms IS NULL OR frame_ms >= 0),                 -- v4: instante del mejor recorte
+    box_x           INTEGER CHECK (box_x IS NULL OR box_x >= 0),                       -- v4: rectángulo de la placa en el fotograma
+    box_y           INTEGER CHECK (box_y IS NULL OR box_y >= 0),
+    box_w           INTEGER CHECK (box_w IS NULL OR box_w >= 1),
+    box_h           INTEGER CHECK (box_h IS NULL OR box_h >= 1),
     UNIQUE (run_id, track_id, first_seen_ms),
     CHECK ((plate_width_px IS NULL) = (plate_height_px IS NULL)
            AND (plate_width_px IS NULL) = (sharpness IS NULL)
@@ -96,7 +101,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 ```
 
-Versión de esquema: `3` (calidad del mejor recorte y `duplicate_of`; `migrate_v2_to_v3` sigue la misma receta, y una BD v1 se migra a v2 y luego a v3). Historia: `2`. Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
+Versión de esquema: `4` (`frame_ms` y `box_x/box_y/box_w/box_h`: instante y rectángulo del mejor recorte, todo o nada; `migrate_v3_to_v4` añade las columnas con `ALTER TABLE`). Versión `3` (calidad del mejor recorte y `duplicate_of`; `migrate_v2_to_v3` sigue la misma receta, y una BD v1 se migra a v2 y luego a v3). Historia: `2`. Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
 (`adapters/persistence/migrations.py`: en una transacción `BEGIN IMMEDIATE` se recrea `sightings` con el `CHECK` de
 `status` que admite `'illegible'`, se copian las filas con su `sighting_id`, se recrean sus índices y se pone la versión
 a 2; si algo falla, `ROLLBACK` y la BD queda en v1); cualquier otro valor → `RepositoryError("versión de esquema no

@@ -159,12 +159,21 @@ class Sighting:
     crop_ref: str | None                 # None o CROP_REF_REGEX
     created_at: datetime                 # con tzinfo, UTC
     quality: CropQuality | None = None
+    location: PlateLocation | None = None   # instante y rectángulo del mejor recorte
 @dataclass(frozen=True, slots=True)
 class CropQuality:                       # medidas del mejor recorte
     plate_width_px: int                  # >= 1
     plate_height_px: int                 # >= 1
     sharpness: float                     # finito, >= 0 (varianza del Laplaciano, ImageQualityScorer)
     contrast: float                      # finito, >= 0 (rms_contrast: std de la luminancia 0.114B+0.587G+0.299R)
+
+@dataclass(frozen=True, slots=True)
+class PlateLocation:                     # instante y rectángulo (píxeles del fotograma) del mejor recorte
+    frame_ms: int                        # >= 0
+    x: int                               # >= 0
+    y: int                               # >= 0
+    width: int                           # >= 1
+    height: int                          # >= 1
 
 @dataclass(frozen=True, slots=True)
 class SightingRecord:
@@ -187,6 +196,7 @@ class SightingRecord:
     reviewed_at: datetime | None
     quality: CropQuality | None = None
     duplicate_of: int | None = None      # (columna) / 061 (lógica); >= 1 y != sighting_id
+    location: PlateLocation | None = None   # None en avistamientos anteriores al esquema v4
 ```
 
 `BoundingBox.clip` recorta a `[0, frame_width] × [0, frame_height]` y devuelve `None` si queda vacía.
@@ -533,6 +543,7 @@ class FinalizedTrack:
     vehicle_type: VehicleType
     readings: tuple[PlateReading, ...]
     best_crop: ImageBGR | None
+    best_reading: PlateReading | None = None   # lectura del mejor recorte (puede no estar en `readings`)
 
 class TrackRegistry:
     def __init__(self, max_readings_per_track: int) -> None: ...
