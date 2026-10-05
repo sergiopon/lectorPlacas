@@ -76,8 +76,7 @@ docker compose run --rm lector lector --help
 ```
 
 Perfiles disponibles: `parqueadero`, `calle_lenta`, `calle_rapida` y `patrulla`. La referencia completa de órdenes está
-en la [guía](guia.md#5-uso-desde-la-terminal-cli). `lector review` abre una ventana de OpenCV y no funciona en Docker;
-en su lugar, revisa desde la interfaz web.
+en la [guía](guia.md#5-uso-desde-la-terminal-cli). `lector review` abre una ventana de escritorio: ver el paso 8.
 
 ## 6. Sacar archivos del contenedor
 
@@ -100,6 +99,33 @@ docker compose --profile gpu up lector-gpu
 
 No arranques `lector` y `lector-gpu` a la vez, porque comparten el puerto. Para la línea de comandos con GPU,
 cambia `lector` por `lector-gpu` en `docker compose run`.
+
+## 8. Revisar con la ventana de escritorio (`lector review`)
+
+La forma más simple de revisar es la interfaz web (paso 4), que no necesita nada más. Si prefieres la ventana de
+`lector review` (revisión rápida con el teclado), el servicio `lector-review` la muestra en tu escritorio:
+
+**Linux** (X11 o Wayland con Xwayland; necesita `xauth` y `setfacl`, paquetes `xauth` y `acl`):
+
+```bash
+scripts/review-docker.sh --limit 20                      # --status unverified por defecto
+```
+
+El script da acceso a tu pantalla **solo** al usuario del contenedor y **solo** mientras dura la revisión. Lo hace con
+permisos temporales sobre el socket X y una copia de la cookie, y los retira al salir, aunque haya un error. Nunca usa
+`xhost +`. El contenedor de revisión no tiene red ni publica puertos.
+
+> **Aviso:** mientras la ventana está abierta, ese contenedor puede ver la pantalla y el teclado de tu escritorio. Si
+> eso no es aceptable, revisa desde la web.
+
+**Windows 11 (WSLg), NO VERIFICADO:** con Docker Desktop y el motor WSL2, en PowerShell:
+
+```powershell
+$env:DISPLAY=":0"; $env:LECTOR_X11_DIR="/run/desktop/mnt/host/wslg/.X11-unix"
+docker compose --profile review run --rm lector-review lector review --limit 20
+```
+
+**macOS:** no soportado.
 
 ## Dónde quedan los datos
 
