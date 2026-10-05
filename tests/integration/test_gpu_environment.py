@@ -8,6 +8,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.gpu
 def test_verify_gpu_script_reports_blackwell_and_cuda_provider() -> None:

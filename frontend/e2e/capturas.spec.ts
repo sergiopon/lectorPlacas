@@ -39,5 +39,4 @@ test('capturas del modo demo', async ({ page }) => {
   await page.getByRole('button', { name: 'Historial' }).click()
   await settle(page)
   await expect(page.locator('tbody tr').first()).toContainText('Video')
-  await page.screenshot({ path: '../docs/img/web-historial.png', animations: 'disabled' })
 })

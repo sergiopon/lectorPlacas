@@ -60,11 +60,6 @@ class TrackRegistry:
         self._max_readings_per_track = max_readings_per_track
         self._tracks: dict[int, _TrackState] = {}
 
-    @property
-    def active_count(self) -> int:
-        """Número de tracks actualmente en el registro."""
-        return len(self._tracks)
-
     def observe(self, tracked: Sequence[TrackedVehicle], timestamp_ms: int) -> None:
         """Registra la observación de los vehículos en el frame indicado.
 

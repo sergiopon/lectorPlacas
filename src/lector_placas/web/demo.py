@@ -68,7 +68,6 @@ VIDEO_FPS: Final[int] = 10
 VIDEO_MS: Final[int] = 62_000
 LETTERS: Final[str] = "ABCDEFGHJKLMNPRSTUVWXYZ"
 DIGITS: Final[str] = "0123456789"
-PLATE_SIZE: Final[tuple[int, int]] = (300, 100)
 PLATE_BGR: Final[tuple[int, int, int]] = (0, 204, 255)
 _LANE_Y: Final[int] = 300
 _K_CORRECTED: Final[int] = 5

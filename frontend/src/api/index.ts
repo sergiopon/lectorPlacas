@@ -97,15 +97,6 @@ export async function listSightings(f: SightingFilters, page = 1): Promise<Sight
   return { items: list.items, total: list.total, counts }
 }
 
-export async function getSighting(id: number): Promise<Sighting | null> {
-  try {
-    return await getJson<Sighting>('/api/sightings/' + id)
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return null
-    throw e
-  }
-}
-
 export async function getPendingCount(): Promise<number> {
   const res = await getJson<{ pending: number }>('/api/summary')
   return res.pending
