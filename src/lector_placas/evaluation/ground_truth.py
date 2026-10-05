@@ -24,6 +24,7 @@ class GroundTruthPlate(BaseModel):
     first_seen_ms: int = Field(ge=0)
     last_seen_ms: int
     legible: bool
+    max_plate_width_px: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def _validate_plate(self) -> GroundTruthPlate:
@@ -43,11 +44,23 @@ class GroundTruth(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    version: Literal[1]
+    version: Literal[1, 2]
     video_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    subset: Literal["street_day", "street_night", "parking", "fast"]
-    camera: Literal["fixed", "handheld"]
+    subset: Literal["street_day", "street_night", "parking", "fast", "patrol"]
+    camera: Literal["fixed", "handheld", "vehicle_mounted"]
     plates: tuple[GroundTruthPlate, ...]
+
+    @model_validator(mode="after")
+    def _validate_version(self) -> GroundTruth:
+        """Exige los campos y modos propios de cada versión del ground truth."""
+        if self.version == 1:
+            if any(plate.max_plate_width_px is not None for plate in self.plates):
+                raise ValueError("max_plate_width_px solo existe en la versión 2")
+            if self.subset == "patrol" or self.camera == "vehicle_mounted":
+                raise ValueError("patrol y vehicle_mounted exigen la versión 2")
+        elif any(plate.legible and plate.max_plate_width_px is None for plate in self.plates):
+            raise ValueError("versión 2: falta max_plate_width_px en una placa legible")
+        return self
 
 
 def load_ground_truth(path: Path) -> GroundTruth:

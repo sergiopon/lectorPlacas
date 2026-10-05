@@ -20,6 +20,7 @@ from lector_placas.application.ports import (
     RunStats,
 )
 from lector_placas.application.process_video import ProcessVideo, RunResult
+from lector_placas.application.proximity import effective_min_width
 from lector_placas.application.purge_expired import PurgeResult
 from lector_placas.cli import commands, composition, detector_evaluation_commands
 from lector_placas.cli.commands import _run_with_repository
@@ -85,7 +86,12 @@ def cmd_evaluate(args: argparse.Namespace, config: AppConfig) -> int:
         del export_store, purge
         use_case = composition.build_process_video(config, name, repository, crop_store, clock)
         result, peak = _execute_run(use_case, video, digest, skip_vram)
-        metrics = compute_metrics(_records_for_run(repository, result.run_id), truth)
+        min_plate_width = _min_plate_width(config, args.profile, truth, repository, result.run_id)
+        metrics = compute_metrics(
+            _records_for_run(repository, result.run_id),
+            truth,
+            min_plate_width=min_plate_width,
+        )
         payload = _video_payload(name, truth, result.run_id, metrics, result.stats, peak)
         report = write_report(_reports_dir(config), payload, clock.now())
         _write_video_summary(metrics, result.stats.speed_factor, peak, report.name)
@@ -131,6 +137,23 @@ def _execute_run(
     return result, monitor.peak_mib
 
 
+def _min_plate_width(
+    config: AppConfig,
+    profile_name: str | None,
+    truth: GroundTruth,
+    repository: PlateRepository,
+    run_id: int,
+) -> int | None:
+    """Calcula el ancho mínimo efectivo del perfil para una corrida de versión 2."""
+    if truth.version == 1:
+        return None
+    width, height = repository.run_frame_sizes()[run_id]
+    _, profile = config.profile(profile_name)
+    return effective_min_width(
+        width, height, profile.min_plate_width_px, profile.near_min_width_frac
+    )
+
+
 def _records_for_run(repository: PlateRepository, run_id: int) -> list[SightingRecord]:
     """Recupera, paginando, los avistamientos de una corrida."""
     records: list[SightingRecord] = []
@@ -168,6 +191,9 @@ def _video_payload(
         "recall_confirmed": metrics.recall_confirmed,
         "speed_factor": stats.speed_factor,
         "vram_peak_mib": peak_mib,
+        "gt_far_excluded": metrics.gt_far_excluded,
+        "confirmed_matched_near": metrics.confirmed_matched_near,
+        "min_plate_width": metrics.min_plate_width,
     }
 
 
@@ -204,6 +230,7 @@ def _write_video_summary(
 ) -> None:
     """Escribe en stdout las métricas de video y el nombre del reporte, sin placas."""
     peak_text = "n/d" if peak_mib is None else str(peak_mib)
+    width_text = "n/d" if metrics.min_plate_width is None else str(metrics.min_plate_width)
     sys.stdout.write(
         f"gt_legible={metrics.gt_legible} confirmed_total={metrics.confirmed_total} "
         f"confirmed_matched={metrics.confirmed_matched} any_matched={metrics.any_matched} "
@@ -211,6 +238,7 @@ def _write_video_summary(
         f"precision_confirmed={_format_metric(metrics.precision_confirmed)} "
         f"recall_any={_format_metric(metrics.recall_any)} "
         f"recall_confirmed={_format_metric(metrics.recall_confirmed)} "
+        f"gt_far_excluded={metrics.gt_far_excluded} min_plate_width={width_text} "
         f"speed_factor={_format_metric(speed_factor)} vram_peak_mib={peak_text}\n"
     )
     sys.stdout.write(f"reporte={report_name}\n")
