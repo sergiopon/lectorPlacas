@@ -43,7 +43,7 @@ el OCR (`lector dataset export-reviewed`, spec 035): excepción controlada a SEG
 La excepción a SEG-07 se amplía a `lector dataset export-legibility` (spec 055): exporta los recortes de los
 avistamientos con estado final (`confirmed`, `corrected`, `illegible`, `rejected`) con su clase de legibilidad y las
 métricas del consolidador, **sin texto de placa ni hash de video**, a `training/legibility/datasets/own/`. Misma
-retención (`training_days`), permisos y auditoría. Sirve para entrenar el filtro de legibilidad (docs/08 §2).
+retención (`training_days`), permisos y auditoría. Sirve para entrenar el filtro de legibilidad (docs/historial/08 §2).
 
 ## Actualización 2026-10-03 (spec 074)
 Dentro de un contenedor no hay Secret Service. Si `LECTOR_KEY_FILE` contiene una ruta absoluta, la clave se lee de ese

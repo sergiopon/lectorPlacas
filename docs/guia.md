@@ -198,10 +198,10 @@ Archivo principal: **`config/lector.yaml`** (esquema en `docs/03-modelo-datos.md
 | `min_plate_width_px` (ancho mínimo para intentar leer) | 20 | 20 | 20 |
 | `min_sharpness` (0 = sin filtro) | 0.0 | 0.0 | 0.0 |
 
-  Estos valores son **provisionales**: se calibran en la Fase 2 de `docs/07-plan-mejora-lectura.md`.
+  Estos valores son **provisionales**: se calibran en la Fase 2 de `docs/historial/07-plan-mejora-lectura.md`.
 - `plate_formats`: catálogo de formatos con su fuente normativa. Los que tienen `verified: false` nunca se confirman
   solos.
-- `retention`: recortes 90 días (temporalmente; el valor normal es 30, ver `docs/08-plan-legibilidad-y-web.md` §2.2), registros 90 días y exportaciones de entrenamiento 180 días.
+- `retention`: recortes 90 días (temporalmente; el valor normal es 30, ver `docs/historial/08-plan-legibilidad-y-web.md` §2.2), registros 90 días y exportaciones de entrenamiento 180 días.
 
 **`config/models.yaml`** es el manifiesto de modelos: archivo, URL y hash SHA-256. Si un `.onnx` no coincide con su
 hash, no se carga.
@@ -221,10 +221,11 @@ logs/lector.log    registro, sin textos de placa en claro
 models/            modelos ONNX verificados por hash
 training/detector  entrenamiento del detector de placas (proyecto uv aparte)
 training/ocr       entrenamiento del OCR colombiano (proyecto uv aparte)
+training/legibility entrenamiento del filtro de legibilidad (proyecto uv aparte; `legibility.enabled: false` por defecto)
 src/lector_placas  código (ver §12)
-docs/              requisitos, contratos, modelo de datos, evaluación, ADRs y plan de mejora
+docs/              requisitos, contratos, modelo de datos, evaluación, ADRs y planes ya ejecutados (docs/historial/)
 frontend/          interfaz web (React + Vite); `npm run build` genera frontend/dist, que sirve lector-web
-specs/             especificaciones numeradas (000–077) y su estado en specs/README.md
+specs/             especificaciones numeradas (000–078) y su estado en specs/README.md
 ```
 
 La clave maestra **no** está en disco: vive en el llavero del sistema. Sin ella no se pueden leer ni la base ni los

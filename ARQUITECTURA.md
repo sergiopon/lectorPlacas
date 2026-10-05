@@ -119,40 +119,48 @@ El orquestador (`ProcessVideo`) y los demás casos de uso dependen solo de estos
 
 ```
 lectorPlacas/
-├── ARQUITECTURA.md  reglas-seguridad.md  README.md  LICENSE (AGPL-3.0)   (CONTEXT.md: local, no se publica)
-├── pyproject.toml  uv.lock  .python-version  .pre-commit-config.yaml  .gitignore
+├── ARQUITECTURA.md  reglas-seguridad.md  README.md  README.en.md  LICENSE (AGPL-3.0)   (CONTEXT.md: local)
+├── specs.md                 # resumen de todas las specs y su estado
+├── pyproject.toml  uv.lock  .python-version  .pre-commit-config.yaml  .gitignore  .dockerignore
+├── Dockerfile  compose.yaml # imagen multietapa y ejecución local (puerto solo en 127.0.0.1)
 ├── config/
 │   ├── lector.yaml          # configuración (perfiles, umbrales, catálogo de formatos)
-│   └── models.yaml          # manifiesto de modelos: id, archivo, URL, SHA-256, licencia
+│   ├── models.yaml          # manifiesto de modelos: id, archivo, URL, SHA-256, licencia
+│   └── datasets.yaml        # fuentes de datasets para entrenamiento
 ├── src/lector_placas/
 │   ├── domain/              # entities, errors, plate_formats, ocr_correction, consolidation, privacy
-│   ├── application/         # ports, frame_sampler, image_ops, track_registry, process_video,
-│   │                        # review_sightings, purge_expired, export_sightings
-│   ├── infrastructure/      # config, paths, input_validation, crypto, logging_setup,
-│   │                        # model_registry, model_fetcher, network_guard, clock
+│   ├── application/         # ports, frame_sampler, image_ops, track_registry, proximity, legibility,
+│   │                        # duplicates, process_video, review_sightings, purge_expired, export_*
+│   ├── infrastructure/      # config, paths, input_validation, crypto, logging_setup, clock,
+│   │                        # model_registry, model_fetcher, dataset_fetcher, network_guard
 │   ├── adapters/
-│   │   ├── video/           # pyav_source
-│   │   ├── inference/       # onnx_session, letterbox, yolo_end2end, vehicle/plate detectors, plate_reader
+│   │   ├── video/           # pyav_source, pyav_frame_grabber
+│   │   ├── inference/       # onnx_session, letterbox, yolo_end2end, vehicle/plate detectors, plate_reader_fpo
 │   │   ├── tracking/        # botsort_tracker
 │   │   ├── imaging/         # quality (nitidez)
-│   │   ├── persistence/     # schema.sql, sqlcipher_repository
+│   │   ├── persistence/     # migrations, rows, sqlcipher_repository, sqlcipher_browser
 │   │   ├── storage/         # encrypted_crop_store
-│   │   ├── security/        # keyring_key_provider
+│   │   ├── security/        # keyring_key_provider, file_key_provider
 │   │   ├── review/          # opencv_review_ui
-│   │   └── export/          # csv_export_store
-│   ├── evaluation/          # ground_truth, metrics, cer, vram_monitor, report
-│   ├── datasets/            # dhash, yolo_format, sources, merge_detection, chars_to_ocr
-│   ├── cli/                 # main (argparse), composition
+│   │   └── export/          # csv, training y legibility export stores
+│   ├── evaluation/          # ground_truth, metrics, detection_metrics, review_metrics, cer, ocr_dataset,
+│   │                        # vram_monitor, report
+│   ├── datasets/            # dhash, yolo_format, yolo_split, sources, registry, merge_detection, chars_to_ocr
+│   ├── cli/                 # main (argparse), composition, comandos por área
 │   └── web/                 # app (lector-web), factory, seguridad, rutas de lectura/acciones/medios, trabajos, demo
+├── frontend/                # interfaz web (React + Vite + TypeScript); Vitest y Playwright (e2e/)
 ├── tests/
 │   ├── architecture/        # regla de dependencia
 │   ├── unit/                # espejo de src/, fixtures sintéticos
 │   ├── integration/         # SQLCipher real, PyAV con video sintético, ONNX sintético
+│   ├── review/              # pruebas añadidas en las revisiones de specs
 │   └── fixtures/            # generadores sintéticos (NUNCA datos reales)
-├── training/
-│   ├── detector/            # proyecto uv separado (paquete detector_training): torch cu130 + ultralytics — export y fine-tuning (spec 030)
-│   └── ocr/                 # proyecto uv separado (paquete ocr_training): fast-plate-ocr[train] — fine-tuning OCR y sintéticos (specs 032–033)
-├── docs/                    # requisitos, contratos, modelo de datos, evaluación, adr/
+├── scripts/                 # nivel_f.py (chequeos no funcionales), verify_gpu.py, demo_gif.sh
+├── training/                # proyectos uv separados, con torch/CUDA propios
+│   ├── detector/            # detector_training: ultralytics, export y fine-tuning (spec 030)
+│   ├── ocr/                 # ocr_training: fast-plate-ocr[train], fine-tuning y sintéticos (specs 032–033)
+│   └── legibility/          # legibility_training: filtro de legibilidad (spec 062)
+├── docs/                    # requisitos, contratos, modelo de datos, evaluación, guía, adr/, historial/
 ├── specs/                   # specs de implementación NNN-*.md + README.md
 ├── data/    (gitignored)    # lector.db, crops/, exports/, eval/
 ├── models/  (gitignored)    # pesos ONNX descargados o exportados

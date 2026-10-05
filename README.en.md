@@ -133,7 +133,7 @@ the same dataset it was trained on (biased in its favour). That is why it is not
 Built with **AI-assisted spec-driven development**, between September and October 2026:
 
 - **Design and review: Claude (Anthropic).** Wrote the requirements, the architecture, the 17 ADRs and the specs
-  (**77 implemented** out of `specs/000`–`078`; 058 and 065 await a decision or data), and reviewed every
+  (**78 implemented** out of `specs/000`–`078`; 065 was dropped), and reviewed every
   implementation against its spec, `ARQUITECTURA.md` and the security checklist in `reglas-seguridad.md`.
 - **Implementation: coding agents.** Each spec was implemented by an agent on its own branch and worktree: Claude
   Sonnet and Haiku subagents and DeepSeek models, depending on each spec's difficulty. Agents could not modify specs or

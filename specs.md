@@ -1,8 +1,8 @@
 # Specs de lectorPlacas
 
 Resumen de todas las specs: qué hace cada una, de cuáles depende y en qué estado está. Fecha: 2026-10-04.
-Fuente de verdad del estado: `specs/README.md`. Las specs 056–064, 066–069, 073 y 074 están redactadas (2026-10-03).
-La 065 se descartó el 2026-10-04 (la proporción de la placa de carro y la de moto difiere solo un 8,5 %). Diseño en `docs/09`.
+Fuente de verdad del estado: `specs/README.md`. Todas están implementadas salvo la 065.
+La 065 se descartó el 2026-10-04 (la proporción de la placa de carro y la de moto difiere solo un 8,5 %). Diseño en `docs/historial/09`.
 
 Estados: **Implementada** (integrada en `main`) · **En implementación** (rama y worktree activos) · **Redactada**
 (spec lista, sin implementar) · **Por redactar** (solo existe en el plan).
@@ -72,7 +72,7 @@ implementación; una spec no se empieza hasta que sus dependencias están integr
 
 ## 3. GUI de escritorio PySide6 (040–049)
 
-La GUI se **retirará** cuando la web (sección 5) la iguale (spec 069).
+La GUI se retiró en la spec 073, cuando la web (sección 5) la igualó.
 
 | # | Qué hace | Depende de | Estado |
 |---|---|---|---|
@@ -89,8 +89,8 @@ La GUI se **retirará** cuando la web (sección 5) la iguale (spec 069).
 
 ## 4. Enfoque nuevo: placas cercanas y legibles, modos de cámara (056–065)
 
-Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta el filtro de legibilidad. Las dependencias de la
-056 en adelante son las del §5 de docs/09.
+Diseño en `docs/historial/09-enfoque-versatil.md` y ADR-017; `docs/historial/08` §2–§3 aporta el filtro de legibilidad. Las dependencias de la
+056 en adelante son las del §5 de docs/historial/09.
 
 | # | Qué hace | Depende de | Estado |
 |---|---|---|---|
@@ -111,7 +111,7 @@ Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta e
 | 064 | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad" | 038, 041, 061, 063 | Implementada |
 | 065 | Tipo de vehículo por la forma de la placa (bloqueada: dimensiones oficiales PENDIENTES DE VALIDAR) | 013, 015, 057 | Descartada (2026-10-04) |
 
-Criterio de aceptación del filtro de legibilidad (docs/09 §4.2): se mide solo sobre la población cercana; legibles
+Criterio de aceptación del filtro de legibilidad (docs/historial/09 §4.2): se mide solo sobre la población cercana; legibles
 escondidas por error ≤ 5 %; con ese umbral, ≥ 60 % de borrosas y no-placas ocultadas; mínimo 100 ejemplos por clase en
 ≥ 4 grupos de video; debe superar la regla "`num_readings` ≤ 1". Lo decide un revisor Opus independiente.
 
@@ -119,7 +119,7 @@ escondidas por error ≤ 5 %; con ese umbral, ≥ 60 % de borrosas y no-placas o
 
 Web FastAPI + React (UI diseñada en Figma Make, que solo diseña), ligada a 127.0.0.1, con token por sesión. Antes se
 redactan **ADR-016** y **SEG-28**. Sustituye a la GUI PySide6. La 066 expone `mode` en `/api/profiles` y `duplicates`
-en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
+en `/api/sightings`; el Anexo A de docs/historial/08 ya está actualizado.
 
 | # | Qué hace | Depende de | Estado |
 |---|---|---|---|
@@ -144,14 +144,9 @@ en `/api/sightings`; el Anexo A de docs/08 ya está actualizado.
 
 ---
 
-## Orden de trabajo (docs/09 §5)
+## Pendientes
 
-1. **056 → 057** (modos y cercanía), con 058 y 059 en paralelo después; luego 060 y 061 (si ambas tocan
-   `process_video.py`, primero la 060).
-2. Filtro de legibilidad: **062 → 063 → 064** (necesita datos nuevos revisados con el sistema de cercanía).
-3. Web: ADR-016 y SEG-28, luego **066 → 069**; diseño en Figma Make (usuario); **070 → 072**; **073** retira la GUI.
-4. **074 → 075** (Docker). **065** cuando la normativa de placas esté verificada.
-
-Pendientes del usuario que bloquean validar (docs/09 §8): clasificar los videos de `videos/` (fijo, en mano, en vehículo),
-grabar material desde un vehículo (modo móvil no validado hasta E6), base legal de un uso policial, aprobar el cambio de
-M-02/M-03 a "placas cercanas". `export-legibility` ya se ejecutó el 2026-10-03; se repite después de la 059.
+Ninguna spec por implementar. Para validar con video real faltan datos del usuario (docs/historial/09 §8): clasificar
+los videos de `videos/` (fijo, en mano, en vehículo), anotar ground truth versión 2 (docs/04 §2), grabar material desde
+un vehículo (modo móvil no validado hasta E6) y la base legal de un uso policial. `export-legibility` se repite
+después de procesar con el esquema v3.

@@ -48,4 +48,4 @@ longitud (p. ej. `LLLDDD` carro y `LLLDDL` moto) hacen que la corrección sea am
 - (−) Parámetros provisionales hasta la calibración de Fase 5.
 - (−, corregido por 5b) Sin el paso 5b, un track mal clasificado como moto con lecturas unánimes
   `LLLDDD` se "corregía" a `LLLDDL` y se confirmaba con la confianza del dígito original: 2 de 13
-  confirmadas auditadas el 2026-09-27 eran erróneas por esta causa (docs/07 §1.1).
+  confirmadas auditadas el 2026-09-27 eran erróneas por esta causa (docs/historial/07 §1.1).

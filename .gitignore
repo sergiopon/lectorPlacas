@@ -26,3 +26,6 @@ CLAUDE.md
 CONTEXT.md
 docs/05-orquestacion.md
 secrets/
+
+# Configuración local de agentes (como CLAUDE.md)
+.claude/

@@ -1,16 +1,16 @@
 # 08 - Plan: solo placas legibles, más desempeño e interfaz web
 
-Estado: aprobado con decisiones del usuario (2026-09-27, §6). Continúa `docs/07-plan-mejora-lectura.md`. Cada bloque de código se especifica en su
+Estado: aprobado con decisiones del usuario (2026-09-27, §6). Continúa `docs/historial/07-plan-mejora-lectura.md`. Cada bloque de código se especifica en su
 spec (055 en adelante) y se implementa con el ciclo habitual: spec, rama `feature/NNN-*`, compuertas, revisión y merge.
 
 > **Contrato vigente de la API:** specs 066 y 067 (rutas y campos exactos); esta tabla es el plan original.
 > El comando es el script `lector-web` (spec 068), no un subcomando de `lector`.
 >
 > **Renumeración (2026-10-03).** El nuevo enfoque (solo placas cercanas y legibles; modos de cámara estática y móvil,
-> `docs/09-enfoque-versatil.md`, ADR-017) añade las specs 056 (modos de cámara), 057 (filtro de cercanía), 058 (evaluación
+> `docs/historial/09-enfoque-versatil.md`, ADR-017) añade las specs 056 (modos de cámara), 057 (filtro de cercanía), 058 (evaluación
 > con cercanía) y 061 (duplicados) y desplaza las demás. Los números de este documento ya están actualizados. Equivalencia
 > con la numeración anterior: 056→059, 057→062, 058→063, 059→064, 061→065, 062–069→066–073, 070–071→074–075; la 060 se
-> mantiene y se redefine. Donde este plan diga "legibles", ahora significa "legibles y cercanas" (docs/09 §4.2).
+> mantiene y se redefine. Donde este plan diga "legibles", ahora significa "legibles y cercanas" (docs/historial/09 §4.2).
 
 Objetivos pedidos por el usuario:
 1. **No mostrar placas borrosas**: que la revisión muestre solo placas que se pueden leer.
@@ -26,10 +26,10 @@ Objetivos pedidos por el usuario:
 |---|---|---|
 | Avistamientos revisados a mano | 1 113: 329 legibles, **422 borrosos**, 362 no-placa | CSV exportado el 2026-09-28 |
 | Video de 17 min (720p, `calle_rapida`) | 45 % borrosas, 30 % no-placa, 25 % legibles; 5,5 % confirmadas solas | corrida 23 |
-| CER del OCR | 3,7 % en el test; 12–14 % en video real | ADR-014, docs/07 |
+| CER del OCR | 3,7 % en el test; 12–14 % en video real | ADR-014, docs/historial/07 |
 | Precisión de las confirmadas automáticas | 93 % (57/61), meta 98 % | `review --status confirmed` |
 | Velocidad | 0,85× tiempo real (meta ≥ 1×) | corrida 23 |
-| Reentrenos del OCR con datos propios | 2 intentos, empate con v1 | docs/07 Fase 4 |
+| Reentrenos del OCR con datos propios | 2 intentos, empate con v1 | docs/historial/07 Fase 4 |
 
 Conclusión: **3 de cada 4 avistamientos que el usuario revisa no aportan nada** (borrosos o no-placa). El mayor salto
 de calidad percibida no está en el OCR, sino en **no enseñar lo inservible** y en **capturar mejor imagen**.
@@ -66,7 +66,7 @@ fecha. Cuando exista el dataset, se vuelve a 30 días.
 | Spec | Qué hace | Detalle |
 |---|---|---|
 | **055** Exportar dataset de legibilidad | `lector dataset export-legibility` | Como `export-reviewed` (spec 035), pero exporta **todos** los revisados con su clase (`legible` / `borrosa` / `no_placa`) y sus métricas (confianza, acuerdo, nº de lecturas, tipo de vehículo, tamaño del recorte). Misma retención propia de 180 días y mismas reglas SEG-07. **Urgente.** |
-| **059** Características de calidad | Guardar por avistamiento el ancho y alto de la placa en píxeles, la nitidez y el contraste del mejor recorte | Hoy la nitidez se calcula pero no se guarda (docs/07 §2). Columnas nuevas: migración de esquema v2 → v3, con la misma receta que la spec 052. |
+| **059** Características de calidad | Guardar por avistamiento el ancho y alto de la placa en píxeles, la nitidez y el contraste del mejor recorte | Hoy la nitidez se calcula pero no se guarda (docs/historial/07 §2). Columnas nuevas: migración de esquema v2 → v3, con la misma receta que la spec 052. |
 | **062** Modelo de legibilidad (entrenamiento) | En `training/legibility` (proyecto uv nuevo): primero una **regresión logística** sobre las características de 055/059 y, si no basta, una **CNN pequeña** sobre el recorte, exportada a ONNX | Reparto por vehículo y por video (como `mix_dataset`) para no filtrar datos entre splits. Se elige un umbral con el criterio del §2.4. La regresión logística se exporta como coeficientes a `config/lector.yaml`; la CNN, como ONNX verificado por hash en `config/models.yaml`. |
 | **063** Filtro de legibilidad en el pipeline | Tras consolidar, calcular la puntuación; por debajo del umbral, razón nueva `PREDICTED_ILLEGIBLE` o `PREDICTED_NOT_PLATE` | Nunca confirma ni borra: solo añade una razón. Sin migración, porque `reasons` es texto (como en la 050). |
 | **064** Vista "solo legibles" | En la GUI (y en la web, §4) el filtro "Por revisar" excluye por defecto las razones `PREDICTED_*`; pestaña "Ocultas por baja calidad" para auditarlas; `evaluate-review` informa cuántas ocultas eran legibles | Afecta a `readings_filters.py`, `review_metrics.py` y a la API web. |
@@ -92,11 +92,11 @@ Ordenado por impacto esperado. Cada punto se mide antes y después con los mismo
 | # | Acción | Tipo | Por qué |
 |---|---|---|---|
 | 1 | **Mejor captura** | Operación, sin código | 45 % de placas ilegibles incluso para una persona. Recomendación: 1080p o más, velocidad de obturación alta (menos desenfoque de movimiento), cámara fija y cerca del paso de los vehículos, sin zoom digital, buena luz. Se documenta como guía en el README. |
-| 2 | **Anotar la verdad de un tramo** (docs/07 Fase 1) | Operación | Sin ground truth, M-01 a M-03 nunca se han medido. Basta un tramo de 3–5 min en 1080p. |
-| 3 | **Calibrar perfiles** (docs/07 Fase 2) | Configuración | Probar `target_fps` 15 frente a 30 (velocidad 0,85× → ≥ 1×), `min_readings` 2 (elimina gran parte de las no-placas de una sola lectura), `min_plate_width_px` 40/60 y el detector `yolo26n-plates`. |
+| 2 | **Anotar la verdad de un tramo** (docs/historial/07 Fase 1) | Operación | Sin ground truth, M-01 a M-03 nunca se han medido. Basta un tramo de 3–5 min en 1080p. |
+| 3 | **Calibrar perfiles** (docs/historial/07 Fase 2) | Configuración | Probar `target_fps` 15 frente a 30 (velocidad 0,85× → ≥ 1×), `min_readings` 2 (elimina gran parte de las no-placas de una sola lectura), `min_plate_width_px` 40/60 y el detector `yolo26n-plates`. |
 | 4 | **Spec 060: parada temprana por track** | Código | La spec 051 lee cada vehículo en todos los frames, lo que es caro. Se deja de leer un track cuando sus N mejores lecturas ya coinciden con alta confianza. Recupera velocidad sin perder las lecturas cercanas. |
-| 5 | **Spec 065: tipo de vehículo por la forma de la placa** | Código | El detector COCO confunde carros y motos, y eso genera dudas de formato (docs/07 §1.1). La proporción de la caja de la placa distingue la placa de moto de la de carro; las dimensiones oficiales están **PENDIENTES DE VALIDAR** en la normativa (Res. 4923/1994 y la ficha técnica MT 001). |
-| 6 | **Reentrenar el OCR** | Operación | Solo cuando `test_video` tenga ≥ 100 recortes (unos 500 revisados). Hasta entonces no hay forma de demostrar la mejora (docs/07). |
+| 5 | **Spec 065: tipo de vehículo por la forma de la placa** | Código | El detector COCO confunde carros y motos, y eso genera dudas de formato (docs/historial/07 §1.1). La proporción de la caja de la placa distingue la placa de moto de la de carro; las dimensiones oficiales están **PENDIENTES DE VALIDAR** en la normativa (Res. 4923/1994 y la ficha técnica MT 001). |
+| 6 | **Reentrenar el OCR** | Operación | Solo cuando `test_video` tenga ≥ 100 recortes (unos 500 revisados). Hasta entonces no hay forma de demostrar la mejora (docs/historial/07). |
 
 ---
 
@@ -256,8 +256,8 @@ Objetivo: `docker compose up` y abrir el navegador, sin instalar uv, Python ni N
 |---|---|---|
 | 0 | ~~Decidir la retención de recortes~~: hecho, 90 días (§2.2) | — |
 | 1 | **055** exportar dataset de legibilidad (antes del 2026-12-25) | 062 |
-| 2 | Anotar un tramo con verdad (docs/07 Fase 1) + guía de captura | 3 |
-| 3 | Calibrar perfiles (docs/07 Fase 2) y **060** parada temprana | — |
+| 2 | Anotar un tramo con verdad (docs/historial/07 Fase 1) + guía de captura | 3 |
+| 3 | Calibrar perfiles (docs/historial/07 Fase 2) y **060** parada temprana | — |
 | 4 | **059** → **062** → **063** → **064**: filtro de legibilidad | web (galería "solo legibles") |
 | 5 | ADR-016, SEG-28, **066**, **067**, **068**, **069** (backend y demo) | 070 |
 | 6 | Diseño en Figma Make con el Anexo A (usuario); integración **070** y **071** | 072 |

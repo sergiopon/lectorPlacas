@@ -427,7 +427,7 @@ class ReviewUI(Protocol):
 class Clock(Protocol):
     def now(self) -> datetime: ...
 
-# --- Specs 040 y 041 (GUI, ADR-015) ---
+# --- Specs 040 y 041 (progreso y búsqueda; los usa la web) ---
 @dataclass(frozen=True, slots=True)
 class ProgressUpdate:                   # todos los enteros >= 0; si no → InvalidEntityError
     frames_decoded: int
@@ -738,8 +738,6 @@ def load_config(path: Path) -> AppConfig: ...
   `finish_run(succeeded=False)` con las estadísticas parciales y relanza. Los avistamientos ya
   guardados se conservan. La cancelación (spec 040) sigue el mismo camino con `ProcessingCancelledError`: la corrida
   queda `failed` y los tracks aún abiertos se descartan.
-- La GUI (`gui/app.py`) no usa códigos de salida por tipo: ante un `LectorPlacasError` al arrancar muestra el mensaje y
-  devuelve 1; durante la sesión, cada acción muestra el mensaje del error en un diálogo y la ventana sigue abierta.
 - `cli/main.py` es el único que captura todo: mapea a códigos de salida:
 
 | Excepción | Código |

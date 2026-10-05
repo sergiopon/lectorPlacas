@@ -1,14 +1,14 @@
 # ADR-017 — Modos de cámara y filtro de cercanía
 
 - Estado: **Aprobado** (2026-10-03): el usuario aprobó el umbral de cercanía, que el modo móvil trabaje solo sobre
-  archivos de video y la renumeración de las specs. Diseño completo y cifras en `docs/09-enfoque-versatil.md`.
+  archivos de video y la renumeración de las specs. Diseño completo y cifras en `docs/historial/09-enfoque-versatil.md`.
 - Requisitos afectados: RF-03, RF-04, RF-08, RF-34, nuevo RF-37; SEG-03, SEG-20, nueva SEG-29.
-- El ADR-016 queda reservado para la interfaz web (docs/08 §4.1).
+- El ADR-016 queda reservado para la interfaz web (docs/historial/08 §4.1).
 
 ## Contexto
 El usuario decidió (2026-10-03) que solo interesan las placas **legibles y cercanas** y que el sistema debe servir en dos
 modos: **cámara estática** (parqueaderos, entradas, calles) y **cámara móvil en vehículo** (patrullas y similares). Datos
-medidos (docs/09 §1.1): de 1 113 avistamientos revisados, 329 legibles, 422 borrosos y 362 no-placa; el ancho del mejor
+medidos (docs/historial/09 §1.1): de 1 113 avistamientos revisados, 329 legibles, 422 borrosos y 362 no-placa; el ancho del mejor
 recorte de las legibles tiene mediana 59 px; el 17 % de las legibles son duplicados dentro de su corrida.
 
 ## Decisión
@@ -19,7 +19,7 @@ recorte de las legibles tiene mediana 59 px; el 17 % de las legibles son duplica
    modo obliga valores mediante la validación (el móvil exige compensación de movimiento de cámara) y separa resultados
    (spec 056). Perfil nuevo `patrulla` (`movil`).
 3. **La compensación de movimiento de cámara (CMC) es un campo por perfil.** Enmienda de ADR-004: ya no está "siempre
-   activo". Los cuatro perfiles la dejan encendida hasta que el experimento E3 (docs/09 §6) demuestre que apagarla en
+   activo". Los cuatro perfiles la dejan encendida hasta que el experimento E3 (docs/historial/09 §6) demuestre que apagarla en
    estático no fragmenta tracks.
 4. **Duplicados de la misma placa en una corrida: se marcan, no se borran** (`duplicate_of`, ventana de 30 000 ms,
    specs 059 y 061).

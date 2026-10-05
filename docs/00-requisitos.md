@@ -72,7 +72,7 @@ Origen: número del requisito confirmado por el usuario en el brief de esta fase
 | RF-27 | Existe una CLI de revisión que muestra el recorte y permite al operador confirmar, corregir o descartar la lectura. | MUST | 7 |
 | RF-28 | La CLI permite procesar un video, revisar, exportar a CSV y purgar. La interfaz gráfica es la web local de RF-36. | MUST | 11 |
 | RF-36 | Existe una interfaz web local (ADR-016: `lector-web`, solo en 127.0.0.1, con token de arranque y cookie de sesión) que permite procesar un video con progreso y cancelación, listar y filtrar avistamientos con su recorte, revisarlos con teclado, ir al instante del video en que aparece la placa, exportar CSV, purgar y ver métricas. La GUI PySide6 (ADR-015) se retiró en la spec 073. | SHOULD | cambio 2026-09-27 (ADR-015); 2026-10-04 (ADR-016, spec 073) |
-| RF-37 | Solo se leen, guardan y muestran placas cuyo ancho en el frame alcanza el mínimo de cercanía del perfil; las placas más lejanas se descartan antes de leerlas (ADR-017, docs/09). | MUST | cambio 2026-10-03 |
+| RF-37 | Solo se leen, guardan y muestran placas cuyo ancho en el frame alcanza el mínimo de cercanía del perfil; las placas más lejanas se descartan antes de leerlas (ADR-017, docs/historial/09). | MUST | cambio 2026-10-03 |
 | RF-29 | La exportación a CSV está disponible desde la CLI. | MUST | 11 |
 | RF-30 | La purga por retención se ejecuta automáticamente al iniciar cada ejecución y también está disponible como comando manual. Retención por defecto: recortes 30 días, registros 90 días. | MUST | 10 |
 | RF-31 | Los logs enmascaran las placas: nunca se escribe una placa en claro en un log. | MUST | 10 |

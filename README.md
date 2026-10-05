@@ -130,14 +130,14 @@ truth.
 - El detector de vehículos a veces confunde carros con motos, y eso genera dudas de formato.
 - Sin video de ejemplo en el repositorio, por privacidad.
 
-Plan de mejora y diagnóstico completo: [`docs/07-plan-mejora-lectura.md`](docs/07-plan-mejora-lectura.md).
+Plan de mejora y diagnóstico completo: [`docs/historial/07-plan-mejora-lectura.md`](docs/historial/07-plan-mejora-lectura.md).
 
 ## Cómo se construyó
 
 El proyecto se hizo con **spec-driven development asistido por IA**, entre septiembre y octubre de 2026:
 
 - **Diseño y revisión: Claude (Anthropic).** Escribió los requisitos, la arquitectura, los 17 ADRs y las specs
-  (**77 implementadas** de `specs/000`–`078`; la 058 y la 065 esperan una decisión o datos), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
+  (**78 implementadas** de `specs/000`–`078`; la 065 se descartó), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
   `reglas-seguridad.md`.
 - **Implementación: agentes de código.** Cada spec la implementó un agente en su propia rama y worktree: subagentes
   Claude Sonnet y Haiku y modelos DeepSeek, según la dificultad de cada spec. Los agentes no podían modificar

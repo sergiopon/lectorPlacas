@@ -1,7 +1,7 @@
 # 09 - Enfoque versátil: solo placas cercanas y legibles, con cámara estática o móvil
 
-Estado: propuesta de diseño (2026-10-03). Autor: Claude Opus (diseño). Continúa `docs/07-plan-mejora-lectura.md` y
-`docs/08-plan-legibilidad-y-web.md` y **reordena** las specs que este último dejó sin redactar (056–071).
+Estado: propuesta de diseño (2026-10-03). Autor: Claude Opus (diseño). Continúa `docs/historial/07-plan-mejora-lectura.md` y
+`docs/historial/08-plan-legibilidad-y-web.md` y **reordena** las specs que este último dejó sin redactar (056–071).
 Nada de este documento es código: cada decisión se implementa en la spec indicada en el §5, con el ciclo habitual.
 
 Decisiones del usuario (2026-10-03) que motivan este documento:
@@ -22,7 +22,7 @@ se reescribe (§4.5).
 |---|---|---|---|
 | D1 | "Cercana" se mide como el **ancho de la caja de la placa en el frame**, con un mínimo efectivo que combina un piso absoluto y una fracción del lado mayor del frame | `ceil(max(min_plate_width_px, near_min_width_frac × max(ancho, alto del frame)))`; por defecto `max(32 px, 0,025 × lado mayor)` → 48 px en 1080p y 32 px en 720p | 057 |
 | D2 | Lo lejano se descarta **antes** de detectar la placa y de leerla: ROI, tamaño del vehículo, ancho de la placa y placa cortada por el borde | Orden fijo en el §1.4 | 057 |
-| D3 | Lo ilegible que pasa el filtro de cercanía se oculta **después**, con el filtro de legibilidad de docs/08 §2, entrenado y medido solo sobre la población cercana | Criterio de docs/08 §2.4 restringido a la población cercana | 062–064 |
+| D3 | Lo ilegible que pasa el filtro de cercanía se oculta **después**, con el filtro de legibilidad de docs/historial/08 §2, entrenado y medido solo sobre la población cercana | Criterio de docs/historial/08 §2.4 restringido a la población cercana | 062–064 |
 | D4 | El modo es un **campo del perfil** (`mode`, con valor `estatico` o `movil`), no una bifurcación del pipeline. Un solo código | Perfiles actuales → `estatico`; perfil nuevo `patrulla` → `movil` | 056 |
 | D5 | La compensación de movimiento de cámara (CMC) pasa a ser un campo **por perfil**. `movil` la exige; en `estatico` se deja encendida hasta que el experimento E3 demuestre que apagarla no fragmenta tracks | `camera_motion_compensation: true` en los cuatro perfiles al inicio | 056 |
 | D6 | Duplicados de la misma placa en una corrida: no se borran, se **marcan** (`duplicate_of`) y salen de la vista por defecto | Mismo texto en la misma corrida, con hueco ≤ `dedup_window_ms` = 30 000 ms | 059 (columna), 061 (lógica) |
@@ -83,7 +83,7 @@ que además es lo que decide si el OCR puede leerla. Se usan dos números:
 | 3840×2160 | 3840 | max(32; 96,0) = **96 px** |
 
 Distancia orientativa (**NO VERIFICADO**: depende del ancho real de la placa y del campo de visión de la cámara). Con una
-placa de carro de 33 cm de ancho (dimensión PENDIENTE DE VALIDAR en la normativa, como ya señala docs/08 §3 punto 5) y un
+placa de carro de 33 cm de ancho (dimensión PENDIENTE DE VALIDAR en la normativa, como ya señala docs/historial/08 §3 punto 5) y un
 campo de visión horizontal de 70° (valor típico de cámara principal de celular, NO VERIFICADO para las cámaras usadas),
 la distancia es aproximadamente 0,33 m / (2 × fracción × tan 35°). Con 0,025 sale **≈ 9 m**; con 0,020, ≈ 12 m; con
 0,015, ≈ 16 m. Una placa de moto, más pequeña, necesita estar más cerca para dar el mismo ancho.
@@ -148,7 +148,7 @@ Sobre la población que ya pasó el filtro de cercanía:
 2. **Duplicados** (D6, specs 059 y 061): al cerrar la corrida, de cada grupo de avistamientos con el mismo `plate_text`
    en la misma corrida y huecos ≤ `dedup_window_ms`, se conserva uno y los demás se marcan con `duplicate_of`. No se
    borran. Ver §3.4.
-3. **Filtro de legibilidad** (docs/08 §2, specs 062–064): añade `PREDICTED_ILLEGIBLE` o `PREDICTED_NOT_PLATE`. Nunca
+3. **Filtro de legibilidad** (docs/historial/08 §2, specs 062–064): añade `PREDICTED_ILLEGIBLE` o `PREDICTED_NOT_PLATE`. Nunca
    confirma ni borra; lo oculto va a la pestaña "Ocultas por baja calidad (N)".
 
 La vista por defecto muestra: avistamientos no duplicados y sin razón `PREDICTED_*`.
@@ -308,7 +308,7 @@ SEG-29 lo convierte en regla (§4.6).
 ### 3.6 Fuente de video: se mantienen solo archivos
 
 Recomendación: **solo archivos de video** en todas las specs de este documento. Motivos:
-1. La velocidad medida es **0,85×** del tiempo real (docs/08 §1). En vivo, por debajo de 1× se acumulan frames y hay que
+1. La velocidad medida es **0,85×** del tiempo real (docs/historial/08 §1). En vivo, por debajo de 1× se acumulan frames y hay que
    decidir qué se descarta; eso es otro diseño.
 2. Una cámara IP o RTSP necesita red, y `block_network()` (SEG-20) la prohíbe en runtime. Abrir esa excepción exige su
    propio ADR y su revisión de seguridad.
@@ -334,12 +334,12 @@ Condición para reabrirlo: M-05 ≥ 1,2× medido en 1080p con `patrulla` y con `
 
 ## 4. Impacto en lo ya existente
 
-### 4.1 Renumeración de las specs de docs/08 (aún no redactadas)
+### 4.1 Renumeración de las specs de docs/historial/08 (aún no redactadas)
 
 El orden numérico es el orden de implementación (`specs/README.md`), así que las specs nuevas desplazan a las del plan
 08. Ninguna está redactada, así que renumerar no rompe nada.
 
-| Número en docs/08 | Contenido | Número nuevo | Cambio de alcance |
+| Número en docs/historial/08 | Contenido | Número nuevo | Cambio de alcance |
 |---|---|---|---|
 | — | Modos de cámara | **056** | Nueva |
 | — | Filtro de cercanía | **057** | Nueva |
@@ -354,12 +354,12 @@ El orden numérico es el orden de implementación (`specs/README.md`), así que 
 | 062–069 | Web | **066–073** | 066 (API de lectura): `/api/profiles` devuelve `mode`; `Run.profile` pasa a `string` |
 | 070–071 | Docker | **074–075** | Sin cambios |
 
-Hay que actualizar `docs/08` (§2.3, §3, §4.7, §4.8, §5) y `specs.md` con los números nuevos, y el **Anexo A** (prompt de
+Hay que actualizar `docs/historial/08` (§2.3, §3, §4.7, §4.8, §5) y `specs.md` con los números nuevos, y el **Anexo A** (prompt de
 Figma Make) **antes** de que el usuario lo use: el selector de escenario agrupa las tarjetas por modo y añade "Patrulla
 (cámara en vehículo)"; `Run.profile` deja de ser una unión de tres nombres y pasa a `string`, con `mode:
 "estatico" | "movil"` aparte; `Sighting` gana `duplicates: number` (cuántos avistamientos apuntan a él).
 
-### 4.2 Métrica de aceptación del filtro de legibilidad (docs/08 §2.4)
+### 4.2 Métrica de aceptación del filtro de legibilidad (docs/historial/08 §2.4)
 
 Lo lejano ya no llega a la revisión, así que el filtro se entrena y se mide **solo sobre lo que pasaría el filtro de
 cercanía**. Si se midiera sobre los 1 113 actuales, se premiaría al filtro por esconder placas lejanas que en el sistema
@@ -374,7 +374,7 @@ nuevo ni siquiera existen.
 - **Línea base obligatoria:** el modelo debe superar a la regla "`num_readings ≤ 1` es inservible" (hoy: 1,5 % de
   legibles escondidas y 19,5 % de inservibles ocultas, sobre los 1 113). Si no la supera, la 063 implementa esa regla en
   lugar del modelo.
-- El criterio de docs/08 §7 ("≥ 60 % menos inservibles en la vista por defecto, ≤ 5 % de legibles escondidas") pasa a
+- El criterio de docs/historial/08 §7 ("≥ 60 % menos inservibles en la vista por defecto, ≤ 5 % de legibles escondidas") pasa a
   medirse con el sistema completo (cercanía, duplicados y legibilidad) contra una corrida de referencia anterior a la 057
   sobre los mismos videos, y "legibles" significa "legibles y cercanas".
 
@@ -468,12 +468,12 @@ Antes de la 056: ADR-017, SEG-29 y los cambios de rectores y requisitos del §4.
 | **063** | Filtro de legibilidad en el pipeline (`PREDICTED_ILLEGIBLE` / `PREDICTED_NOT_PLATE`) | 062 | D3 |
 | **064** | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad (N)"; `evaluate-review` informa las legibles ocultas | 061, 063, 048 | §1.5 |
 | **065** | Tipo de vehículo por la forma de la placa (bloqueada: normativa PENDIENTE DE VALIDAR) | 013, 015, 057 | §4.4 |
-| **066–073** | Web (antes 062–069). La 066 expone `mode` en `/api/profiles` y `duplicates` en `/api/sightings` | Las de docs/08, renumeradas | §4.1 |
-| **074–075** | Docker (antes 070–071) | Las de docs/08, renumeradas | — |
+| **066–073** | Web (antes 062–069). La 066 expone `mode` en `/api/profiles` y `duplicates` en `/api/sightings` | Las de docs/historial/08, renumeradas | §4.1 |
+| **074–075** | Docker (antes 070–071) | Las de docs/historial/08, renumeradas | — |
 
 Pueden ir en paralelo: 058 con 059; 060 con 061 (tocan `track_registry.py`/`process_video.py` la 060 y la capa de
 persistencia la 061; si ambas tocan `process_video.py`, primero la 060). La web (066 en adelante) puede empezar en
-paralelo desde la 056, como prevé docs/08 §5.
+paralelo desde la 056, como prevé docs/historial/08 §5.
 
 ---
 
@@ -489,7 +489,7 @@ Todos se ejecutan en local; los resultados se publican solo como conteos y métr
 | E4 | M-05 por perfil | Los 6 videos 1080p | `lector process` con `calle_lenta`, `calle_rapida` y `patrulla` | ≥ 1,0× en cada video. Si `patrulla` no llega, su `target_fps` baja a 20 y se repite; si aún no llega, se informa | Tras 057 y tras 060 |
 | E5 | ¿La parada temprana cambia resultados? | Mismos videos | Procesar con `early_stop` true y false | Confirmadas: mismo conjunto de textos (diferencia ≤ 1 por video) y ninguna confirmada nueva que el revisor corrija; velocidad mejor | Tras 060 |
 | E6 | ¿El modo móvil funciona? | **Material nuevo:** ≥ 3 videos de 3–5 min desde un vehículo, cámara en soporte mirando hacia delante, 1080p a 30 fps o más, de día, con ≥ 50 placas cercanas en total; GT versión 2 | `lector evaluate --profile patrulla` | M-01 ≥ 98 %, M-02 ≥ 90 % y M-03 ≥ 75 % sobre placas cercanas y legibles; avistamientos no duplicados por placa GT cercana ≤ 1,2; M-05 ≥ 1,0×. Hasta cumplirlo, el README dice "modo móvil no validado" | Tras 058 y 061 |
-| E7 | Línea base estática con verdad | Tramo de 3–5 min de un video fijo existente (docs/07 Fase 1), anotado con GT versión 2 | `lector evaluate --profile calle_lenta`, antes (sin 057) y después de la 057 | Informar M-01..M-03 y M-05 con su n. La 057 no puede bajar M-02 sobre placas cercanas más de 5 puntos | Tras 058 |
+| E7 | Línea base estática con verdad | Tramo de 3–5 min de un video fijo existente (docs/historial/07 Fase 1), anotado con GT versión 2 | `lector evaluate --profile calle_lenta`, antes (sin 057) y después de la 057 | Informar M-01..M-03 y M-05 con su n. La 057 no puede bajar M-02 sobre placas cercanas más de 5 puntos | Tras 058 |
 | E8 | Umbral de nitidez | Avistamientos de la población cercana revisados tras la 059 (≥ 300) | Distribución de `sharpness` por clase | `min_sharpness` = el mayor valor que deja fuera ≤ 2 % de las legibles; se adopta solo si oculta ≥ 20 % de las borrosas. Lo aprueba un revisor Opus | Tras 059 |
 | E9 | Guía de captura | Material nuevo: misma escena grabada con dos velocidades de obturación | Procesar y revisar | Informar el % de legibles de cada grabación; la guía del README recomienda la mejor | Cuando haya material |
 

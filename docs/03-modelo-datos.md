@@ -266,7 +266,7 @@ consolidation:
   confusions: [["O", "0"], ["I", "1"], ["B", "8"], ["S", "5"]]
 
 retention:
-  crops_days: 90      # temporal (2026-09-27, docs/08 §2.2); valor normal 30
+  crops_days: 90      # temporal (2026-09-27, docs/historial/08 §2.2); valor normal 30
   records_days: 90
   training_days: 180                 # exportaciones de entrenamiento (spec 035)
 
