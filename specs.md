@@ -2,7 +2,7 @@
 
 Resumen de todas las specs: qué hace cada una, de cuáles depende y en qué estado está. Fecha: 2026-10-04.
 Fuente de verdad del estado: `specs/README.md`. Las specs 056–064, 066–069, 073 y 074 están redactadas (2026-10-03).
-Las 065, 070–072 y 075 están bloqueadas: dependen de datos o artefactos que aún no existen. Diseño en `docs/09`.
+La 065 sigue bloqueada: depende de las dimensiones oficiales de las placas, aún sin verificar. Diseño en `docs/09`.
 
 Estados: **Implementada** (integrada en `main`) · **En implementación** (rama y worktree activos) · **Redactada**
 (spec lista, sin implementar) · **Por redactar** (solo existe en el plan).
@@ -11,9 +11,9 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 
 | Estado | Specs |
 |---|---|
-| Implementada | 000–078 salvo 065 y 070–072, 075 (la 058 el 2026-10-04) |
+| Implementada | 000–064 y 066–078 (la 058 el 2026-10-04) |
 | Redactada (lista para implementar) | — |
-| Bloqueada, sin redactar | 065 (normativa de placas), 070–072 (exportación de Figma Make), 075 (frontend e imágenes base) |
+| Bloqueada, sin redactar | 065 (dimensiones oficiales de placa sin verificar) |
 
 Cada spec se implementa en su rama `feature/NNN-*` y se integra con `merge --no-ff`. El orden numérico es el orden de
 implementación; una spec no se empieza hasta que sus dependencias están integradas.
