@@ -6,6 +6,7 @@ import pytest
 
 from lector_placas.application.proximity import (
     ProximityCounters,
+    center_in_box,
     center_in_roi,
     effective_min_width,
     touches_frame_edge,
@@ -131,3 +132,28 @@ class TestProximityCounters:
         assert counters.plate_at_edge == 0
         assert counters.narrow_plate == 0
         assert counters.blurry == 0
+        assert counters.plate_outside_vehicle == 0
+
+
+class TestCenterInBox:
+    """Tests de `center_in_box`."""
+
+    def test_center_inside(self) -> None:
+        """El centro dentro de la caja cuenta como dentro."""
+        outer = BoundingBox(0, 0, 100, 100)
+        assert center_in_box(BoundingBox(10, 10, 20, 20), outer) is True
+
+    def test_center_on_border_is_inside(self) -> None:
+        """El centro sobre el borde cuenta como dentro."""
+        outer = BoundingBox(0, 0, 100, 100)
+        assert center_in_box(BoundingBox(90, 40, 110, 60), outer) is True
+
+    def test_center_outside(self) -> None:
+        """El centro fuera de la caja cuenta como fuera."""
+        outer = BoundingBox(0, 0, 100, 100)
+        assert center_in_box(BoundingBox(95, 40, 115, 60), outer) is False
+
+    def test_only_center_matters(self) -> None:
+        """Solo cuenta el centro, no el tamaño."""
+        outer = BoundingBox(0, 0, 100, 100)
+        assert center_in_box(BoundingBox(0, 0, 150, 150), outer) is True
