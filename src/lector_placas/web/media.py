@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -21,6 +22,41 @@ VIDEO_MEDIA_TYPES: Final[Mapping[str, str]] = {
     ".avi": "video/x-msvideo",
     ".webm": "video/webm",
 }
+VIDEO_DIR_HINT: Final[str] = (
+    "lector-web: aviso: hay videos que no se pueden leer en '{directory}' "
+    "(en Docker: chmod 755 en la carpeta y chmod 644 en los videos)"
+)
+
+
+def _video_files(folder: Path, config: AppConfig) -> list[Path]:
+    """Lista los archivos regulares con extensión permitida de una carpeta legible."""
+    return [
+        file
+        for file in sorted(folder.iterdir())
+        if file.is_file() and file.suffix.lower() in config.input.allowed_extensions
+    ]
+
+
+def unreadable_video_dirs(config: AppConfig) -> list[str]:
+    """Devuelve las carpetas permitidas con contenido que no se puede leer.
+
+    Args:
+        config: configuración de la aplicación.
+
+    Returns:
+        Las cadenas de `allowed_dirs`, en orden, cuya carpeta existe y no es legible o contiene
+        algún video no legible.
+    """
+    result: list[str] = []
+    for directory in config.input.allowed_dirs:
+        folder = config.under_root(directory)
+        if not folder.exists():
+            continue
+        if not os.access(folder, os.R_OK | os.X_OK) or any(
+            not os.access(file, os.R_OK) for file in _video_files(folder, config)
+        ):
+            result.append(str(directory))
+    return result
 
 
 class VideoLocator:
@@ -38,11 +74,9 @@ class VideoLocator:
         found: list[Path] = []
         for directory in config.input.allowed_dirs:
             folder = config.under_root(directory)
-            if not folder.exists():
+            if not folder.exists() or not os.access(folder, os.R_OK | os.X_OK):
                 continue
-            for file in sorted(folder.iterdir()):
-                if file.is_file() and file.suffix.lower() in config.input.allowed_extensions:
-                    found.append(file)
+            found.extend(file for file in _video_files(folder, config) if os.access(file, os.R_OK))
         return found
 
     def find(self, sha256: str) -> Path | None:

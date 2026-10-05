@@ -54,8 +54,21 @@ def test_compose_uses_named_volumes() -> None:
 
 def test_compose_execution_provider() -> None:
     data = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
-    assert data["services"]["lector"]["environment"] == {"LECTOR_EXECUTION_PROVIDER": "cpu"}
+    assert data["services"]["lector"]["environment"] == {
+        "LECTOR_EXECUTION_PROVIDER": "cpu",
+        "LECTOR_PUBLIC_PORT": "${LECTOR_PORT:-8765}",
+    }
     assert data["services"]["lector-gpu"]["environment"] == {"LECTOR_EXECUTION_PROVIDER": "cuda"}
+
+
+def test_compose_port_is_configurable() -> None:
+    data = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    assert data["services"]["lector"]["ports"] == ["127.0.0.1:${LECTOR_PORT:-8765}:8765"]
+    lines = (ROOT / "Dockerfile").read_text(encoding="utf-8").splitlines()
+    env_line = next(line for line in lines if line.startswith("ENV"))
+    assert "LECTOR_PUBLIC_PORT=8765" in env_line
+    health_line = next(line for line in lines if line.startswith("HEALTHCHECK"))
+    assert "LECTOR_PUBLIC_PORT" in health_line
 
 
 def test_gitattributes_forces_lf() -> None:

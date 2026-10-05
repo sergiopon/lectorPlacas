@@ -16,9 +16,14 @@ from typing import Final
 
 import uvicorn
 
+from lector_placas.adapters.security.file_key_provider import KEY_FILE_ENV
 from lector_placas.application.ports import KeyProvider
 from lector_placas.cli import composition
-from lector_placas.domain.errors import KeyUnavailableError, LectorPlacasError
+from lector_placas.domain.errors import (
+    ConfigurationError,
+    KeyUnavailableError,
+    LectorPlacasError,
+)
 from lector_placas.infrastructure import network_guard
 from lector_placas.infrastructure.config import AppConfig, load_config
 from lector_placas.infrastructure.logging_setup import configure_logging
@@ -31,6 +36,7 @@ from lector_placas.web.demo import (
 )
 from lector_placas.web.factory import create_app
 from lector_placas.web.jobs import JobRunner
+from lector_placas.web.media import VIDEO_DIR_HINT, unreadable_video_dirs
 from lector_placas.web.security import SessionAuth, allowed_hosts_for
 
 DEFAULT_CONFIG_PATH: Final[Path] = Path("config/lector.yaml")
@@ -40,7 +46,44 @@ CONTAINER_ENV: Final[str] = "LECTOR_IN_CONTAINER"
 CONTAINER_BIND: Final[str] = "0.0.0.0"  # noqa: S104 — excepción de contenedor de SEG-28 (spec 075)
 FRONTEND_DIST: Final[Path] = Path("frontend/dist")
 KEY_HINT: Final[str] = "Cree la clave con: lector key init"
+KEY_FILE_HINT: Final[str] = "Cree la clave con: lector key init-file {path}"
+PUBLIC_PORT_ENV: Final[str] = "LECTOR_PUBLIC_PORT"
 MAX_PORT: Final[int] = 65535
+
+
+def public_port(listen_port: int) -> int:
+    """Devuelve el puerto que ve el navegador.
+
+    Args:
+        listen_port: puerto en el que escucha el servidor.
+
+    Returns:
+        El valor de LECTOR_PUBLIC_PORT si LECTOR_IN_CONTAINER es "1" y la variable no está
+        vacía; si no, listen_port.
+
+    Raises:
+        ConfigurationError: si LECTOR_PUBLIC_PORT no es un entero entre 1 y 65535.
+    """
+    if os.environ.get(CONTAINER_ENV) != "1":
+        return listen_port
+    value = os.environ.get(PUBLIC_PORT_ENV)
+    if value is None or value == "":
+        return listen_port
+    if not value.isdecimal() or not 1 <= int(value) <= MAX_PORT:
+        raise ConfigurationError("LECTOR_PUBLIC_PORT debe ser un entero entre 1 y 65535")
+    return int(value)
+
+
+def key_hint() -> str:
+    """Devuelve la pista para crear la clave maestra.
+
+    Returns:
+        KEY_FILE_HINT con la ruta si LECTOR_KEY_FILE no está vacía; si no, KEY_HINT.
+    """
+    path = os.environ.get(KEY_FILE_ENV)
+    if path:
+        return KEY_FILE_HINT.format(path=path)
+    return KEY_HINT
 
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
@@ -146,17 +189,18 @@ def _serve(
         0 al terminar el servidor.
     """
     port = sock.getsockname()[1]
+    shown_port = public_port(port)
     token = secrets.token_urlsafe(32)
     app = create_app(
         config,
         keys,
         SessionAuth(token),
-        allowed_hosts_for(port),
+        allowed_hosts_for(shown_port),
         runner=runner,
         static_dir=static_dir,
     )
-    url = launch_url(port, token)
-    sys.stdout.write(f"lectorPlacas web en http://{HOST}:{port}/\nAbra: {url}\n")
+    url = launch_url(shown_port, token)
+    sys.stdout.write(f"lectorPlacas web en http://{HOST}:{shown_port}/\nAbra: {url}\n")
     if not no_browser:
         webbrowser.open(url)
     server = uvicorn.Server(
@@ -232,14 +276,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     try:
         config = load_config(args.config)
+        public_port(args.port)
         configure_logging(
             config.logging.level, config.under_root(config.paths.log_dir) / LOG_FILENAME
         )
+        if not args.demo:
+            for directory in unreadable_video_dirs(config):
+                sys.stderr.write(f"{VIDEO_DIR_HINT.format(directory=directory)}\n")
         keys = None if args.demo else _real_keys()
     except LectorPlacasError as error:
         sys.stderr.write(f"lector-web: {error}\n")
         if isinstance(error, KeyUnavailableError):
-            sys.stderr.write(f"{KEY_HINT}\n")
+            sys.stderr.write(f"{key_hint()}\n")
         return 1
     try:
         if keys is None:
