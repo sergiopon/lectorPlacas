@@ -141,6 +141,7 @@ en `/api/sightings`; el Anexo A de docs/historial/08 ya está actualizado.
 | 076 | API para el frontend: video original por SHA-256 (Range), fotograma completo, conteos por pestaña, métricas por corrida, ajustes | 066, 067, 068 | Implementada |
 | 077 | Escalas del gráfico de métricas ajustadas a los datos; capturas sin esqueletos ni transiciones | 070, 071, 072 | Implementada |
 | 078 | Demo con videos WebM sintéticos (Ir al video funciona en la demo) y script del GIF del README | 069, 071, 076, 077 | Implementada |
+| 079 | Limpieza de código sin uso: test de la GUI, símbolos muertos, `scipy` directa fuera y `starlette` declarada, hooks del frontend | 073, 078 | Lista |
 
 ---
 

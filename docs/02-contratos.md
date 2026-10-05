@@ -199,7 +199,6 @@ class SightingRecord:
 
 `domain/plate_formats.py`
 ```python
-def text_pattern(text: str) -> str: ...        # "ABC12D" -> "LLLDDL"; lanza InvalidPlateTextError si no cumple PLATE_TEXT_REGEX
 
 class PlateFormatCatalog:
     def __init__(self, formats: Sequence[PlateFormat]) -> None: ...  # vacío o ids repetidos -> PlateFormatCatalogError
@@ -539,8 +538,6 @@ class FinalizedTrack:
 
 class TrackRegistry:
     def __init__(self, max_readings_per_track: int) -> None: ...
-    @property
-    def active_count(self) -> int: ...
     def observe(self, tracked: Sequence[TrackedVehicle], timestamp_ms: int) -> None: ...
     def needs_reading(self, track_id: int) -> bool: ...   # spec 051: True <=> el track está activo; spec 060: y no resuelto
     def readings(self, track_id: int) -> tuple[PlateReading, ...]: ...   # spec 060, orden (timestamp_ms, frame_index)
