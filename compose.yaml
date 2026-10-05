@@ -2,20 +2,22 @@ services:
   lector:
     build: .
     image: lector-placas:local
-    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      LECTOR_EXECUTION_PROVIDER: cpu
     ports:
       - "127.0.0.1:8765:8765"
     volumes:
-      - ./videos:/app/videos:ro
-      - ./data:/app/data
-      - ./logs:/app/logs
-    secrets:
-      - lector_key
+      - "${LECTOR_VIDEOS_DIR:-./videos}:/app/videos:ro"
+      - "lector-data:/app/data"
+      - "lector-logs:/app/logs"
+      - "lector-keys:/app/keys"
     restart: "no"
   lector-gpu:
     extends:
       service: lector
     profiles: ["gpu"]
+    environment:
+      LECTOR_EXECUTION_PROVIDER: cuda
     deploy:
       resources:
         reservations:
@@ -23,6 +25,7 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-secrets:
-  lector_key:
-    file: ./secrets/lector_key
+volumes:
+  lector-data: {}
+  lector-logs: {}
+  lector-keys: {}
