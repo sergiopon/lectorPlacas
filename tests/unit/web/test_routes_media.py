@@ -5,12 +5,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import av
+import cv2
 import numpy as np
 from fastapi.testclient import TestClient
 
 from lector_placas.adapters.video.pyav_source import PyAVVideoSourceFactory
 from lector_placas.application.ports import ImageBGR, RunStart, VideoInfo
-from lector_placas.domain.entities import ReviewStatus, UnverifiedReason
+from lector_placas.domain.entities import PlateLocation, ReviewStatus, UnverifiedReason
 from lector_placas.domain.errors import VideoSourceError
 from lector_placas.infrastructure.config import AppConfig
 from lector_placas.web.media import MediaServices, VideoLocator
@@ -108,6 +109,44 @@ def test_frame(config: AppConfig, tmp_path: Path) -> None:
         grabber.fail = False
         video.unlink()
         check_404(c, "/api/sightings/1/frame", "video no disponible")
+
+
+def test_frame_uses_stored_location(config: AppConfig, tmp_path: Path) -> None:
+    folder = tmp_path / "videos"
+    folder.mkdir()
+    video = make_video(folder / "v.mp4")
+    cfg = config.model_copy(update={"root_dir": tmp_path})
+    with authenticated_client(cfg) as c:
+        grabber = setup_media(c, cfg, video)
+        add(
+            1,
+            run_id=1,
+            first_seen_ms=1000,
+            last_seen_ms=2000,
+            location=PlateLocation(1200, 10, 12, 20, 10),
+        )
+        response = c.get("/api/sightings/1/frame")
+        assert response.status_code == 200
+        assert response.headers["x-frame-timestamp-ms"] == "1200"
+        assert grabber.calls[-1][1] == 1200
+        image = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
+        assert image.shape == (48, 64, 3)
+        assert tuple(int(v) for v in image[12, 10]) == (0, 255, 255)
+        assert tuple(int(v) for v in image[17, 20]) == (0, 0, 0)
+
+
+def test_frame_without_location_is_not_drawn(config: AppConfig, tmp_path: Path) -> None:
+    folder = tmp_path / "videos"
+    folder.mkdir()
+    video = make_video(folder / "v.mp4")
+    cfg = config.model_copy(update={"root_dir": tmp_path})
+    with authenticated_client(cfg) as c:
+        setup_media(c, cfg, video)
+        add(2, run_id=1, first_seen_ms=1000, last_seen_ms=2000)
+        response = c.get("/api/sightings/2/frame")
+        assert response.headers["x-frame-timestamp-ms"] == "1500"
+        image = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
+        assert image.max() == 0
 
 
 def test_counts(client: TestClient) -> None:

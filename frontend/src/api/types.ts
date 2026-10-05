@@ -16,6 +16,7 @@ export interface Sighting {
   duplicates: number
   firstSeenMs: number
   lastSeenMs: number
+  frameMs: number | null
   cropUrl: string | null
   duplicateOf: number | null
   reviewedAt: string | null

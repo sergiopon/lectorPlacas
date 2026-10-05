@@ -18,7 +18,10 @@ export default function FrameViewer({ s, videoName, initial, onClose }: { s: Sig
     dialog.current?.showModal()
   }, [])
 
-  const seek = () => { if (video.current) video.current.currentTime = Math.max(0, s.firstSeenMs / 1000 - 1) }
+  const at = s.frameMs ?? s.firstSeenMs
+  const seek = () => {
+    if (video.current) video.current.currentTime = Math.max(0, at / 1000 - 1)
+  }
   const tab = (id: View, label: string) => (
     <button role="tab" aria-selected={view === id} onClick={() => setView(id)}
       className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${view === id ? 'bg-surface text-ink shadow-soft' : 'text-ink-2 hover:text-ink'}`}>{label}</button>
@@ -62,7 +65,7 @@ export default function FrameViewer({ s, videoName, initial, onClose }: { s: Sig
           <div className="anim-in grid aspect-video place-items-center rounded-lg border border-dashed border-line text-center">
             <div className="max-w-sm">
               <p className="font-medium">El video original no está disponible</p>
-              <p className="mt-1 text-sm text-ink-3">No se encontró <span className="font-mono">{source.name}</span>. Cuando esté, se abrirá en {fmtTime(Math.max(0, s.firstSeenMs - 1000))}, un segundo antes de que aparezca la placa.</p>
+              <p className="mt-1 text-sm text-ink-3">No se encontró <span className="font-mono">{source.name}</span>. Cuando esté, se abrirá en {fmtTime(Math.max(0, at - 1000))}, un segundo antes de la lectura.</p>
               <Button className="mt-4" onClick={() => setView('frame')}>Ver la captura completa</Button>
             </div>
           </div>

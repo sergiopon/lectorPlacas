@@ -222,9 +222,9 @@ export async function purgeExpired(): Promise<PurgeResult> {
   return { crops: r.cropsDeleted, sightings: r.sightingsDeleted, runs: r.runsDeleted, exports: r.exportsDeleted }
 }
 
-/** Fotograma completo del momento en que aparece la placa. */
+/** Fotograma completo del instante en que se leyó la placa. */
 export function getSightingFrame(s: Sighting): SightingFrame {
-  return { frameUrl: '/api/sightings/' + s.id + '/frame', timestampMs: Math.floor((s.firstSeenMs + s.lastSeenMs) / 2) }
+  return { frameUrl: '/api/sightings/' + s.id + '/frame', timestampMs: s.frameMs ?? Math.floor((s.firstSeenMs + s.lastSeenMs) / 2) }
 }
 
 /** URL reproducible del video original de la corrida. */

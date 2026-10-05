@@ -8,7 +8,7 @@ import numpy as np
 from fastapi.testclient import TestClient
 
 from lector_placas.application.ports import RunStart, RunStats, VideoInfo
-from lector_placas.domain.entities import ReviewStatus, UnverifiedReason
+from lector_placas.domain.entities import PlateLocation, ReviewStatus, UnverifiedReason
 from lector_placas.infrastructure.config import AppConfig
 from tests.fixtures.fakes import fake_sighting_record
 from tests.unit.web.conftest import authenticated_client, make_session
@@ -146,3 +146,10 @@ def test_hidden_filter(client: TestClient) -> None:
     everything = client.get("/api/sightings", params={"hidden": "all"}).json()
     assert [i["id"] for i in everything["items"]] == [2, 1]
     assert client.get("/api/sightings", params={"hidden": "x"}).status_code == 422
+
+
+def test_sighting_exposes_frame_ms(client: TestClient) -> None:
+    add(1, location=PlateLocation(1200, 10, 12, 20, 10))
+    add(2)
+    assert client.get("/api/sightings/1").json()["frameMs"] == 1200
+    assert client.get("/api/sightings/2").json()["frameMs"] is None

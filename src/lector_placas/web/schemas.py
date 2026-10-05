@@ -78,6 +78,7 @@ class SightingOut(ApiModel):
     duplicate_of: int | None
     first_seen_ms: int
     last_seen_ms: int
+    frame_ms: int | None
     crop_url: str | None
     created_at: datetime
     reviewed_at: datetime | None

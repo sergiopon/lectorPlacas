@@ -58,6 +58,11 @@ CREATE TABLE IF NOT EXISTS sightings (
     sharpness       REAL    CHECK (sharpness IS NULL OR sharpness >= 0.0),
     contrast        REAL    CHECK (contrast IS NULL OR contrast >= 0.0),
     duplicate_of    INTEGER REFERENCES sightings(sighting_id) ON DELETE SET NULL CHECK (duplicate_of IS NULL OR duplicate_of <> sighting_id),
+    frame_ms        INTEGER CHECK (frame_ms IS NULL OR frame_ms >= 0),
+    box_x           INTEGER CHECK (box_x IS NULL OR box_x >= 0),
+    box_y           INTEGER CHECK (box_y IS NULL OR box_y >= 0),
+    box_w           INTEGER CHECK (box_w IS NULL OR box_w >= 1),
+    box_h           INTEGER CHECK (box_h IS NULL OR box_h >= 1),
     UNIQUE (run_id, track_id, first_seen_ms),
     CHECK ((plate_width_px IS NULL) = (plate_height_px IS NULL) AND (plate_width_px IS NULL) = (sharpness IS NULL) AND (plate_width_px IS NULL) = (contrast IS NULL))
 );

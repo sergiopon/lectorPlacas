@@ -11,8 +11,8 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
-from lector_placas.application.ports import SightingQuery
-from lector_placas.domain.entities import ReviewStatus, SightingRecord
+from lector_placas.application.ports import ImageBGR, SightingQuery
+from lector_placas.domain.entities import PlateLocation, ReviewStatus, SightingRecord
 from lector_placas.domain.errors import SightingNotFoundError, VideoSourceError
 from lector_placas.evaluation.review_metrics import compute_review_metrics
 from lector_placas.web.media import VIDEO_MEDIA_TYPES, MediaServices
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/api")
 
 _METRICS_PAGE_SIZE: Final[int] = 500
 _NO_VIDEO: Final[str] = "video no disponible"
+HIGHLIGHT_BGR: Final[tuple[int, int, int]] = (0, 255, 255)
 _LEGIBLE: Final[frozenset[ReviewStatus]] = frozenset(
     {ReviewStatus.CONFIRMED, ReviewStatus.CORRECTED}
 )
@@ -88,16 +89,35 @@ async def run_video(request: Request, run_id: int) -> Response:
     return FileResponse(path, media_type=media_type)
 
 
+def _highlight_plate(image: ImageBGR, location: PlateLocation) -> None:
+    """Dibuja en memoria el rectángulo de la placa leída sobre el fotograma."""
+    thickness = max(3, image.shape[1] // 400)
+    cv2.rectangle(
+        image,
+        (location.x, location.y),
+        (location.x + location.width, location.y + location.height),
+        HIGHLIGHT_BGR,
+        thickness,
+    )
+
+
 @router.get("/sightings/{sighting_id}/frame")
 async def sighting_frame(request: Request, sighting_id: int) -> Response:
     """Devuelve el fotograma completo del avistamiento como PNG, sin escribir a disco."""
     record = _get_record(_session(request), sighting_id)
     path = await _locate_video(request, record.run_id)
-    timestamp = (record.first_seen_ms + record.last_seen_ms) // 2
+    location = record.location
+    timestamp = (
+        location.frame_ms
+        if location is not None
+        else (record.first_seen_ms + record.last_seen_ms) // 2
+    )
     try:
         image = await run_in_threadpool(_media(request).grabber.grab, path, timestamp)
     except VideoSourceError as error:
         raise HTTPException(404, "fotograma no disponible") from error
+    if location is not None:
+        _highlight_plate(image, location)
     ok, encoded = cv2.imencode(".png", image)
     if not ok:
         raise HTTPException(500, "no se pudo codificar el fotograma")

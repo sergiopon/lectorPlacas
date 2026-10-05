@@ -50,6 +50,7 @@ from lector_placas.domain.entities import (
     ConsolidatedPlate,
     CropQuality,
     PlateDetection,
+    PlateLocation,
     PlateReading,
     ReviewStatus,
     Sighting,
@@ -444,6 +445,7 @@ class ProcessVideo:
                 deps.quality.sharpness(track.best_crop),
                 rms_contrast(track.best_crop),
             )
+        location = _plate_location(track.best_reading)
         plate = self._apply_legibility(plate, quality, track, counters)
         sighting = Sighting(
             run_id,
@@ -455,6 +457,7 @@ class ProcessVideo:
             crop_ref,
             deps.clock.now(),
             quality,
+            location,
         )
         sighting_id = deps.repository.save_sighting(sighting)
         counters.saved.append(
@@ -574,6 +577,18 @@ def _expand_vehicle_box(box: BoundingBox, margin: float, frame: Frame) -> Boundi
     if vbox is None or vbox.width < MIN_VEHICLE_CROP_PX or vbox.height < MIN_VEHICLE_CROP_PX:
         return None
     return vbox
+
+
+def _plate_location(reading: PlateReading | None) -> PlateLocation | None:
+    """Instante y rectángulo de la placa de la lectura que dio el mejor recorte."""
+    if reading is None:
+        return None
+    box = reading.plate_box
+    x = math.floor(box.x1)
+    y = math.floor(box.y1)
+    width = math.ceil(box.x2) - x
+    height = math.ceil(box.y2) - y
+    return PlateLocation(reading.timestamp_ms, x, y, width, height)
 
 
 def _best_plate_box(

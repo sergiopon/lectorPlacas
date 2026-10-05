@@ -25,6 +25,7 @@ class FinalizedTrack:
     vehicle_type: VehicleType
     readings: tuple[PlateReading, ...]
     best_crop: ImageBGR | None
+    best_reading: PlateReading | None = None
 
 
 @dataclass(slots=True)
@@ -38,6 +39,7 @@ class _TrackState:
     readings: list[PlateReading]
     best_crop: ImageBGR | None
     best_score: float
+    best_reading: PlateReading | None
     resolved: bool
 
 
@@ -188,6 +190,7 @@ class TrackRegistry:
         if state.best_crop is None or score > state.best_score:
             state.best_crop = crop.copy()
             state.best_score = score
+            state.best_reading = reading
 
     def pop_inactive(self, now_ms: int, inactive_after_ms: int) -> list[FinalizedTrack]:
         """Extrae los tracks sin observaciones durante más de `inactive_after_ms`.
@@ -229,6 +232,7 @@ class TrackRegistry:
                         sorted(state.readings, key=lambda r: (r.timestamp_ms, r.frame_index))
                     ),
                     best_crop=state.best_crop,
+                    best_reading=state.best_reading,
                 )
             )
         return finalized
@@ -244,6 +248,7 @@ def _new_state(timestamp_ms: int) -> _TrackState:
         readings=[],
         best_crop=None,
         best_score=0.0,
+        best_reading=None,
         resolved=False,
     )
 
