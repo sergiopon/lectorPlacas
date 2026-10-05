@@ -583,7 +583,8 @@ class ProcessingSettings:
 
 # application/proximity.py: FRAME_EDGE_MARGIN_PX = 2; effective_min_width(w, h, min_px, frac) -> int
 #   = ceil(round(max(min_px, frac * max(w, h)), 6)); center_in_roi(box, roi, w, h) -> bool;
-#   touches_frame_edge(box, w, h) -> bool; validate_roi(roi) -> None; ProximityCounters
+#   touches_frame_edge(box, w, h) -> bool; center_in_box(inner, outer) -> bool (centro de la placa dentro del
+#   vehículo); validate_roi(roi) -> None; ProximityCounters (con plate_outside_vehicle)
 
 @dataclass(frozen=True, slots=True)
 class PipelineDependencies:
