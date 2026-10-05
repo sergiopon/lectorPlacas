@@ -8,6 +8,8 @@ import pytest
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "nivel_f.py"
 
+pytestmark = pytest.mark.integration
+
 
 def test_web_loopback_check_passes() -> None:
     if shutil.which("ss") is None:

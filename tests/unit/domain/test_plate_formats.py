@@ -3,28 +3,9 @@ from __future__ import annotations
 import pytest
 
 from lector_placas.domain.entities import PlateFormat, VehicleType
-from lector_placas.domain.errors import InvalidPlateTextError, PlateFormatCatalogError
-from lector_placas.domain.plate_formats import PlateFormatCatalog, text_pattern
+from lector_placas.domain.errors import PlateFormatCatalogError
+from lector_placas.domain.plate_formats import PlateFormatCatalog
 from tests.fixtures.plate_catalog import build_test_catalog
-
-
-@pytest.mark.parametrize(
-    "text,expected",
-    [
-        ("ABC123", "LLLDDD"),
-        ("XYZ98K", "LLLDDL"),
-        ("123ABC", "DDDLLL"),
-        ("R12345", "LDDDDD"),
-    ],
-)
-def test_text_pattern(text: str, expected: str) -> None:
-    assert text_pattern(text) == expected
-
-
-@pytest.mark.parametrize("text", ["", "abc123", "AB-123", "ABCDEFGHIJK"])
-def test_text_pattern_rejects_invalid(text: str) -> None:
-    with pytest.raises(InvalidPlateTextError):
-        text_pattern(text)
 
 
 def test_catalog_rejects_empty_and_duplicates() -> None:

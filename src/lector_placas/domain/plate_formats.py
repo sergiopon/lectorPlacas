@@ -4,25 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from lector_placas.domain.entities import PLATE_TEXT_REGEX, PlateFormat
-from lector_placas.domain.errors import InvalidPlateTextError, PlateFormatCatalogError
-
-
-def text_pattern(text: str) -> str:
-    """Devuelve la forma del texto con `L` para letras y `D` para dígitos.
-
-    Args:
-        text: Texto de placa que debe cumplir `PLATE_TEXT_REGEX`.
-
-    Returns:
-        Patrón de la misma longitud que `text`.
-
-    Raises:
-        InvalidPlateTextError: Si `text` no cumple `PLATE_TEXT_REGEX`.
-    """
-    if PLATE_TEXT_REGEX.fullmatch(text) is None:
-        raise InvalidPlateTextError(f"texto de placa inválido (longitud={len(text)})")
-    return "".join("L" if character.isalpha() else "D" for character in text)
+from lector_placas.domain.entities import PlateFormat
+from lector_placas.domain.errors import PlateFormatCatalogError
 
 
 class PlateFormatCatalog:

@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 from lector_placas.application.ports import SightingQuery
 from lector_placas.domain.entities import ReviewStatus, UnverifiedReason
 from tests.fixtures.fakes import InMemoryPlateRepository, fake_sighting_record
+
+pytestmark = pytest.mark.integration
 
 
 def test_default_includes_everything() -> None:

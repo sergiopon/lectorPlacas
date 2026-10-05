@@ -18,7 +18,6 @@ SHA256_PATTERN: Final[str] = r"^[0-9a-f]{64}$"
 ALLOWED_PREFIX: Final[str] = "https://github.com/"
 PENDING_EXPORT: Final[str] = "PENDIENTE_EXPORT"
 FORBIDDEN_FILENAME_PARTS: Final[tuple[str, ...]] = ("/", "\\", "..")
-MANIFEST_VERSION: Final[int] = 1
 
 
 class ModelEntry(BaseModel):

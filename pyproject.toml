@@ -13,13 +13,13 @@ dependencies = [
     "open-image-models==0.6.0",
     "trackers==2.6.0",
     "supervision==0.30.5",
-    "scipy==1.18.1",
     "sqlcipher3==0.6.2",
     "cryptography==50.0.1",
     "keyring==25.7.0",
     "pydantic==2.13.5",
     "PyYAML==6.0.3",
     "fastapi==0.141.1",
+    "starlette==1.7.0",
     "uvicorn==0.54.0",
 ]
 
@@ -69,7 +69,7 @@ max-returns = 4
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "ANN", "D", "PLR2004", "PLR0913", "PLC0415", "S311", "N817", "E501", "S603", "S108"]
-"scripts/**" = ["T201", "S603", "S607"]
+"scripts/**" = ["S603", "S607"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -80,7 +80,7 @@ packages = ["lector_placas"]
 [[tool.mypy.overrides]]
 module = [
     "onnxruntime.*", "sqlcipher3.*", "trackers.*", "supervision.*", "open_image_models.*",
-    "fast_plate_ocr.*", "keyring.*", "scipy.*", "onnx.*",
+    "fast_plate_ocr.*", "keyring.*", "onnx.*",
 ]
 ignore_missing_imports = true
 

@@ -99,12 +99,6 @@ class SummaryOut(ApiModel):
     hidden: int
 
 
-class ErrorOut(ApiModel):
-    """Error de la API."""
-
-    detail: str
-
-
 class JobRequest(ApiModel):
     """Solicitud de procesamiento."""
 

@@ -21,6 +21,8 @@ from lector_placas.domain.errors import RepositoryError
 from lector_placas.infrastructure.paths import ensure_private_dir
 from tests.fixtures.fakes import FakeKeyProvider
 
+pytestmark = pytest.mark.integration
+
 
 def test_new_database_is_v3(tmp_path: Path) -> None:
     """Una BD nueva tiene esquema v3 con las columnas de calidad."""

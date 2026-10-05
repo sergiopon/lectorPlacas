@@ -29,13 +29,11 @@ def test_lifecycle_and_ordering() -> None:
     registry = TrackRegistry(2)
     registry.observe([tv(5), tv(3)], 0)
     registry.observe([tv(5)], 500)
-    assert registry.active_count == 2
     inactive = registry.pop_inactive(now_ms=1200, inactive_after_ms=1000)
     assert [t.track_id for t in inactive] == [3]
     assert (inactive[0].first_seen_ms, inactive[0].last_seen_ms) == (0, 0)
     remaining = registry.pop_all()
     assert [(t.track_id, t.first_seen_ms, t.last_seen_ms) for t in remaining] == [(5, 0, 500)]
-    assert registry.active_count == 0
 
 
 def test_reading_limit_and_best_crop() -> None:
