@@ -26,6 +26,24 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+  lector-review:
+    image: lector-placas:local
+    profiles: ["review"]
+    network_mode: none
+    environment:
+      LECTOR_EXECUTION_PROVIDER: cpu
+      DISPLAY: "${DISPLAY:-:0}"
+      XAUTHORITY: /tmp/lector-review.xauth
+      QT_X11_NO_MITSHM: "1"
+    volumes:
+      - "${LECTOR_VIDEOS_DIR:-./videos}:/app/videos:ro"
+      - "lector-data:/app/data"
+      - "lector-logs:/app/logs"
+      - "lector-keys:/app/keys"
+      - "${LECTOR_X11_DIR:-/tmp/.X11-unix}:/tmp/.X11-unix:ro"
+      - "${LECTOR_XAUTH:-/dev/null}:/tmp/lector-review.xauth:ro"
+    command: ["lector", "review"]
+    restart: "no"
 volumes:
   lector-data: {}
   lector-logs: {}

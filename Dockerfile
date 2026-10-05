@@ -7,7 +7,7 @@ RUN npm run build
 
 FROM python:3.13-slim@sha256:3dd7cc108ec1493442514f5c2a871af6af0ec31d768ff6e378a93340c3b3db5f
 COPY --from=ghcr.io/astral-sh/uv:0.12.19@sha256:04d046b13e60d6bcec73cbc5e1cad25d680dea90c8573340950a0ac2d1aef424 /uv /uvx /bin/
-RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0t64 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0t64 libsm6 && rm -rf /var/lib/apt/lists/*
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never LECTOR_IN_CONTAINER=1 LECTOR_KEY_FILE=/app/keys/lector_key LECTOR_EXECUTION_PROVIDER=cpu LECTOR_PUBLIC_PORT=8765 PATH=/app/.venv/bin:$PATH
 RUN groupadd --system --gid 10001 lector && useradd --system --uid 10001 --gid 10001 --no-create-home --home-dir /app --shell /usr/sbin/nologin lector
 WORKDIR /app
