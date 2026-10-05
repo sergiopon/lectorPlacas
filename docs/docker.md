@@ -55,6 +55,10 @@ En la salida aparece una línea `Abra: http://127.0.0.1:8765/auth?token=…`. Á
 - El enlace es de un solo uso. Si cierras la sesión, reinicia el contenedor para obtener otro.
 - El puerto solo se publica en `127.0.0.1` de tu equipo: nadie más en la red puede entrar.
 - Para dejarlo en segundo plano usa `docker compose up -d`, y luego `docker compose logs lector` para ver el enlace.
+- **Otro puerto:** por defecto es el 8765. Para usar otro, define `LECTOR_PORT` antes de arrancar; el enlace impreso ya
+  sale con ese puerto:
+  - bash: `LECTOR_PORT=9000 docker compose up`
+  - PowerShell: `$env:LECTOR_PORT="9000"; docker compose up`
 - Para detenerlo: `Ctrl+C`, o `docker compose down` si está en segundo plano.
 
 ## 5. Usar la línea de comandos
@@ -92,7 +96,7 @@ docker compose --profile gpu up lector-gpu
 - **Windows:** necesita Docker Desktop con el motor WSL2 y el controlador NVIDIA de Windows.
 - **Podman:** usa CDI (`nvidia.com/gpu=all`) en lugar del bloque `deploy.resources` de `compose.yaml`.
 
-No arranques `lector` y `lector-gpu` a la vez, porque comparten el puerto 8765. Para la línea de comandos con GPU,
+No arranques `lector` y `lector-gpu` a la vez, porque comparten el puerto. Para la línea de comandos con GPU,
 cambia `lector` por `lector-gpu` en `docker compose run`.
 
 ## Dónde quedan los datos
@@ -128,5 +132,5 @@ docker compose cp lector:/app/data/lector.db ./lector.db.bak
 | `archivo de clave no encontrado` | Falta el paso 2 (crear la clave). |
 | `Permission denied` al leer un video (Linux) | El archivo no es legible por otros: `chmod 644 videos/*`. Con SELinux o Podman, añade `,z` al montaje de videos en `compose.yaml` (`…:/app/videos:ro,z`). |
 | `CUDA no disponible en ONNX Runtime` | Se arrancó `lector-gpu` sin GPU accesible. Usa el servicio `lector` (CPU) o instala lo del paso 7. |
-| El puerto 8765 está ocupado | Libera ese puerto. No basta con cambiar solo el puerto publicado: el servidor exige que la cabecera `Host` diga `127.0.0.1:8765`. |
+| El puerto 8765 está ocupado | Usa otro con `LECTOR_PORT` (paso 4). No edites el puerto en `compose.yaml` a mano: la variable también le dice al servidor qué puerto aceptar. |
 | `400` al abrir la página | Entra por `127.0.0.1` o `localhost`, no por otra dirección del equipo. |
