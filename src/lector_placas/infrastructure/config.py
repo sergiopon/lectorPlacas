@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Final, Literal
@@ -25,6 +26,7 @@ from lector_placas.domain.errors import ConfigurationError, DomainError
 from lector_placas.domain.ocr_correction import ConfusionMap
 from lector_placas.domain.plate_formats import PlateFormatCatalog
 
+EXECUTION_PROVIDER_ENV: Final[str] = "LECTOR_EXECUTION_PROVIDER"
 IDENTIFIER_REGEX: Final[re.Pattern[str]] = re.compile(r"^[a-z0-9][a-z0-9-]{1,63}$")
 PROFILE_NAME_REGEX: Final[re.Pattern[str]] = re.compile(r"^[a-z_]{1,32}$")
 INPUT_SIZE_MIN: Final[int] = 32
@@ -528,6 +530,18 @@ class AppConfig(StrictModel):
         )
 
 
+def _apply_env_overrides(data: dict[str, object]) -> None:
+    """Aplica `LECTOR_EXECUTION_PROVIDER` sobre `inference.execution_provider`."""
+    value = os.environ.get(EXECUTION_PROVIDER_ENV)
+    if not value:
+        return
+    if value not in ("cpu", "cuda"):
+        raise ConfigurationError("LECTOR_EXECUTION_PROVIDER debe ser 'cpu' o 'cuda'")
+    inference = data.get("inference")
+    if isinstance(inference, dict):
+        inference["execution_provider"] = value
+
+
 def load_config(path: Path) -> AppConfig:
     """Lee y valida la configuración desde `path`.
 
@@ -554,6 +568,7 @@ def load_config(path: Path) -> AppConfig:
     if "root_dir" in data:
         raise ConfigurationError("root_dir no se configura en el archivo")
     data["root_dir"] = path.resolve().parent.parent
+    _apply_env_overrides(data)
     try:
         return AppConfig.model_validate(data)
     except ValidationError as error:
