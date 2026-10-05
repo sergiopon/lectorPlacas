@@ -399,7 +399,7 @@ Ficha MT 001):** placa de carro 33,0 × 16,0 cm (proporción ancho/alto 2,06); p
 23,5 × 10,5 cm (proporción 2,24). Las proporciones difieren solo un 8,5 %, y la perspectiva (placa girada respecto de la
 cámara) acorta el ancho aparente y baja la proporción: una moto vista de lado parece una placa de carro, pero una placa
 de carro nunca parece más ancha de lo que es. Por eso la proporción solo sirve como indicio de moto (valor alto), no como
-prueba de carro. Antes de redactar la 065 hay que medir la distribución real de proporciones de cajas de placa anotadas.
+prueba de carro. **Decisión del usuario (2026-10-04): la 065 se descarta**, porque la diferencia es mínima.
 
 ### 4.5 Documentos rectores y de requisitos que cambian (los redacta Claude, antes de la 056)
 

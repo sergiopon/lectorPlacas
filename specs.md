@@ -2,7 +2,7 @@
 
 Resumen de todas las specs: qué hace cada una, de cuáles depende y en qué estado está. Fecha: 2026-10-04.
 Fuente de verdad del estado: `specs/README.md`. Las specs 056–064, 066–069, 073 y 074 están redactadas (2026-10-03).
-La 065 sigue bloqueada: depende de las dimensiones oficiales de las placas, aún sin verificar. Diseño en `docs/09`.
+La 065 se descartó el 2026-10-04 (la proporción de la placa de carro y la de moto difiere solo un 8,5 %). Diseño en `docs/09`.
 
 Estados: **Implementada** (integrada en `main`) · **En implementación** (rama y worktree activos) · **Redactada**
 (spec lista, sin implementar) · **Por redactar** (solo existe en el plan).
@@ -13,7 +13,7 @@ Estados: **Implementada** (integrada en `main`) · **En implementación** (rama 
 |---|---|
 | Implementada | 000–064 y 066–078 (la 058 el 2026-10-04) |
 | Redactada (lista para implementar) | — |
-| Bloqueada, sin redactar | 065 (dimensiones oficiales de placa sin verificar) |
+| Descartada | 065 (tipo de vehículo por la forma de la placa) |
 
 Cada spec se implementa en su rama `feature/NNN-*` y se integra con `merge --no-ff`. El orden numérico es el orden de
 implementación; una spec no se empieza hasta que sus dependencias están integradas.
@@ -109,7 +109,7 @@ Diseño en `docs/09-enfoque-versatil.md` y ADR-017; `docs/08` §2–§3 aporta e
 | 062 | Entrena el filtro de legibilidad (`training/legibility`) solo con la población cercana; línea base `num_readings` ≤ 1 | 055, 059 | Implementada |
 | 063 | Filtro de legibilidad en el pipeline: razones `PREDICTED_ILLEGIBLE` / `PREDICTED_NOT_PLATE`; nunca confirma ni borra | 057, 059, 062 | Implementada |
 | 064 | Vista "solo legibles": oculta `PREDICTED_*` y duplicados; pestaña "Ocultas por baja calidad" | 038, 041, 061, 063 | Implementada |
-| 065 | Tipo de vehículo por la forma de la placa (bloqueada: dimensiones oficiales PENDIENTES DE VALIDAR) | 013, 015, 057 | Bloqueada: dimensiones oficiales de placa sin verificar |
+| 065 | Tipo de vehículo por la forma de la placa (bloqueada: dimensiones oficiales PENDIENTES DE VALIDAR) | 013, 015, 057 | Descartada (2026-10-04) |
 
 Criterio de aceptación del filtro de legibilidad (docs/09 §4.2): se mide solo sobre la población cercana; legibles
 escondidas por error ≤ 5 %; con ese umbral, ≥ 60 % de borrosas y no-placas ocultadas; mínimo 100 ejemplos por clase en
