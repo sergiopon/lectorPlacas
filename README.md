@@ -80,7 +80,7 @@ mkdir -p videos                   # copia aquí tus videos
 uv run lector-web
 ```
 
-O con Docker, sin instalar nada más: [instrucciones](docs/guia.md#3b-con-docker-sin-instalar-uv-python-ni-node).
+O con Docker, sin instalar nada más: [cómo usar la imagen de Docker](docs/docker.md).
 La CLI (`lector process`, `lector review`, `lector export`…) también está: [guía](docs/guia.md#5-uso-desde-la-terminal-cli).
 
 ## Privacidad por diseño

@@ -63,34 +63,8 @@ Crea la carpeta **`videos/`** (`mkdir -p videos`) y pon ahí tus videos. Por seg
 
 ## 3b. Con Docker (sin instalar uv, Python ni Node)
 
-Pensado para funcionar igual en Linux (Docker o Podman, con o sin root) y en Windows (Docker Desktop, desde PowerShell).
-Probado de punta a punta con Docker en Fedora 44 (CPU); Windows, Podman y Docker sin root están **NO VERIFICADOS**. Los
-comandos son los mismos en bash y en PowerShell:
-
-```bash
-docker compose build                                          # imagen de ~10 GB; descarga los modelos al construir
-docker compose run --rm lector lector key init-file /app/keys/lector_key   # clave maestra, una sola vez
-docker compose up                                             # CPU
-```
-
-Abre la dirección `Abra: http://127.0.0.1:8765/auth?token=…` que aparece en la salida. El puerto se publica solo en
-`127.0.0.1` del equipo.
-
-- **Videos:** pon los videos en la carpeta `videos/` del proyecto, que se monta en solo lectura. Para usar otra carpeta,
-  define `LECTOR_VIDEOS_DIR` antes de `up` (bash: `export LECTOR_VIDEOS_DIR=/ruta`; PowerShell:
-  `$env:LECTOR_VIDEOS_DIR="D:\videos"`). En Linux los archivos deben ser legibles por otros usuarios (modo 644).
-- **Datos, registros y clave:** viven en los volúmenes de Docker `lector-data`, `lector-logs` y `lector-keys`, no en
-  carpetas del proyecto. Así no dependen de los permisos del sistema de archivos del anfitrión (NTFS no los tiene).
-  `docker compose down` los conserva; `docker compose down -v` **los borra**, junto con la base de datos.
-- **Procesar desde la línea de comandos:** `docker compose run --rm lector lector process videos/<archivo>`.
-- **Sacar exportaciones:** `docker compose cp lector:/app/data/exports ./exports` (con el servicio en marcha).
-- **GPU NVIDIA** (`docker compose --profile gpu up lector-gpu`): en Linux necesita el NVIDIA Container Toolkit; en
-  Windows, Docker Desktop con WSL2 y el controlador NVIDIA de Windows. En Podman se usa CDI en lugar de
-  `deploy.resources`. **NO VERIFICADO**: solo se ha probado la CPU (en Fedora 44).
-- **Podman o SELinux:** si al leer los videos aparece `Permission denied`, añade `,z` al montaje de videos en
-  `compose.yaml` (`…:/app/videos:ro,z`).
-- **Windows: NO VERIFICADO** en un equipo con Windows; el diseño evita lo que allí falla (UID del anfitrión, permisos de
-  archivos y finales de línea CRLF, que `.gitattributes` impide).
+Todo el uso con Docker (construir, clave, videos, web, línea de comandos, GPU, volúmenes y problemas frecuentes)
+está en [docker.md](docker.md).
 
 ---
 

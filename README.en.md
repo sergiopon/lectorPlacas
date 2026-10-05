@@ -79,7 +79,7 @@ mkdir -p videos                   # copy your videos here
 uv run lector-web
 ```
 
-Or with Docker, nothing else to install: [instructions](docs/guia.md#3b-con-docker-sin-instalar-uv-python-ni-node).
+Or with Docker, nothing else to install: [how to use the Docker image](docs/docker.md) (in Spanish).
 There is also a CLI (`lector process`, `lector review`, `lector export`…): [guide](docs/guia.md#5-uso-desde-la-terminal-cli).
 
 ## Privacy by design
