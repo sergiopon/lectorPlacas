@@ -1,8 +1,8 @@
 # Atribuciones de los datasets públicos
 
 Datasets de Roboflow Universe con los que se entrenaron los modelos propios publicados en el Release `models-v1`
-(`yolo26n-plates` y `fpo-cct-xs-v2-colombia`). Se descargan con `lector dataset prepare` (API REST de Roboflow, spec
-036; lista en `config/datasets.yaml`). Las versiones y fechas de exportación se comprobaron en los archivos
+(`yolo26n-plates` y `fpo-cct-xs-v2-colombia`). Se descargan con `lector dataset prepare` (API REST de Roboflow;
+lista en `config/datasets.yaml`). Las versiones y fechas de exportación se comprobaron en los archivos
 descargados (`data.yaml` y `README.roboflow.txt`).
 
 | Dataset | Autor en Roboflow | URL | Licencia | Versión | Exportado | Uso |

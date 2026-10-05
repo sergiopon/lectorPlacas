@@ -22,5 +22,5 @@ PyTorch **no** es dependencia de runtime; `torch.load` nunca se llama en `src/`.
 ## Consecuencias
 - (+) Sin deserialización pickle en runtime; modelos verificados por SHA-256 (ADR-012).
 - (+) El mismo ONNX corre en CPU y es el punto de partida para móvil.
-- (−) Pre/post-procesamiento YOLO (letterbox, des-escalado) implementado por nosotros (spec 011/012).
+- (−) Pre/post-procesamiento YOLO (letterbox, des-escalado) implementado por nosotros.
 - (−) Hay que exportar los modelos en `training/detector` antes del primer uso del detector de vehículos.

@@ -29,7 +29,7 @@ Hallazgos verificados:
 - Lector único v1: **`cct-xs-v2-global`** (ONNX SHA-256
   `8031afb5fdc6b4d80462c9d542f1284ebd2cfddf5dbacd62609848d7e2855f44`; config SHA-256
   `0335c74a305173bb6f393efed0fde03cadeaa0b649ed8e19f431016d8232d0a6`) como baseline y
-  **fine-tuning obligatorio** con placas colombianas (spec 032).
+  **fine-tuning obligatorio** con placas colombianas.
 - PaddleOCR y VLM **fuera de v1**: las lecturas dudosas ya van a revisión humana (CLI). El puerto
   `PlateReader` permite añadirlos después sin tocar el orquestador.
 
@@ -40,6 +40,6 @@ Hallazgos verificados:
 - El entorno de entrenamiento OCR (TensorFlow/Keras) se aísla en `training/ocr` (ADR-011). El fine-tuning
   usa el backend torch de Keras; la **exportación a ONNX del modelo ajustado** se hace en un subproceso con
   `KERAS_BACKEND=tensorflow` (tf2onnx) sobre una copia del `.keras` sin configuración de compilación, porque
-  `torch.onnx` no soporta el kernel de `PatchExtractor` con lote dinámico (detalle en spec 032, paso 5.6).
-  El modelo exportado conserva el contrato del adaptador de la spec 017: entrada `input` uint8
+  `torch.onnx` no soporta el kernel de `PatchExtractor` con lote dinámico.
+  El modelo exportado conserva el contrato del adaptador de OCR: entrada `input` uint8
   `[batch, 64, 128, 3]` y salida `plate` `[batch, 10, 37]`.

@@ -112,7 +112,7 @@ real crops (92 and 329 crops) tied with it, with no demonstrable improvement, an
 - The system **confirmed only 5.5 %** of the sightings; the rest went to review. This is deliberate (precision first),
   but it shows that today it is a **review assistant**, not an autonomous reader.
 - Of the audited automatic confirmations, **93 %** were correct (57 of 61). Target M-01 is 98 %. Two of the errors came
-  from an 8→B correction forced by the vehicle type, which spec 050 already fixes.
+  from an 8→B correction forced by the vehicle type, which is already fixed.
 - **Speed:** 0.85× real time on an RTX 5050 with the 30 fps profile (17 min of video in 20 min); the target is ≥ 1×.
 
 **Own plate detector** (`yolo26n-plates`): F1 0.94 vs 0.88 for the default model, measured on the validation split of
@@ -123,35 +123,29 @@ the same dataset it was trained on (biased in its favour). That is why it is not
 
 **Known limitations:**
 - Colombian plates only; formats in `config/lector.yaml`.
-- Tested only on Linux (Fedora 44) with one GPU. It works without a GPU, but speed was not measured.
+- Tested on Linux (Fedora 44): installed with uv and a GPU, and in Docker on CPU. On CPU (Docker) a 14 s 1080p video
+  was processed at 0.56× real time. Windows and the GPU inside Docker are not verified.
 - Without a system keyring, a key file is required (`LECTOR_KEY_FILE`, as in Docker).
 - The vehicle detector sometimes confuses cars with motorcycles, which causes format doubts.
 - No sample video in the repository, for privacy reasons.
 
-## How it was built
+## How it is made
 
-Built with **AI-assisted spec-driven development**, between September and October 2026:
+- **Clean architecture** with ports and adapters; the layer dependency rule is enforced by a test
+  (`tests/architecture/`). Design in [`ARQUITECTURA.md`](ARQUITECTURA.md) and 17 decisions recorded as ADRs.
+- **Security as a requirement:** verifiable rules in [`reglas-seguridad.md`](reglas-seguridad.md) (encryption,
+  retention, no network at runtime, web on loopback only) and automated non-functional checks (`scripts/nivel_f.py`).
+- **Quality gates** on every change: ruff, strict mypy, pytest and pre-commit (frontend included).
+- **Verified data:** versions, plate formats and hashes were checked at their source; anything that could not be
+  verified is marked `NO VERIFICADO`.
+- Built with AI assistance; direction, real data, the manual review of more than 1,100 sightings and the validation
+  of every result are the author's.
 
-- **Design and review: Claude (Anthropic).** Wrote the requirements, the architecture, the 17 ADRs and the specs
-  (**78 implemented** out of `specs/000`–`078`; 065 was dropped), and reviewed every
-  implementation against its spec, `ARQUITECTURA.md` and the security checklist in `reglas-seguridad.md`.
-- **Implementation: coding agents.** Each spec was implemented by an agent on its own branch and worktree: Claude
-  Sonnet and Haiku subagents and DeepSeek models, depending on each spec's difficulty. Agents could not modify specs or
-  governing documents.
-- **Direction, data and validation: the author.** Decided the scope, processed real videos and reviewed more than 1,100
-  sightings by hand, trained and evaluated the models with the tools in `training/`, and accepted or rejected every
-  result.
-- **Per-spec cycle:** spec → implementation on a `feature/NNN-*` branch → gates (ruff, mypy strict, pytest, hidden
-  review tests in `tests/review/`) → review → `--no-ff` merge. Status and correction log: `specs/README.md`. When a
-  spec was wrong, the spec was fixed, not the code by hand.
-- **Working rule:** never invent technical data (versions, plate formats, hashes). Anything that could not be verified
-  is marked `NO VERIFICADO` in the repository.
-
-Size (2026-10-04): 14,797 lines of Python in `src/`, 12,099 of tests (751 tests), 5,123 in `training/` and 1,944 of
-TypeScript in `frontend/` (UI and its tests: 14 Vitest and 5 Playwright).
+Size (2026-10-04): 14,930 lines of Python in `src/`, 12,562 of tests (772 tests), 5,123 in `training/` and
+1,992 of TypeScript in `frontend/` (UI and its tests: 14 Vitest and 7 Playwright).
 
 ---
 
 **Documentation (Spanish):** [user and developer guide](docs/guia.md) · [architecture](ARQUITECTURA.md) ·
-[decisions (ADR)](docs/adr/) · [specs](specs/README.md).
+[decisions (ADR)](docs/adr/) · [Docker](docs/docker.md).
 License AGPL-3.0 ([`LICENSE`](LICENSE)). Data and model attributions: [`docs/datasets/ATRIBUCIONES.md`](docs/datasets/ATRIBUCIONES.md).

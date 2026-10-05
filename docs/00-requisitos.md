@@ -1,6 +1,5 @@
 # 00 — Requisitos
 
-> **Fase 1** del desarrollo spec-driven de `lectorPlacas`.
 > Documento de requisitos. No contiene código ni decisiones de implementación (esas se toman en Fase 2).
 > Toda cifra o dato que no provenga de una fuente listada aquí se marca **PENDIENTE DE VALIDAR**.
 
@@ -24,7 +23,7 @@ lo que queda explícitamente fuera.
 | C-05 | Ultralytics es AGPL-3.0 (https://www.ultralytics.com/license) y su uso es aceptable porque el repo será público. | Confirmado por usuario + verificado (licencia) |
 | C-06 | El OCR preentrenado candidato (fast-plate-ocr 1.1.0, MIT) no entrenó con Colombia: en LatAm solo Argentina, Brasil y México → requiere fine-tuning. | Verificado — https://github.com/ankandrew/fast-plate-ocr |
 | C-07 | El pipeline previsto es: decodificación → detección de vehículos → detección de placas → tracking → OCR → consolidación por track (votación + validación de formato + corrección posicional) → persistencia. El pipeline definitivo se decide en Fase 2. | Confirmado por usuario (contexto) |
-| C-08 | El desarrollo es spec-driven: un LLM externo (DeepSeek) implementa las specs y **nunca** recibe datos reales. | Confirmado por usuario |
+| C-08 | Las herramientas externas de desarrollo (servicios en la nube, incluidos asistentes de IA) **nunca** reciben datos reales: solo código y datos sintéticos. | Confirmado por usuario |
 | C-09 | La PC de referencia para medir rendimiento es la del usuario (RTX 5050); el sistema también debe poder correr en otras máquinas, por lo que los modelos deben ser pequeños y portables. | Confirmado por usuario |
 | C-10 | El archivo de resultados de evaluación y su formato se definen en `docs/04-evaluacion.md` (Fase 5). | Decisión de proceso |
 | C-11 | Cantidad de dato colombiano público disponible (~1.800 imágenes de detección, 926 con cajas por carácter, pocas motos, ninguna con transcripción de texto). Posibles duplicados entre proyectos y licencias declaradas por quien sube los datos: NO VERIFICADO. | Verificado — Roboflow Universe, conteos leídos el 2026-09-24: placas-colombianas (1.770, CC BY 4.0) https://universe.roboflow.com/licenseplates-gk27i/placas-colombianas ; usco (1.106, MIT) https://universe.roboflow.com/usco-thj9e/placas-colombia-ixdpr ; OCR Placas Colombia (926, cajas por carácter, CC BY 4.0) https://universe.roboflow.com/ia-xgdnt/ocr-placas-colombia-etll5 ; Placas_Motos_Carros (469) https://universe.roboflow.com/reimerjsuarez/placas_motos_carros ; motos-placas (264) https://universe.roboflow.com/placas-sn7fb/motos-placas |
@@ -34,7 +33,7 @@ lo que queda explícitamente fuera.
 | Actor | Descripción | Acceso a datos |
 |---|---|---|
 | Operador local | Única persona que ejecuta el pipeline, revisa lecturas dudosas y purga datos. Usa la CLI. | Total (es el dueño de la máquina y de los datos). |
-| Implementador externo (DeepSeek) | LLM que implementa las specs de cada fase. Solo ve especificaciones, código y datos sintéticos. | **Ninguno** sobre datos reales: no recibe videos, recortes, placas ni la clave de cifrado. |
+| Herramientas externas de desarrollo | Servicios en la nube usados durante el desarrollo. Solo ven código, documentación y datos sintéticos. | **Ninguno** sobre datos reales: no recibe videos, recortes, placas ni la clave de cifrado. |
 
 ## 4. Requisitos funcionales
 
@@ -71,8 +70,8 @@ Origen: número del requisito confirmado por el usuario en el brief de esta fase
 | RF-26 | La base de datos está cifrada; la clave se almacena en el llavero del sistema operativo, nunca en el repo ni en texto plano. | MUST | 10 |
 | RF-27 | Existe una CLI de revisión que muestra el recorte y permite al operador confirmar, corregir o descartar la lectura. | MUST | 7 |
 | RF-28 | La CLI permite procesar un video, revisar, exportar a CSV y purgar. La interfaz gráfica es la web local de RF-36. | MUST | 11 |
-| RF-36 | Existe una interfaz web local (ADR-016: `lector-web`, solo en 127.0.0.1, con token de arranque y cookie de sesión) que permite procesar un video con progreso y cancelación, listar y filtrar avistamientos con su recorte, revisarlos con teclado, ir al instante del video en que aparece la placa, exportar CSV, purgar y ver métricas. La GUI PySide6 (ADR-015) se retiró en la spec 073. | SHOULD | cambio 2026-09-27 (ADR-015); 2026-10-04 (ADR-016, spec 073) |
-| RF-37 | Solo se leen, guardan y muestran placas cuyo ancho en el frame alcanza el mínimo de cercanía del perfil; las placas más lejanas se descartan antes de leerlas (ADR-017, docs/historial/09). | MUST | cambio 2026-10-03 |
+| RF-36 | Existe una interfaz web local (ADR-016: `lector-web`, solo en 127.0.0.1, con token de arranque y cookie de sesión) que permite procesar un video con progreso y cancelación, listar y filtrar avistamientos con su recorte, revisarlos con teclado, ir al instante del video en que aparece la placa, exportar CSV, purgar y ver métricas. La GUI PySide6 (ADR-015) se retiró. | SHOULD | cambio 2026-09-27 (ADR-015); 2026-10-04 (ADR-016) |
+| RF-37 | Solo se leen, guardan y muestran placas cuyo ancho en el frame alcanza el mínimo de cercanía del perfil; las placas más lejanas se descartan antes de leerlas (ADR-017). | MUST | cambio 2026-10-03 |
 | RF-29 | La exportación a CSV está disponible desde la CLI. | MUST | 11 |
 | RF-30 | La purga por retención se ejecuta automáticamente al iniciar cada ejecución y también está disponible como comando manual. Retención por defecto: recortes 30 días, registros 90 días. | MUST | 10 |
 | RF-31 | Los logs enmascaran las placas: nunca se escribe una placa en claro en un log. | MUST | 10 |

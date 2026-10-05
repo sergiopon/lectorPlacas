@@ -36,23 +36,23 @@ SO, un solo operador local y retención 30 días (recortes) / 90 días (registro
 
 ## Actualización 2026-09-26
 Por decisión del usuario, las lecturas revisadas (`confirmed`/`corrected`) pueden exportarse descifradas para reentrenar
-el OCR (`lector dataset export-reviewed`, spec 035): excepción controlada a SEG-07, con retención propia
+el OCR (`lector dataset export-reviewed`): excepción controlada a SEG-07, con retención propia
 `retention.training_days` (180 días) aplicada por la purga, permisos 0600/0700 y registro en `audit_log`.
 
 ## Actualización 2026-10-03
-La excepción a SEG-07 se amplía a `lector dataset export-legibility` (spec 055): exporta los recortes de los
+La excepción a SEG-07 se amplía a `lector dataset export-legibility`: exporta los recortes de los
 avistamientos con estado final (`confirmed`, `corrected`, `illegible`, `rejected`) con su clase de legibilidad y las
 métricas del consolidador, **sin texto de placa ni hash de video**, a `training/legibility/datasets/own/`. Misma
-retención (`training_days`), permisos y auditoría. Sirve para entrenar el filtro de legibilidad (docs/historial/08 §2).
+retención (`training_days`), permisos y auditoría. Sirve para entrenar el filtro de legibilidad.
 
-## Actualización 2026-10-03 (spec 074)
+## Actualización 2026-10-03
 Dentro de un contenedor no hay Secret Service. Si `LECTOR_KEY_FILE` contiene una ruta absoluta, la clave se lee de ese
 archivo (64 hex y salto de línea opcional, archivo regular del usuario del proceso, sin permisos de grupo ni otros).
 `lector key export-file <ruta>` copia la clave del keyring (mismos datos dentro y fuera de Docker) y
-`lector key init-file <ruta>` genera una nueva. El archivo se monta como Docker secret (spec 075) y nunca entra en el
+`lector key init-file <ruta>` genera una nueva. El archivo se monta como Docker secret y nunca entra en el
 repo ni en la imagen.
 
-## Actualización 2026-10-04 (spec 080)
+## Actualización 2026-10-04
 En Docker la clave deja de llegar como Docker secret desde `./secrets/` del anfitrión: en Windows (NTFS) y en Docker o
 Podman sin root el archivo montado aparece con otro dueño o con modo 0777, y `FileKeyProvider` lo rechaza con razón. Ahora
 vive en el volumen con nombre `lector-keys`, montado en `/app/keys`, y se crea una sola vez dentro del contenedor con

@@ -21,7 +21,7 @@ https://github.com/roboflow/rf-detr (consultadas 2026-09-24).
 ## Decisión
 **YOLO26n preentrenado COCO** (`yolo26n.pt`, Ultralytics 8.4.162, SHA-256
 `9b09cc8bf347f0fc8a5f7657480587f25db09b34bf33b0652110fb03a8ad4fef`), **exportado a ONNX** en el
-entorno `training/detector` (spec 030) con cabeza end2end (salida `output0` de forma `[1, 300, 6]`:
+entorno `training/detector` con cabeza end2end (salida `output0` de forma `[1, 300, 6]`:
 `x1, y1, x2, y2, score, class_id` en píxeles de la entrada letterbox 640×640). Clases COCO usadas:
 2=car, 3=motorcycle, 5=bus, 7=truck. En runtime se ejecuta con ONNX Runtime (ADR-009).
 
@@ -29,6 +29,6 @@ entorno `training/detector` (spec 030) con cabeza end2end (salida `output0` de f
 - (+) Más preciso y ~30 % más rápido en CPU que YOLO11n; sin NMS externo.
 - (+) Exportable a LiteRT/NCNN/CoreML para el futuro.
 - (−) Modelo más reciente (enero 2026): menos historial en producción. Cambiar a YOLO11n requiere
-  una spec nueva porque su exportación ONNX por defecto no es end2end (otro formato de salida).
+  un cambio aparte porque su exportación ONNX por defecto no es end2end (otro formato de salida).
 - (−) AGPL-3.0 (ADR-008).
 - COCO no distingue motocarros; un motocarro puede detectarse como `motorcycle` o `car`.

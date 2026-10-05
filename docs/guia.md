@@ -189,10 +189,10 @@ Archivo principal: **`config/lector.yaml`** (esquema en `docs/03-modelo-datos.md
 | `min_plate_width_px` (ancho mínimo para intentar leer) | 20 | 20 | 20 |
 | `min_sharpness` (0 = sin filtro) | 0.0 | 0.0 | 0.0 |
 
-  Estos valores son **provisionales**: se calibran en la Fase 2 de `docs/historial/07-plan-mejora-lectura.md`.
+  Estos valores son **provisionales**: se calibrarán con video real anotado (`docs/04-evaluacion.md`).
 - `plate_formats`: catálogo de formatos con su fuente normativa. Los que tienen `verified: false` nunca se confirman
   solos.
-- `retention`: recortes 90 días (temporalmente; el valor normal es 30, ver `docs/historial/08-plan-legibilidad-y-web.md` §2.2), registros 90 días y exportaciones de entrenamiento 180 días.
+- `retention`: recortes 90 días (temporalmente; el valor normal es 30, SEG-03), registros 90 días y exportaciones de entrenamiento 180 días.
 
 **`config/models.yaml`** es el manifiesto de modelos: archivo, URL y hash SHA-256. Si un `.onnx` no coincide con su
 hash, no se carga.
@@ -214,9 +214,8 @@ training/detector  entrenamiento del detector de placas (proyecto uv aparte)
 training/ocr       entrenamiento del OCR colombiano (proyecto uv aparte)
 training/legibility entrenamiento del filtro de legibilidad (proyecto uv aparte; `legibility.enabled: false` por defecto)
 src/lector_placas  código (ver §12)
-docs/              requisitos, contratos, modelo de datos, evaluación, ADRs y planes ya ejecutados (docs/historial/)
+docs/              requisitos, contratos, modelo de datos, evaluación, guías y ADRs
 frontend/          interfaz web (React + Vite); `npm run build` genera frontend/dist, que sirve lector-web
-specs/             especificaciones numeradas (000–078) y su estado en specs/README.md
 ```
 
 La clave maestra **no** está en disco: vive en el llavero del sistema. Sin ella no se pueden leer ni la base ni los
@@ -282,7 +281,7 @@ uv run python -m ocr_training.evaluate_ocr --crops mix_v1/test/annotations.csv -
 - `train.py` **sobrescribe** `models/fpo-cct-xs-v2-colombia/` aunque el modelo salga peor. Guarda antes una copia del
   `.onnx` en uso.
 
-**Reentrenar con tus revisiones** (spec 054):
+**Reentrenar con tus revisiones**:
 ```bash
 uv run lector dataset export-reviewed                        # desde la raíz → training/ocr/datasets/own/reviewed-<fecha>
 cd training/ocr
@@ -346,9 +345,7 @@ uv run pre-commit run --all-files
 uv run python scripts/nivel_f.py               # red (strace), permisos, cifrado, placas en claro, web solo en loopback, velocidad, VRAM
 ```
 
-Cómo se trabaja: **spec-driven development**. Cada cambio se describe primero en una spec de `specs/` y se implementa en
-una rama `feature/NNN-*` con merge `--no-ff`. El estado de cada spec y el registro de correcciones están en
-`specs/README.md`. Las firmas exactas están en `docs/02-contratos.md` y las decisiones, en `docs/adr/`.
+Las firmas exactas están en `docs/02-contratos.md` y las decisiones, en `docs/adr/`.
 
 ---
 

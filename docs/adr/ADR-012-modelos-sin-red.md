@@ -35,12 +35,12 @@ Hashes fijados (calculados el 2026-09-24 sobre las URLs oficiales):
 
 ## Consecuencias
 - (+) Integridad y aislamiento de red verificables por tests.
-- (−) El modelo exportado localmente (`yolo26n-coco`) obtiene su hash al exportarse (spec 030) y debe
+- (−) El modelo exportado localmente (`yolo26n-coco`) obtiene su hash al exportarse y debe
   registrarse en `config/models.yaml` antes de usarse (trust-on-first-export, documentado).
 - (−) La guardia bloquea también los sockets Unix, incluido D-Bus: la clave maestra se lee del keyring antes de
-  `block_network()` y queda en memoria (corrección 2026-09-26, spec 028).
+  `block_network()` y queda en memoria (corrección 2026-09-26).
 
-## Actualización 2026-09-26 (spec 036)
+## Actualización 2026-09-26
 Segundo paso de setup con red: `lector dataset download` / `lector dataset prepare` descargan los datasets públicos de
 Roboflow por su API REST (`https://api.roboflow.com`, verificada contra el SDK `roboflow` 1.5.1, que no se usa por
 exigir `numpy<2.4` y `opencv-python-headless`). La API key vive solo en `ROBOFLOW_API_KEY`. El pipeline de

@@ -1,7 +1,7 @@
 # ADR-016 — Interfaz web local (sustituye a la GUI PySide6)
 
-- Estado: **Aprobado** (2026-09-27, decisiones del usuario en docs/historial/08 §6; redactado 2026-10-03). Sustituye a ADR-015
-  desde el 2026-10-04 (spec 073: GUI retirada).
+- Estado: **Aprobado** (2026-09-27, decisiones del usuario; redactado 2026-10-03). Sustituye a ADR-015
+  desde el 2026-10-04 (GUI retirada).
 - Requisitos afectados: RF-28, RF-36 (pasa a cumplirse con la web), RF-33, §7 (UI web deja de estar fuera de alcance,
   solo en loopback); SEG-20, nueva SEG-28.
 
@@ -43,21 +43,21 @@ Verificado en el JSON de PyPI el 2026-10-03:
 | Endpoints síncronos (`def`) | FastAPI los ejecuta en un pool de hilos y compartirían la conexión SQLCipher entre hilos. |
 | Token en cada URL o en `localStorage` | Queda en el historial o al alcance de JavaScript; la cookie `HttpOnly` no. |
 | WebSocket para el progreso | SSE basta (un solo sentido) y no necesita dependencias. |
-| Bind a `0.0.0.0` | Expone placas a la red local. Solo se admite dentro de Docker (spec 075, excepción de SEG-28). |
+| Bind a `0.0.0.0` | Expone placas a la red local. Solo se admite dentro de Docker (excepción de SEG-28). |
 
 ## Consecuencias
-- (+) Una interfaz moderna, la misma en cualquier sistema; la GUI PySide6 se retira (spec 073).
+- (+) Una interfaz moderna, la misma en cualquier sistema; la GUI PySide6 se retira.
 - (−) Se añade Node.js como requisito para compilar el frontend (decisión del usuario) y una superficie HTTP local que
   SEG-28 acota.
 - (−) Las llamadas a la BD bloquean el bucle de eventos mientras duran; aceptable para un solo operador local.
 
-## Actualización 2026-10-04 (spec 080)
+## Actualización 2026-10-04
 El Docker multiplataforma no cambia la exposición: el puerto sigue publicado solo en `127.0.0.1` del anfitrión y el
 `0.0.0.0` interno sigue condicionado a `LECTOR_IN_CONTAINER=1`.
 
-Spec 081: el puerto publicado en el anfitrión es configurable (`LECTOR_PORT`); dentro del contenedor `LECTOR_PUBLIC_PORT`
+Actualización 2026-10-04: el puerto publicado en el anfitrión es configurable (`LECTOR_PORT`); dentro del contenedor `LECTOR_PUBLIC_PORT`
 fija qué puerto se acepta en la cabecera `Host` y se muestra en el enlace. Sigue publicado solo en `127.0.0.1`.
 
-Spec 082: `lector review` (ventana OpenCV) funciona en Docker con el servicio `lector-review`, que comparte el
+Actualización 2026-10-04: `lector review` (ventana OpenCV) funciona en Docker con el servicio `lector-review`, que comparte el
 socket X11 del anfitrión solo con UID 10001 (ACL temporales) y no tiene red ni puertos. Coste aceptado por el usuario:
 mientras corre, ese contenedor accede a la pantalla y al teclado del escritorio.

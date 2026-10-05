@@ -1,7 +1,6 @@
 # 02 — Contratos: entidades, puertos, casos de uso y errores
 
-> Fuente de verdad de las **firmas**. Las specs copian de aquí literalmente. Si una firma cambia,
-> se actualiza este archivo, `CONTEXT.md` y las specs afectadas.
+> Fuente de verdad de las **firmas**. Si una firma cambia, se actualiza este archivo junto con el código.
 > Todos los módulos empiezan con `from __future__ import annotations`.
 
 ## 1. Dominio — `src/lector_placas/domain/errors.py`
@@ -40,7 +39,7 @@ class NetworkAccessError(LectorPlacasError): ...
 class ReviewError(LectorPlacasError): ...
 class EvaluationError(LectorPlacasError): ...
 class DatasetError(LectorPlacasError): ...
-class ProcessingCancelledError(LectorPlacasError): ...   # spec 040: el operador canceló `ProcessVideo`
+class ProcessingCancelledError(LectorPlacasError): ...   # el operador canceló `ProcessVideo`
 ```
 
 Cada clase tiene un docstring de una línea en español. No añaden atributos.
@@ -62,7 +61,7 @@ class ReviewStatus(StrEnum):
     UNVERIFIED = "unverified"
     REJECTED = "rejected"
     CORRECTED = "corrected"
-    ILLEGIBLE = "illegible"      # spec 052: es una placa, pero no se puede leer
+    ILLEGIBLE = "illegible"      # es una placa, pero no se puede leer
 
 class UnverifiedReason(StrEnum):
     INSUFFICIENT_READINGS = "insufficient_readings"
@@ -72,7 +71,7 @@ class UnverifiedReason(StrEnum):
     UNVERIFIED_FORMAT = "unverified_format"
     VEHICLE_FORMAT_MISMATCH = "vehicle_format_mismatch"
     AMBIGUOUS_FORMAT = "ambiguous_format"
-    CORRECTION_CONFLICT = "correction_conflict"   # spec 050 (ADR-007 paso 5b)
+    CORRECTION_CONFLICT = "correction_conflict"   # (ADR-007 paso 5b)
 
 @dataclass(frozen=True, slots=True)
 class BoundingBox:
@@ -159,10 +158,9 @@ class Sighting:
     plate: ConsolidatedPlate
     crop_ref: str | None                 # None o CROP_REF_REGEX
     created_at: datetime                 # con tzinfo, UTC
-    quality: CropQuality | None = None   # spec 059
-
+    quality: CropQuality | None = None
 @dataclass(frozen=True, slots=True)
-class CropQuality:                       # spec 059: medidas del mejor recorte
+class CropQuality:                       # medidas del mejor recorte
     plate_width_px: int                  # >= 1
     plate_height_px: int                 # >= 1
     sharpness: float                     # finito, >= 0 (varianza del Laplaciano, ImageQualityScorer)
@@ -187,8 +185,8 @@ class SightingRecord:
     crop_ref: str | None
     created_at: datetime
     reviewed_at: datetime | None
-    quality: CropQuality | None = None   # spec 059
-    duplicate_of: int | None = None      # spec 059 (columna) / 061 (lógica); >= 1 y != sighting_id
+    quality: CropQuality | None = None
+    duplicate_of: int | None = None      # (columna) / 061 (lógica); >= 1 y != sighting_id
 ```
 
 `BoundingBox.clip` recorta a `[0, frame_width] × [0, frame_height]` y devuelve `None` si queda vacía.
@@ -309,7 +307,7 @@ class ReviewAction(StrEnum):
     REJECT = "reject"
     SKIP = "skip"
     QUIT = "quit"
-    ILLEGIBLE = "illegible"      # spec 052: → ReviewStatus.ILLEGIBLE
+    ILLEGIBLE = "illegible"      # → ReviewStatus.ILLEGIBLE
 
 @dataclass(frozen=True, slots=True)
 class ReviewDecision:
@@ -359,13 +357,13 @@ class PlateRepository(Protocol):
     def get_sighting(self, sighting_id: int) -> SightingRecord: ...
     def record_review(self, sighting_id: int, status: ReviewStatus,
                       corrected_text: str | None, reviewed_at: datetime) -> None: ...
-        # status ∈ {CONFIRMED, CORRECTED, REJECTED, ILLEGIBLE}; ILLEGIBLE se trata como REJECTED (spec 052)
+        # status ∈ {CONFIRMED, CORRECTED, REJECTED, ILLEGIBLE}; ILLEGIBLE se trata como REJECTED
     def expire_crop_refs(self, cutoff: datetime) -> list[str]: ...
     def delete_records_before(self, cutoff: datetime) -> RecordPurge: ...
     def log_event(self, event: AuditEvent, occurred_at: datetime, detail: str) -> None: ...
-    def run_video_hashes(self) -> dict[int, str]: ...   # spec 055: run_id → video_sha256 de todas las corridas
-    def run_frame_sizes(self) -> dict[int, tuple[int, int]]: ...   # spec 059: run_id → (width, height) ya rotados
-    def mark_duplicates(self, pairs: Sequence[tuple[int, int]]) -> None: ...   # spec 061: (duplicado, conservado), una transacción
+    def run_video_hashes(self) -> dict[int, str]: ...   # run_id → video_sha256 de todas las corridas
+    def run_frame_sizes(self) -> dict[int, tuple[int, int]]: ...   # run_id → (width, height) ya rotados
+    def mark_duplicates(self, pairs: Sequence[tuple[int, int]]) -> None: ...   # (duplicado, conservado), una transacción
     def close(self) -> None: ...
 
 class CropStore(Protocol):
@@ -382,7 +380,7 @@ class TrainingExportStore(Protocol):
     def write_samples(self, samples: Sequence[tuple[str, ImageBGR]], created_at: datetime) -> Path: ...
     def delete_older_than(self, cutoff: datetime) -> int: ...
 
-# spec 055
+
 class LegibilityLabel(StrEnum):
     LEGIBLE = "legible"
     BLURRY = "borrosa"
@@ -402,7 +400,7 @@ class LegibilitySample:            # sin texto de placa (SEG-07)
     agreement: float
     num_readings: int
     reasons: tuple[UnverifiedReason, ...]
-    plate_width_px: int | None = None    # spec 059 (las seis)
+    plate_width_px: int | None = None    # (las seis)
     plate_height_px: int | None = None
     sharpness: float | None = None
     contrast: float | None = None
@@ -426,7 +424,7 @@ class ReviewUI(Protocol):
 class Clock(Protocol):
     def now(self) -> datetime: ...
 
-# --- Specs 040 y 041 (progreso y búsqueda; los usa la web) ---
+# --- Progreso y búsqueda (los usa la web) ---
 @dataclass(frozen=True, slots=True)
 class ProgressUpdate:                   # todos los enteros >= 0; si no → InvalidEntityError
     frames_decoded: int
@@ -467,7 +465,7 @@ class SightingQuery:                    # validación en __post_init__ → Inval
     run_id: int | None = None           # >= 1
     created_from: datetime | None = None   # con tzinfo; inclusivo
     created_to: datetime | None = None     # con tzinfo; exclusivo; > created_from si ambos
-    include_duplicates: bool = False       # spec 061: por defecto excluye duplicate_of no nulo
+    include_duplicates: bool = False       # por defecto excluye duplicate_of no nulo
 
 class SightingBrowser(Protocol):
     def search_sightings(self, query: SightingQuery, limit: int, offset: int) -> list[SightingRecord]: ...
@@ -479,8 +477,8 @@ class SightingBrowser(Protocol):
 
 | Puerto.método | Precondiciones | Postcondiciones | Raises |
 |---|---|---|---|
-| `VideoSourceFactory.open` | `path` ya validado (spec 007) | Fuente abierta; `info()` disponible | `VideoSourceError` si no decodifica o no tiene stream de video |
-| `FrameGrabber.grab` (spec 076) | `path` localizado por `VideoLocator`; `timestamp_ms >= 0` | Imagen BGR upright del primer frame con timestamp `>= timestamp_ms` (o el último) | `VideoSourceError` si no abre o no decodifica |
+| `VideoSourceFactory.open` | `path` ya validado | Fuente abierta; `info()` disponible | `VideoSourceError` si no decodifica o no tiene stream de video |
+| `FrameGrabber.grab` | `path` localizado por `VideoLocator`; `timestamp_ms >= 0` | Imagen BGR upright del primer frame con timestamp `>= timestamp_ms` (o el último) | `VideoSourceError` si no abre o no decodifica |
 | `VideoSource.frames` | Fuente abierta; se llama una sola vez | `Frame` en orden de decodificación, `timestamp_ms` no decreciente, imagen upright BGR | `VideoSourceError` ante error de decodificación |
 | `VideoSource.close` | — | Idempotente; libera el contenedor | — |
 | `FrameSampler.should_process` | `timestamp_ms >= 0` | `True` para el primer frame; luego según ADR-006 | — |
@@ -539,13 +537,13 @@ class FinalizedTrack:
 class TrackRegistry:
     def __init__(self, max_readings_per_track: int) -> None: ...
     def observe(self, tracked: Sequence[TrackedVehicle], timestamp_ms: int) -> None: ...
-    def needs_reading(self, track_id: int) -> bool: ...   # spec 051: True <=> el track está activo; spec 060: y no resuelto
-    def readings(self, track_id: int) -> tuple[PlateReading, ...]: ...   # spec 060, orden (timestamp_ms, frame_index)
-    def vehicle_type(self, track_id: int) -> VehicleType: ...            # spec 060, tipo dominante actual
-    def mark_resolved(self, track_id: int) -> None: ...                  # spec 060
-    def is_full(self, track_id: int) -> bool: ...         # spec 051: activo y con max_readings_per_track lecturas
+    def needs_reading(self, track_id: int) -> bool: ...   # True <=> el track está activo: y no resuelto
+    def readings(self, track_id: int) -> tuple[PlateReading, ...]: ...   # orden (timestamp_ms, frame_index)
+    def vehicle_type(self, track_id: int) -> VehicleType: ...            # tipo dominante actual
+    def mark_resolved(self, track_id: int) -> None: ...
+    def is_full(self, track_id: int) -> bool: ...         # activo y con max_readings_per_track lecturas
     def add_reading(self, reading: PlateReading, crop: ImageBGR) -> None: ...
-        # spec 051: lleno → reemplaza a la peor si (ancho de placa, nitidez) es estrictamente mayor;
+        # lleno → reemplaza a la peor si (ancho de placa, nitidez) es estrictamente mayor;
         # readings de FinalizedTrack en orden (timestamp_ms, frame_index)
     def pop_inactive(self, now_ms: int, inactive_after_ms: int) -> list[FinalizedTrack]: ...
     def pop_all(self) -> list[FinalizedTrack]: ...
@@ -562,17 +560,17 @@ class ProcessingSettings:
     vehicle_crop_margin: float      # [0, 1]
     track_finalize_after_ms: int    # >= 1
     max_readings_per_track: int     # >= 1
-    near_min_width_frac: float = 0.0                    # [0, 0.2]; spec 057
-    max_plate_vehicle_ratio: float = 1.0                # (0, 1]; spec 057
+    near_min_width_frac: float = 0.0                    # [0, 0.2]
+    max_plate_vehicle_ratio: float = 1.0                # (0, 1]
     roi: tuple[float, float, float, float] = (0.0, 0.0, 1.0, 1.0)   # 0 <= x1 < x2 <= 1, 0 <= y1 < y2 <= 1
-    early_stop: bool = False                            # spec 060
-    dedup_window_ms: int = 0                            # spec 061: [0, 600000]; 0 desactiva
+    early_stop: bool = False
+    dedup_window_ms: int = 0                            # [0, 600000]; 0 desactiva
 
-# application/duplicates.py (spec 061): DuplicateCandidate(sighting_id, plate_text, status, confidence,
+# application/duplicates.py: DuplicateCandidate(sighting_id, plate_text, status, confidence,
 #   first_seen_ms, last_seen_ms); find_duplicates(candidates, window_ms) -> list[(duplicado, conservado)]
 #   conservado = min por (no CONFIRMED, -confidence, sighting_id); grupo por texto exacto y hueco <= window_ms
 
-# application/proximity.py (spec 057): FRAME_EDGE_MARGIN_PX = 2; effective_min_width(w, h, min_px, frac) -> int
+# application/proximity.py: FRAME_EDGE_MARGIN_PX = 2; effective_min_width(w, h, min_px, frac) -> int
 #   = ceil(round(max(min_px, frac * max(w, h)), 6)); center_in_roi(box, roi, w, h) -> bool;
 #   touches_frame_edge(box, w, h) -> bool; validate_roi(roi) -> None; ProximityCounters
 
@@ -599,7 +597,7 @@ class ProcessVideo:
     def __init__(self, deps: PipelineDependencies, settings: ProcessingSettings) -> None: ...
     def execute(
         self, video_path: Path, video_sha256: str, progress: ProgressReporter | None = None
-    ) -> RunResult: ...   # `progress` desde la spec 040
+    ) -> RunResult: ...
 ```
 
 `application/purge_expired.py`
@@ -638,15 +636,14 @@ class ReviewSummary:
     corrected: int
     rejected: int
     skipped: int
-    illegible: int = 0           # spec 052
-
+    illegible: int = 0
 class ReviewSightings:
     def __init__(self, repository: PlateRepository, crop_store: CropStore, ui: ReviewUI,
                  clock: Clock) -> None: ...
     def execute(self, limit: int) -> ReviewSummary: ...
 ```
 
-`application/export_reviewed.py` (spec 035)
+`application/export_reviewed.py`
 ```python
 @dataclass(frozen=True, slots=True)
 class ExportReviewedResult:
@@ -659,10 +656,10 @@ class ExportReviewedCrops:
                  training_store: TrainingExportStore, clock: Clock) -> None: ...
     def execute(self) -> ExportReviewedResult: ...
 ```
-Cambios de la spec 035 en `application/purge_expired.py`: `RetentionPolicy.training_days: int = 180`,
+Cambios en `application/purge_expired.py`: `RetentionPolicy.training_days: int = 180`,
 `PurgeResult.training_deleted: int = 0` y `PurgeExpiredData(..., policy, training_store: TrainingExportStore | None = None)`.
 
-`application/export_legibility.py` (spec 055)
+`application/export_legibility.py`
 ```python
 LABELS: Final[dict[ReviewStatus, LegibilityLabel]]   # CONFIRMED/CORRECTED→LEGIBLE, ILLEGIBLE→BLURRY, REJECTED→NOT_PLATE
 
@@ -678,7 +675,7 @@ class ExportLegibilityDataset:
                  legibility_store: LegibilityExportStore, clock: Clock) -> None: ...
     def execute(self) -> ExportLegibilityResult: ...
 ```
-Cambio de la spec 055 en la purga: `PurgeExpiredData(..., training_store=None, legibility_store: LegibilityExportStore | None = None)`;
+Cambio en la purga: `PurgeExpiredData(..., training_store=None, legibility_store: LegibilityExportStore | None = None)`;
 lo que borra se suma a `training_deleted` (mismo corte `training_days`).
 
 ## 6. Infraestructura (firmas públicas)
@@ -723,7 +720,7 @@ class ManifestModelRegistry:
 def fetch_models(manifest_path: Path, models_dir: Path, opener: UrlOpener) -> list[str]: ...
 
 # infrastructure/config.py
-def load_config(path: Path) -> AppConfig: ...   # spec 080: LECTOR_EXECUTION_PROVIDER (cpu|cuda) sustituye inference.execution_provider
+def load_config(path: Path) -> AppConfig: ...   # LECTOR_EXECUTION_PROVIDER (cpu|cuda) sustituye inference.execution_provider
 ```
 
 ## 7. Estrategia de errores
@@ -733,7 +730,7 @@ def load_config(path: Path) -> AppConfig: ...   # spec 080: LECTOR_EXECUTION_PRO
   `cryptography.exceptions.InvalidTag`, `keyring.errors.KeyringError`, `OSError`) con `raise ... from e`.
 - `ProcessVideo.execute` ante cualquier `LectorPlacasError`: registra `ERROR`, llama
   `finish_run(succeeded=False)` con las estadísticas parciales y relanza. Los avistamientos ya
-  guardados se conservan. La cancelación (spec 040) sigue el mismo camino con `ProcessingCancelledError`: la corrida
+  guardados se conservan. La cancelación sigue el mismo camino con `ProcessingCancelledError`: la corrida
   queda `failed` y los tracks aún abiertos se descartan.
 - `cli/main.py` es el único que captura todo: mapea a códigos de salida:
 

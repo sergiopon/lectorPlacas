@@ -15,7 +15,7 @@ longitud (p. ej. `LLLDDD` carro y `LLLDDL` moto) hacen que la corrección sea am
 3. **Voto por carácter ponderado por probabilidad, por patrón candidato**, con corrección
    posicional previa al voto y desempate por tipo de vehículo.
 
-## Decisión (algoritmo normativo; implementado en spec 004)
+## Decisión (algoritmo normativo)
 1. Longitud objetivo `L` = longitud con mayor suma de `mean_confidence` entre las lecturas; empate
    exacto → la mayor longitud, y se añade la razón `LOW_AGREEMENT`.
 2. Lecturas usadas = las de longitud `L` (`n = len`).
@@ -29,7 +29,7 @@ longitud (p. ej. `LLLDDD` carro y `LLLDDL` moto) hacen que la corrección sea am
 5. Compatibles = resultados con algún formato coincidente que incluya el tipo de vehículo del track.
    Ninguno compatible pero hay conservados → mejor por confianza, razón `VEHICLE_FORMAT_MISMATCH`.
    Ninguno conservado → voto sin corrección, razón `UNRECOGNIZED_FORMAT`.
-5b. (Enmienda 2026-09-27, spec 050.) Voto directo = voto por posición **sin** corrección sobre las
+5b. (Enmienda 2026-09-27.) Voto directo = voto por posición **sin** corrección sobre las
    mismas `n` lecturas. Si su texto cumple la regex de algún formato del catálogo y es distinto del
    texto elegido en los pasos 5–6, el resultado pasa a ser el voto directo (texto, confianza y
    acuerdo), con `format_ids` de sus formatos compatibles con el vehículo (o de todos si no hay
@@ -48,4 +48,4 @@ longitud (p. ej. `LLLDDD` carro y `LLLDDL` moto) hacen que la corrección sea am
 - (−) Parámetros provisionales hasta la calibración de Fase 5.
 - (−, corregido por 5b) Sin el paso 5b, un track mal clasificado como moto con lecturas unánimes
   `LLLDDD` se "corregía" a `LLLDDL` y se confirmaba con la confianza del dígito original: 2 de 13
-  confirmadas auditadas el 2026-09-27 eran erróneas por esta causa (docs/historial/07 §1.1).
+  confirmadas auditadas el 2026-09-27 eran erróneas por esta causa.

@@ -9,7 +9,7 @@ Hechos verificados el 2026-09-27 sobre los datos locales (conteos agregados; nin
 
 | Hecho | Valor |
 |---|---|
-| `ocr_colombia` (salida de `chars-to-ocr`, spec 031) | 806 recortes en `train` y 50 en `val` (856 en total), todos PNG |
+| `ocr_colombia` (salida de `chars-to-ocr`) | 806 recortes en `train` y 50 en `val` (856 en total), todos PNG |
 | Imágenes del export de Roboflow (`raw/ocr_placas_colombia`, solo `train`) | 926 |
 | Textos distintos | 490 en train, 39 en val; un mismo texto aparece hasta 18 veces (copias `.rf.<hash>` que el dHash no detecta) |
 | Componentes independientes (mismo texto **o** misma imagen de origen) | 492: 441 carro, 24 con placa de moto, 27 con motocarro; los mayores tienen 18, 18 y 13 recortes |
@@ -30,14 +30,14 @@ Hechos verificados de la CLI `fast-plate-ocr train` 1.1.0 (`fast_plate_ocr/cli/t
 - `best.keras` se guarda con `save_best_only` según `--early-stopping-metric` (por defecto `val_plate_acc`, que sin
   cabeza de región se registra como `val_acc`); `EarlyStopping` usa `restore_best_weights=False`.
 - Aumento de datos: `default_train_augmentation` de la librería, solo en train.
-- `ocr_training/train.py` (spec 032) solo expone `--epochs`, `--batch-size`, `--patience` y `--seed`, y su test de revisión
+- `ocr_training/train.py` solo expone `--epochs`, `--batch-size`, `--patience` y `--seed`, y su test de revisión
   fija la lista exacta de argumentos: `--lr` y el resto quedan en los valores por defecto de la librería.
 
 ## Opciones evaluadas
 1. **Entrenar con `ocr_colombia` tal cual** (806/50). Descartada: val sin poder estadístico y sin motos, y ningún
    conjunto separado para aceptar el modelo.
 2. **Completar hasta 5 000 con sintéticos** (≈ 4 200 sintéticos, ≈ 84 %). Descartada: rompe el tope de sintéticos
-   ≤ 50 %. El generador (spec 033) usa Liberation Sans y colores aproximados (tipografía oficial y RGB NO VERIFICADOS);
+   ≤ 50 %. El generador usa Liberation Sans y colores aproximados (tipografía oficial y RGB NO VERIFICADOS);
    con esa proporción el modelo aprendería el dominio sintético.
 3. **Usar la misma partición para elegir el checkpoint y para aceptar el modelo.** Descartada: `best.keras` se elige
    por `val_acc` entre 150 épocas y medir M-04 en esa misma partición da una estimación optimista.
@@ -45,13 +45,13 @@ Hechos verificados de la CLI `fast-plate-ocr train` 1.1.0 (`fast_plate_ocr/cli/t
    costaría k entrenamientos en una GPU compartida y el modelo registrado seguiría siendo uno solo.
 5. **Congelar el extractor de características.** Descartada: la CLI no lo soporta (verificado) y exigiría escribir un
    bucle de entrenamiento propio fuera de la librería.
-6. **Rehacer la partición en `chars_to_ocr` (código de `src/`, spec 031).** Descartada: cambia `src/` y la spec 031 para
+6. **Rehacer la partición en `chars_to_ocr` (código de `src/`).** Descartada: cambia `src/` para
    algo que solo necesita el entrenamiento; la nueva partición se hace en `training/ocr` sin tocar el dataset base.
 7. **Elegida: repartición por componente en train/val/test, sintéticos solo en train (≤ 50 %) con cuota de motos, y
-   aceptación en un test real apartado frente al modelo base** (spec 039).
+   aceptación en un test real apartado frente al modelo base**.
 
 ## Decisión
-**Datos (spec 039, `mix_dataset`).** Los 856 recortes reales se agrupan en componentes (mismo texto de placa o misma
+**Datos (`mix_dataset`).** Los 856 recortes reales se agrupan en componentes (mismo texto de placa o misma
 imagen de origen) y cada componente va entero a una partición. El reparto es estratificado por categoría (moto,
 motocarro, otro) y determinista (SHA-256 del grupo con la semilla): **test 20 %, val 10 %, train 70 % de los
 componentes**. Con `seed=0` (simulado sobre los datos actuales) quedan:
@@ -64,13 +64,13 @@ componentes**. Con `seed=0` (simulado sobre los datos actuales) quedan:
 
 - Sintéticos: tantos como reales de train (`--synthetic-ratio 1.0`, es decir 50 %), elegidos con cuota para que el train
   tenga **≥ 20 % motos**: 553 + 553 = **1 106 recortes de train, 20,1 % motos**. El 15 % de los sintéticos que no son de
-  moto son motocarro y el resto carro. Se generan 1 500 con el generador de la spec 033 (300 moto, 600 carro y 600
+  moto son motocarro y el resto carro. Se generan 1 500 con el generador de placas sintéticas (300 moto, 600 carro y 600
   motocarro, por el ciclo de estilos) para que haya margen; se descartan los que repiten un texto de val/test.
 - **Val y test son 100 % reales.** Val solo elige el checkpoint; test solo se usa para aceptar.
 - **Metas de §5.3 para esta iteración (declaradas como no cumplidas):** 1 106 de train frente a ≥ 5 000 y 88 + 215 reales
   de evaluación frente a ≥ 500. La meta de §5.3 se mantiene para las iteraciones siguientes.
 
-**Hiperparámetros (CLI de la spec 032).** `--epochs 150 --batch-size 64 --patience 40 --seed 0`; el resto, valores por
+**Hiperparámetros (CLI de entrenamiento).** `--epochs 150 --batch-size 64 --patience 40 --seed 0`; el resto, valores por
 defecto de fast-plate-ocr (lr 0.001, calentamiento 5 %, coseno hasta 1e-5, EMA, label smoothing 0.01). Con 1 106 filas
 son 18 pasos por época y 2 700 en total (135 de calentamiento). `patience 40` solo corta el tiempo: `best.keras` es el de
 mejor `val_acc` en cualquier caso. El lote 64 es el valor con el que la librería fija su lr por defecto.
@@ -85,7 +85,7 @@ uv run python -m ocr_training.evaluate_ocr --crops mix_v1/test/annotations.csv \
     --candidate runs/colombia_v1/<fecha>/best.onnx
 ```
 
-**Criterio de aceptación (spec 039, `evaluate_ocr`)**, sobre `mix_v1/test` y con el mismo lector que usa el runtime
+**Criterio de aceptación (`evaluate_ocr`)**, sobre `mix_v1/test` y con el mismo lector que usa el runtime
 (`LicensePlateRecognizer` de fast-plate-ocr 1.1.0, BGR→RGB, textos inválidos vacíos). El modelo se acepta solo si se
 cumplen todas las condiciones:
 1. Hay al menos 100 recortes de test.
@@ -131,8 +131,7 @@ manifiesto (ADR-012).
 
 **Test congelado.** El `test` de `mix_v1` (`--seed 0`) es la referencia fija de todas las versiones futuras del OCR:
 no se vuelve a repartir y nunca se usa para entrenar ni para elegir checkpoint. Los datos nuevos (p. ej. lecturas
-revisadas de la spec 035) entran solo a `train` o `val` y no mueven los vehículos ya asignados a `test`; la spec de la
-versión 2 debe exigirlo.
+revisadas con `export-reviewed`) entran solo a `train` o `val` y no mueven los vehículos ya asignados a `test`.
 
 **Esta es la versión 1.** Se registra con su tamaño real (1 106 de train, 215 de test); no se presenta como
 cumplimiento de las cantidades de §5.3, que siguen siendo el objetivo de la versión 2.
@@ -148,7 +147,7 @@ cumplimiento de las cantidades de §5.3, que siguen siendo el objetivo de la ver
   de regresión en motos lo mostrará.
 
 ## Siguientes iteraciones (candidatas, sin decidir)
-- **Datos propios revisados** (spec 035): `mix_dataset --real ocr_colombia --real own/reviewed-<fecha>` los añade con la
+- **Datos propios revisados**: `mix_dataset --real ocr_colombia --real own/reviewed-<fecha>` los añade con la
   misma regla de componentes. Es la vía verificable para acercarse a ≥ 500 reales en evaluación.
 - **Recortes de `usco`** (`training/detector/datasets/raw/usco`, 3 751 archivos en el export con aumentos; 1 106
   imágenes según Roboflow): ya son recortes de placa, pero **no tienen texto** y habría que etiquetarlo a mano.
@@ -156,13 +155,13 @@ cumplimiento de las cantidades de §5.3, que siguen siendo el objetivo de la ver
 - **`motos_placas`**: sus clases `H`, `I`, `Q` podrían ser caracteres. NO VERIFICADO; no sirve para el OCR sin texto
   completo.
 - **Ajustar el lr** (`--lr`, soportado por la CLI) si el log muestra sobreajuste: `acc` de train muy por encima de
-  `val_acc`. Requiere una spec que modifique `train.py` y su test de lista exacta. El valor adecuado para fine-tuning
+  `val_acc`. Requiere modificar `train.py` y su test de lista exacta. El valor adecuado para fine-tuning
   está NO VERIFICADO.
 
 ## Decisiones confirmadas (2026-09-27)
 1. **Cantidades de §5.3.** La primera iteración no las cumple (1 106 de train y 303 reales de evaluación) y se registra
    igualmente si pasa el criterio. Las metas de §5.3 no se rebajan: son el objetivo de la versión 2, cuya fuente
-   verificable son las lecturas revisadas (spec 035). Un tope de sintéticos ≤ 50 % hace inalcanzable 5 000 con los
+   verificable son las lecturas revisadas. Un tope de sintéticos ≤ 50 % hace inalcanzable 5 000 con los
    datos actuales sin que el modelo aprenda el render.
 2. **30 % de los componentes reales para val y test.** Con menos, el test bajaría de 100 vehículos y el IC dejaría de
    medir; la validación cruzada multiplica el costo por 5 y no deja un test fijo comparable entre versiones. Se añade

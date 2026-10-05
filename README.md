@@ -113,7 +113,7 @@ con recortes reales revisados (92 y 329 recortes) empataron con él, sin mejora 
 - El sistema **confirmó solo el 5,5 %** de los avistamientos; el resto quedó para revisión. Es deliberado (precisión
   primero), pero muestra que hoy es un **asistente de revisión**, no un lector autónomo.
 - De las confirmaciones automáticas auditadas, el **93 %** eran correctas (57 de 61). La meta M-01 es 98 %. Dos de los
-  errores se debían a una corrección 8→B forzada por el tipo de vehículo, que la spec 050 ya corrige.
+  errores se debían a una corrección 8→B forzada por el tipo de vehículo, ya corregida.
 - **Velocidad:** 0,85× tiempo real en una RTX 5050 con el perfil de 30 fps (17 min de video en 20 min); la meta es ≥ 1×.
 
 **Detector de placas propio** (`yolo26n-plates`): F1 0,94 frente a 0,88 del modelo por defecto, medido sobre la
@@ -125,39 +125,30 @@ truth.
 
 **Limitaciones conocidas:**
 - Solo placas colombianas; formatos en `config/lector.yaml`.
-- Probado solo en Linux (Fedora 44) con una GPU. Sin GPU funciona, pero no se midió la velocidad.
+- Probado en Linux (Fedora 44): instalado con uv y con GPU, y en Docker en CPU. En CPU (Docker) un video 1080p de
+  14 s se procesó a 0,56× tiempo real. Windows y la GPU dentro de Docker no están verificados.
 - Sin llavero del sistema hace falta un archivo de clave (`LECTOR_KEY_FILE`, como en Docker).
 - El detector de vehículos a veces confunde carros con motos, y eso genera dudas de formato.
 - Sin video de ejemplo en el repositorio, por privacidad.
 
-Plan de mejora y diagnóstico completo: [`docs/historial/07-plan-mejora-lectura.md`](docs/historial/07-plan-mejora-lectura.md).
+## Cómo está hecho
 
-## Cómo se construyó
+- **Arquitectura limpia** con puertos y adaptadores; la regla de dependencias entre capas la comprueba un test
+  (`tests/architecture/`). Diseño en [`ARQUITECTURA.md`](ARQUITECTURA.md) y 17 decisiones documentadas como ADR.
+- **Seguridad como requisito:** reglas verificables en [`reglas-seguridad.md`](reglas-seguridad.md) (cifrado,
+  retención, sin red en ejecución, web solo en loopback) y chequeos no funcionales automatizados (`scripts/nivel_f.py`).
+- **Compuertas de calidad** en cada cambio: ruff, mypy en modo estricto, pytest y pre-commit (también para el
+  frontend).
+- **Datos verificados:** versiones, formatos de placa y hashes se comprobaron en su fuente; lo que no se pudo
+  verificar está marcado `NO VERIFICADO`.
+- Desarrollado con asistencia de IA; la dirección, los datos reales, la revisión manual de más de 1 100 avistamientos
+  y la validación de cada resultado son del autor.
 
-El proyecto se hizo con **spec-driven development asistido por IA**, entre septiembre y octubre de 2026:
-
-- **Diseño y revisión: Claude (Anthropic).** Escribió los requisitos, la arquitectura, los 17 ADRs y las specs
-  (**78 implementadas** de `specs/000`–`078`; la 065 se descartó), y revisó cada implementación contra su spec, `ARQUITECTURA.md` y el checklist de seguridad de
-  `reglas-seguridad.md`.
-- **Implementación: agentes de código.** Cada spec la implementó un agente en su propia rama y worktree: subagentes
-  Claude Sonnet y Haiku y modelos DeepSeek, según la dificultad de cada spec. Los agentes no podían modificar
-  specs ni documentos rectores.
-- **Dirección, datos y validación: el autor.** Decidió el alcance, procesó videos reales y revisó a mano más de 1 100
-  avistamientos, entrenó y evaluó los modelos con las herramientas de `training/` y aceptó o rechazó cada resultado.
-- **Ciclo por spec:** spec → implementación en rama `feature/NNN-*` → compuertas (ruff, mypy strict, pytest,
-  tests de revisión ocultos en `tests/review/`) → revisión → merge `--no-ff`. Estado de cada spec y registro de
-  correcciones: `specs/README.md`. Cuando una spec estaba mal, se corregía la spec, no el código a mano.
-- **Regla de trabajo:** no inventar datos técnicos (versiones, formatos de placa, hashes). Lo que no se pudo
-  verificar está marcado `NO VERIFICADO` en el repositorio.
-
-Tamaño (2026-10-04): 14 797 líneas de Python en `src/`, 12 099 de tests (751 tests), 5 123 en `training/` y
-1 944 de TypeScript en `frontend/` (interfaz y sus pruebas: 14 de Vitest y 5 de Playwright).
-Las instrucciones operativas de los agentes (`CLAUDE.md`, `CONTEXT.md` y el plan de orquestación) son archivos locales
-que no se publican. Por eso algunos documentos los mencionan sin que estén en el repositorio. Las specs, ADRs, contratos
-y tests sí están completos.
+Tamaño (2026-10-04): 14 930 líneas de Python en `src/`, 12 562 de tests (772 tests), 5 123 en `training/` y
+1 992 de TypeScript en `frontend/` (interfaz y sus pruebas: 14 de Vitest y 7 de Playwright).
 
 ---
 
 **Documentación:** [guía de uso y desarrollo](docs/guia.md) · [arquitectura](ARQUITECTURA.md) · [decisiones (ADR)](docs/adr/) ·
-[specs](specs/README.md).
+[Docker](docs/docker.md).
 Licencia AGPL-3.0 ([`LICENSE`](LICENSE)). Atribuciones de datos y modelos: [`docs/datasets/ATRIBUCIONES.md`](docs/datasets/ATRIBUCIONES.md).

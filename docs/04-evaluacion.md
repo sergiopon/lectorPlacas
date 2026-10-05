@@ -1,7 +1,7 @@
 # 04 — Evaluación y plan de datos
 
 > Todo lo de este documento se ejecuta **localmente**. Ground truth, videos, recortes y datasets son
-> datos reales o con datos personales: NO se envían a la API externa (SEG-09) y viven en
+> datos reales o con datos personales: NO se envían a servicios externos (SEG-09) y viven en
 > `data/eval/` y `training/**/datasets/` (gitignored, SEG-11).
 
 ## 1. Set de evaluación
@@ -98,20 +98,20 @@ Reporte por subconjunto y global, más desglose `car` vs `motorcycle` y por `cam
 `vehicle_mounted`); hoy el reporte es por video y lleva su `camera`.
 
 **Métricas sin ground truth manual (decisión del usuario 2026-09-26):**
-- Detector de placas sobre dataset (spec 037): precisión, recall y F1 a IoU ≥ 0,5 en el split `val` del dataset unificado.
-- Desde la revisión (spec 038): aproximación de M-01 = confirmadas auditadas que siguen `confirmed` / confirmadas
+- Detector de placas sobre dataset: precisión, recall y F1 a IoU ≥ 0,5 en el split `val` del dataset unificado.
+- Desde la revisión: aproximación de M-01 = confirmadas auditadas que siguen `confirmed` / confirmadas
   auditadas (`lector review --status confirmed`), y CER sobre datos reales = Levenshtein(`ocr_text`, `plate_text`)
   en avistamientos revisados no rechazados. Son estimaciones por muestreo; no sustituyen M-02/M-03 (requieren GT).
 
-## 4. Spec del script de evaluación
-Se implementa en `specs/029-evaluacion.md` (módulo `lector_placas.evaluation`):
+## 4. Script de evaluación
+Módulo `lector_placas.evaluation`:
 - `lector evaluate --video <archivo> --ground-truth <json> [--profile <p>]`: procesa el video con el
   pipeline normal mientras `VramMonitor` ejecuta `nvidia-smi --query-gpu=memory.used
   --format=csv,noheader,nounits -lms 200` como subproceso (lista de argumentos, sin shell); al terminar
   calcula M-01, M-02, M-03, M-05 y M-06 para esa corrida.
 - `lector evaluate-ocr --crops <annotations.csv>`: ejecuta el `PlateReader` configurado sobre los
   recortes y calcula M-04.
-- `lector evaluate-detector [--dataset <dir>] [--split val] [--iou 0.5]` (spec 037): ejecuta el
+- `lector evaluate-detector [--dataset <dir>] [--split val] [--iou 0.5]`: ejecuta el
   `PlateDetector` configurado sobre un dataset YOLO (por defecto el unificado de `merge-detection`) y reporta
   precisión, recall y F1 con emparejamiento voraz por confianza a IoU ≥ 0,5.
 - Los tres escriben `data/eval/reports/report-<YYYYmmddTHHMMSSZ>.json` (0600) y un resumen en consola
@@ -133,7 +133,7 @@ usco), veracidad de licencias declaradas, proporción día/noche y de motos. Exc
 usuario: RodoSol-ALPR, UFPR-ALPR. Excluido por licencia ambigua: generador de `ddfulaa/deteccion_placas`
 (README dice MIT, el repositorio no tiene archivo LICENSE).
 
-Descarga automática (spec 036, decisión del usuario 2026-09-26): `lector dataset download` baja la última versión
+Descarga automática (decisión del usuario 2026-09-26): `lector dataset download` baja la última versión
 de cada proyecto listado en `config/datasets.yaml` en formato "yolov8" por la API REST de Roboflow (clave solo en la
 variable de entorno `ROBOFLOW_API_KEY`) a `training/detector/datasets/raw/<nombre>/` y
 `training/ocr/datasets/raw/<nombre>/`, y genera `training/detector/sources.yaml`; `lector dataset prepare` además
@@ -145,7 +145,7 @@ versión y licencia en `docs/datasets/ATRIBUCIONES.md` (obligatorio por CC BY 4.
   vehículos, anotados con cajas de placa en Label Studio 1.23.0 (Apache-2.0) ejecutado localmente
   (`uvx --python 3.13 label-studio==1.23.0`, en `localhost`). Telemetría de Label Studio: NO VERIFICADO
   cómo desactivarla; revisar su documentación antes de usarlo.
-- Recortes de avistamientos `confirmed`/`corrected` revisados en la CLI: `lector dataset export-reviewed` (spec 035)
+- Recortes de avistamientos `confirmed`/`corrected` revisados en la CLI: `lector dataset export-reviewed`
   los escribe en `training/ocr/datasets/own/reviewed-<fecha>/` (formato fast-plate-ocr, 0600, gitignored, auditado) y
   se borran a los `retention.training_days` días (180 por defecto). Decisión del usuario 2026-09-26.
 
@@ -166,7 +166,7 @@ provisional, marcado como que no cumple M-04 (ADR-014).
 - Detector: una caja ajustada al borde exterior de la placa (incluye el texto de municipio/"COLOMBIA").
 - OCR: `plate_text` solo con los caracteres principales (sin municipio ni "COLOMBIA"), mayúsculas,
   sin espacios ni guiones. Recortes ilegibles se descartan (no se etiquetan con texto parcial).
-- Deduplicación por hash perceptual antes de dividir en train/val (spec 031).
+- Deduplicación por hash perceptual antes de dividir en train/val.
 - Partición: en datasets públicos se respeta su partición (train → train; valid/test → val) y se eliminan de
   val las imágenes casi duplicadas de alguna de train (dHash con distancia de Hamming ≤ 4). Si el dataset OCR público no trae
   `valid`/`test`, `chars-to-ocr` divide `train` por grupo de imagen de origen (nombre sin el sufijo `.rf.<hash>`;

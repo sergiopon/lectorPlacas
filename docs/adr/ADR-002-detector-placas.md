@@ -22,7 +22,7 @@ Se necesita un detector usable desde el primer día para construir y medir el pi
   (archivo `yolo-v9-t-384-license-plates-end2end.onnx`, SHA-256
   `888397b96d761c89db40bc9c305838e8652660f5e282c2cadebbe8d2951a77a8`, 7 771 218 bytes).
   Se ejecuta **sobre el recorte del vehículo** (ADR-013), por eso 384 px de entrada basta.
-- **v1.1:** YOLO26n fine-tuneado con placas colombianas (spec 030), exportado a ONNX end2end con
+- **v1.1:** YOLO26n fine-tuneado con placas colombianas, exportado a ONNX end2end con
   una clase `plate`. Ambos implementan el puerto `PlateDetector`; se elige por configuración
   (`models.plate_detector.backend: open_image_models | yolo`).
 

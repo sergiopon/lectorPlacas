@@ -21,11 +21,14 @@ training/**/weights/
 training/**/.venv/
 training/detector/sources.yaml
 
-# Instrucciones locales de los agentes (no se publican)
-CLAUDE.md
-CONTEXT.md
-docs/05-orquestacion.md
 secrets/
 
-# Configuración local de agentes (como CLAUDE.md)
+# Documentos de trabajo locales (no se publican)
+CLAUDE.md
+CONTEXT.md
 .claude/
+specs/
+specs.md
+docs/05-orquestacion.md
+docs/06-plan-pruebas.md
+docs/historial/

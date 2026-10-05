@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS sightings (
                                                    AND crop_ref NOT GLOB '*[^0-9a-f]*')),
     created_at    TEXT    NOT NULL,
     reviewed_at   TEXT,
-    plate_width_px  INTEGER CHECK (plate_width_px IS NULL OR plate_width_px >= 1),     -- v3 (spec 059)
+    plate_width_px  INTEGER CHECK (plate_width_px IS NULL OR plate_width_px >= 1),     -- v3
     plate_height_px INTEGER CHECK (plate_height_px IS NULL OR plate_height_px >= 1),
     sharpness       REAL    CHECK (sharpness IS NULL OR sharpness >= 0.0),
     contrast        REAL    CHECK (contrast IS NULL OR contrast >= 0.0),
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 ```
 
-Versión de esquema: `3` (spec 059: calidad del mejor recorte y `duplicate_of`; `migrate_v2_to_v3` sigue la misma receta, y una BD v1 se migra a v2 y luego a v3). Historia: `2` (spec 052). Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
+Versión de esquema: `3` (calidad del mejor recorte y `duplicate_of`; `migrate_v2_to_v3` sigue la misma receta, y una BD v1 se migra a v2 y luego a v3). Historia: `2`. Al abrir, si `schema_version` está vacía se inserta `2`; si es `1` se migra a `2`
 (`adapters/persistence/migrations.py`: en una transacción `BEGIN IMMEDIATE` se recrea `sightings` con el `CHECK` de
 `status` que admite `'illegible'`, se copian las filas con su `sighting_id`, se recrean sus índices y se pone la versión
 a 2; si algo falla, `ROLLBACK` y la BD queda en v1); cualquier otro valor → `RepositoryError("versión de esquema no
@@ -159,7 +159,7 @@ input:
   max_file_size_mb: 4096
 
 inference:
-  execution_provider: cuda            # cuda | cpu; la variable LECTOR_EXECUTION_PROVIDER (cpu|cuda) lo sustituye (spec 080)
+  execution_provider: cuda            # cuda | cpu; la variable LECTOR_EXECUTION_PROVIDER (cpu|cuda) lo sustituye
 
 models:
   vehicle_detector:
@@ -197,15 +197,15 @@ profiles:
     min_readings: 3
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 32            # spec 057 (antes 20)
+    min_plate_width_px: 32            # (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
-    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    near_min_width_frac: 0.025        # ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
-    early_stop: true                  # spec 060
-    dedup_window_ms: 30000            # spec 061: [0, 600000]; 0 desactiva
+    early_stop: true
+    dedup_window_ms: 30000            # [0, 600000]; 0 desactiva
   calle_lenta:
     mode: estatico
     camera_motion_compensation: true
@@ -215,15 +215,15 @@ profiles:
     min_readings: 3
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 32            # spec 057 (antes 20)
+    min_plate_width_px: 32            # (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
-    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    near_min_width_frac: 0.025        # ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
-    early_stop: true                  # spec 060
-    dedup_window_ms: 30000            # spec 061: [0, 600000]; 0 desactiva
+    early_stop: true
+    dedup_window_ms: 30000            # [0, 600000]; 0 desactiva
   calle_rapida:
     mode: estatico
     camera_motion_compensation: true
@@ -233,16 +233,16 @@ profiles:
     min_readings: 2
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 32            # spec 057 (antes 20)
+    min_plate_width_px: 32            # (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
-    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    near_min_width_frac: 0.025        # ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
-    early_stop: true                  # spec 060
-    dedup_window_ms: 30000            # spec 061: [0, 600000]; 0 desactiva
-  patrulla:                          # spec 056, modo movil (ADR-017)
+    early_stop: true
+    dedup_window_ms: 30000            # [0, 600000]; 0 desactiva
+  patrulla:                          # modo movil (ADR-017)
     mode: movil
     camera_motion_compensation: true
     target_fps: 30
@@ -251,24 +251,24 @@ profiles:
     min_readings: 2
     confirm_threshold: 0.90
     min_agreement: 0.60
-    min_plate_width_px: 32            # spec 057 (antes 20)
+    min_plate_width_px: 32            # (antes 20)
     min_sharpness: 0.0
     max_ocr_per_frame: 8
     vehicle_crop_margin: 0.10
-    near_min_width_frac: 0.025        # spec 057: ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
+    near_min_width_frac: 0.025        # ancho mínimo = ceil(max(min_plate_width_px, frac × lado mayor))
     max_plate_vehicle_ratio: 0.5
     roi: [0.0, 0.0, 1.0, 1.0]         # x1, y1, x2, y2 normalizados sobre el frame rotado
-    early_stop: true                  # spec 060
-    dedup_window_ms: 30000            # spec 061: [0, 600000]; 0 desactiva
+    early_stop: true
+    dedup_window_ms: 30000            # [0, 600000]; 0 desactiva
 
 consolidation:
   ambiguity_margin: 0.10
   confusions: [["O", "0"], ["I", "1"], ["B", "8"], ["S", "5"]]
 
 retention:
-  crops_days: 90      # temporal (2026-09-27, docs/historial/08 §2.2); valor normal 30
+  crops_days: 90      # temporal (2026-09-27); valor normal 30
   records_days: 90
-  training_days: 180                 # exportaciones de entrenamiento (spec 035)
+  training_days: 180                 # exportaciones de entrenamiento
 
 logging:
   level: INFO                          # DEBUG | INFO | WARNING | ERROR
@@ -318,7 +318,7 @@ Notas del catálogo:
 | `tracker.cmc_method` | `sparseOptFlow`, `orb`, `sift`, `ecc` |
 | `tracker.*threshold*` | [0, 1]; `lost_track_buffer >= 0`; `minimum_consecutive_frames >= 1`; `cmc_downscale >= 1` |
 | `default_profile` | existe en `profiles` |
-| `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1]; `mode` ∈ {`estatico`, `movil`}; si `mode` es `movil`, `camera_motion_compensation` debe ser `true` (spec 056); `near_min_width_frac` [0, 0.2]; `max_plate_vehicle_ratio` (0, 1]; `roi` 0 ≤ x1 < x2 ≤ 1 y 0 ≤ y1 < y2 ≤ 1 (spec 057); `early_stop` bool (spec 060); `dedup_window_ms` [0, 600000] (spec 061) |
+| `profiles.*` | `target_fps` (0, 120]; enteros ≥ 1; umbrales [0, 1]; `min_sharpness >= 0`; `vehicle_crop_margin` [0, 1]; `mode` ∈ {`estatico`, `movil`}; si `mode` es `movil`, `camera_motion_compensation` debe ser `true`; `near_min_width_frac` [0, 0.2]; `max_plate_vehicle_ratio` (0, 1]; `roi` 0 ≤ x1 < x2 ≤ 1 y 0 ≤ y1 < y2 ≤ 1; `early_stop` bool; `dedup_window_ms` [0, 600000] |
 | `consolidation.confusions` | pares `[letra A-Z, dígito 0-9]`, sin letras ni dígitos repetidos |
 | `retention` | `1 <= crops_days <= records_days <= 3650`; `1 <= training_days <= 3650` |
 | `plate_formats` | ≥ 1; `format_id` únicos; `regex` compila; `pattern` `^[LD]{1,10}$` |
@@ -342,18 +342,18 @@ models:
      license: MIT, source: fast-plate-ocr 1.1.0}
   - {model_id: yolo26n-coco, filename: yolo26n-coco.onnx, url: "https://github.com/sergiopon/lectorPlacas/releases/download/models-v1/yolo26n-coco.onnx",
      sha256: 28d570970b867a53a4c5c7787db0c22372882bbbcc1d68d3c0a657ea97cf7b64, size_bytes: 9942097,
-     license: AGPL-3.0, source: "exportado localmente desde yolo26n.pt (spec 030)"}
+     license: AGPL-3.0, source: "exportado localmente desde yolo26n.pt"}
   - {model_id: yolo26n-plates, filename: yolo26n-plates.onnx, url: "https://github.com/sergiopon/lectorPlacas/releases/download/models-v1/yolo26n-plates.onnx",
      sha256: 8676a19b5388ce852b0a71fcb6ced841efce33bbc2fa638fbf2a76484f4ea770, size_bytes: 9804866,
-     license: AGPL-3.0, source: "YOLO26n fine-tuneado con placas colombianas (spec 030)"}
+     license: AGPL-3.0, source: "YOLO26n fine-tuneado con placas colombianas"}
   - {model_id: fpo-cct-xs-v2-colombia, filename: fpo-cct-xs-v2-colombia.onnx, url: "https://github.com/sergiopon/lectorPlacas/releases/download/models-v1/fpo-cct-xs-v2-colombia.onnx",
      sha256: 2a057dd8922cd5267fe6fe66c3d09dee6119bacc8929b36a26c06c70f2a327e8, size_bytes: 3080105,
-     license: MIT, source: "cct-xs-v2-global fine-tuneado con placas colombianas (spec 032; ADR-014 v1, PROVISIONAL: no cumple M-04: CER 0,0373 > 0,03 y cota IC 95 % 0,0667 > 0,05 sobre mix_v1/test, n=215)"}
+     license: MIT, source: "cct-xs-v2-global fine-tuneado con placas colombianas (ADR-014 v1, PROVISIONAL: no cumple M-04: CER 0,0373 > 0,03 y cota IC 95 % 0,0667 > 0,05 sobre mix_v1/test, n=215)"}
 ```
 
 - `sha256: PENDIENTE_EXPORT` es el único valor no hexadecimal admitido y significa "aún no exportado":
   `verified_path` lanza `ModelIntegrityError("modelo no exportado")`. El script de exportación
-  (spec 030) imprime el SHA-256 y el tamaño que el operador copia aquí.
+  imprime el SHA-256 y el tamaño que el operador copia aquí.
 - Validación: `model_id` `^[a-z0-9][a-z0-9-]{1,63}$` único; `filename` sin `/` ni `..`;
   `url` nulo o empieza por `https://github.com/`; `sha256` `^[0-9a-f]{64}$` o `PENDIENTE_EXPORT`;
   `size_bytes >= 0`.

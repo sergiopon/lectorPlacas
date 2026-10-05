@@ -1,7 +1,7 @@
 # ARQUITECTURA — lectorPlacas
 
-> Archivo rector. Junto con `reglas-seguridad.md` y `CONTEXT.md` es fuente de verdad del proyecto.
-> Ninguna spec puede contradecirlo. Si cambia, se revisa el impacto en los otros dos y en `specs/`.
+> Archivo rector. Junto con `reglas-seguridad.md` es fuente de verdad del proyecto.
+> Ningún cambio puede contradecirlo. Si cambia, se revisa el impacto en el otro.
 > Requisitos de origen: `docs/00-requisitos.md` (aprobado 2026-09-24).
 
 ## 1. Visión general
@@ -18,13 +18,13 @@ Ultralytics viven solo en entornos de entrenamiento separados (`training/`). Ver
 ## 2. Capas y regla de dependencia (Clean Architecture)
 
 | Capa | Paquete | Contiene | Puede importar |
-|---|---|---|---|
+|---|---|---|
 | Dominio | `lector_placas.domain` | Entidades, reglas de placas colombianas, corrección posicional, votación, excepciones | **Solo la biblioteca estándar** |
 | Aplicación | `lector_placas.application` | Puertos (Protocols), casos de uso, muestreo de frames, registro de tracks | `domain`, `numpy` (solo como tipo de imagen), stdlib |
 | Infraestructura | `lector_placas.infrastructure` | Configuración, rutas seguras, cripto, logging, registro de modelos, guardia de red, reloj | `domain`, `application`, librerías de terceros |
 | Adaptadores | `lector_placas.adapters` | Implementaciones concretas de los puertos (PyAV, ONNX, trackers, fast-plate-ocr, SQLCipher, keyring, OpenCV) | `domain`, `application`, `infrastructure`, terceros |
 | Entrada (composición) | `lector_placas.cli` | Composition root y comandos de la CLI | Todo, excepto `web` |
-| Entrada (web) | `lector_placas.web` | Segundo composition root: API FastAPI en 127.0.0.1 que sirve el frontend compilado (ADR-016, specs 066–072) | Todo, excepto `cli` y `datasets`; de `cli` solo `lector_placas.cli.composition` |
+| Entrada (web) | `lector_placas.web` | Segundo composition root: API FastAPI en 127.0.0.1 que sirve el frontend compilado (ADR-016) | Todo, excepto `cli` y `datasets`; de `cli` solo `lector_placas.cli.composition` |
 | Evaluación | `lector_placas.evaluation` | Métricas contra ground truth | `domain`, `application`, `infrastructure`, `adapters` |
 | Datasets | `lector_placas.datasets` | Preparación de datos de entrenamiento (offline) | `domain`, `application`, `infrastructure`, `adapters` |
 
@@ -36,9 +36,9 @@ Reglas obligatorias:
 4. Los casos de uso reciben sus dependencias por constructor (inyección manual en `cli/composition.py`).
    No hay contenedores de DI, singletons ni variables globales mutables. `web` compone igual, llamando a
    `composition.<función>`.
-6. PySide6 ya no forma parte del proyecto (la GUI se retiró en la spec 073). `fastapi`, `starlette` y `uvicorn`
+6. PySide6 ya no forma parte del proyecto (la GUI se retiró). `fastapi`, `starlette` y `uvicorn`
    solo se importan en `lector_placas.web`; todos sus endpoints son `async def` (ADR-016).
-5. La regla se verifica con `tests/architecture/test_dependency_rule.py` (spec 000).
+5. La regla se verifica con `tests/architecture/test_dependency_rule.py`.
 
 ```mermaid
 flowchart TB
@@ -91,27 +91,27 @@ Pasos por frame muestreado:
 
 ## 4. Puertos y adaptadores
 
-Las firmas exactas están en `docs/02-contratos.md` (y copiadas en `CONTEXT.md`).
+Las firmas exactas están en `docs/02-contratos.md`.
 
-| Puerto (application/ports.py) | Responsabilidad | Adaptador v1 | Spec |
-|---|---|---|---|
-| `VideoSourceFactory` / `VideoSource` | Abrir video, entregar frames BGR upright con timestamp | `PyAVVideoSourceFactory` | 010 |
-| `FrameSampler` | Decidir qué frames se procesan (por timestamp, VFR) | `TimeBasedFrameSampler` (application) | 009 |
-| `VehicleDetector` | Detectar vehículos en un frame | `YoloVehicleDetector` (ONNX) | 013 |
-| `PlateDetector` | Detectar placas en un recorte de vehículo | `OimPlateDetector` (open-image-models) / `YoloPlateDetector` (ONNX fine-tuned) | 014 / 015 |
-| `Tracker` | Asignar IDs persistentes con compensación de cámara | `BotSortTracker` (trackers 2.6.0) | 016 |
-| `PlateReader` | OCR de recortes de placa | `FastPlateOcrReader` | 017 |
-| `ImageQualityScorer` | Nitidez de un recorte | `LaplacianQualityScorer` (OpenCV) | 018 |
-| `PlateConsolidator` | Votación + formato + corrección → `ConsolidatedPlate` | `VotingPlateConsolidator` (domain) | 004 |
-| `PlateRepository` | Persistencia de corridas y avistamientos | `SqlCipherPlateRepository` | 020 |
-| `CropStore` | Guardar/leer/borrar recortes cifrados | `EncryptedFileCropStore` | 021 |
-| `ExportStore` | Escribir CSV de avistamientos y borrar exportaciones vencidas | `CsvExportStore` | 026 |
-| `KeyProvider` | Entregar la clave maestra de 32 bytes | `KeyringKeyProvider` | 008 |
-| `ModelRegistry` | Ruta local verificada (SHA-256) de un modelo | `ManifestModelRegistry` (infrastructure) | 019 |
-| `ReviewUI` | Mostrar recorte y pedir decisión al operador | `OpenCvReviewUI` (CLI); la web revisa desde la galería con `DecideSighting` | 027 / 046, 048 |
-| `ProgressReporter` | Recibir el avance de `ProcessVideo` y pedir su cancelación | `JobReporter` (web) | 040 / 067 |
-| `SightingBrowser` | Buscar avistamientos con filtros, contarlos y listar corridas | `SqlCipherSightingBrowser` | 041 |
-| `Clock` | Hora UTC actual | `SystemClock` (infrastructure) | 005 |
+| Puerto (application/ports.py) | Responsabilidad | Adaptador v1 |
+|---|---|---|
+| `VideoSourceFactory` / `VideoSource` | Abrir video, entregar frames BGR upright con timestamp | `PyAVVideoSourceFactory` |
+| `FrameSampler` | Decidir qué frames se procesan (por timestamp, VFR) | `TimeBasedFrameSampler` (application) |
+| `VehicleDetector` | Detectar vehículos en un frame | `YoloVehicleDetector` (ONNX) |
+| `PlateDetector` | Detectar placas en un recorte de vehículo | `OimPlateDetector` (open-image-models) / `YoloPlateDetector` (ONNX fine-tuned) |
+| `Tracker` | Asignar IDs persistentes con compensación de cámara | `BotSortTracker` (trackers 2.6.0) |
+| `PlateReader` | OCR de recortes de placa | `FastPlateOcrReader` |
+| `ImageQualityScorer` | Nitidez de un recorte | `LaplacianQualityScorer` (OpenCV) |
+| `PlateConsolidator` | Votación + formato + corrección → `ConsolidatedPlate` | `VotingPlateConsolidator` (domain) |
+| `PlateRepository` | Persistencia de corridas y avistamientos | `SqlCipherPlateRepository` |
+| `CropStore` | Guardar/leer/borrar recortes cifrados | `EncryptedFileCropStore` |
+| `ExportStore` | Escribir CSV de avistamientos y borrar exportaciones vencidas | `CsvExportStore` |
+| `KeyProvider` | Entregar la clave maestra de 32 bytes | `KeyringKeyProvider` |
+| `ModelRegistry` | Ruta local verificada (SHA-256) de un modelo | `ManifestModelRegistry` (infrastructure) |
+| `ReviewUI` | Mostrar recorte y pedir decisión al operador | `OpenCvReviewUI` (CLI); la web revisa desde la galería con `DecideSighting` |
+| `ProgressReporter` | Recibir el avance de `ProcessVideo` y pedir su cancelación | `JobReporter` (web) |
+| `SightingBrowser` | Buscar avistamientos con filtros, contarlos y listar corridas | `SqlCipherSightingBrowser` |
+| `Clock` | Hora UTC actual | `SystemClock` (infrastructure) |
 
 El orquestador (`ProcessVideo`) y los demás casos de uso dependen solo de estos Protocols.
 
@@ -119,8 +119,7 @@ El orquestador (`ProcessVideo`) y los demás casos de uso dependen solo de estos
 
 ```
 lectorPlacas/
-├── ARQUITECTURA.md  reglas-seguridad.md  README.md  README.en.md  LICENSE (AGPL-3.0)   (CONTEXT.md: local)
-├── specs.md                 # resumen de todas las specs y su estado
+├── ARQUITECTURA.md  reglas-seguridad.md  README.md  README.en.md  LICENSE (AGPL-3.0)
 ├── pyproject.toml  uv.lock  .python-version  .pre-commit-config.yaml  .gitignore  .dockerignore
 ├── Dockerfile  compose.yaml # imagen multietapa y ejecución local (puerto solo en 127.0.0.1)
 ├── config/
@@ -153,15 +152,14 @@ lectorPlacas/
 │   ├── architecture/        # regla de dependencia
 │   ├── unit/                # espejo de src/, fixtures sintéticos
 │   ├── integration/         # SQLCipher real, PyAV con video sintético, ONNX sintético
-│   ├── review/              # pruebas añadidas en las revisiones de specs
+│   ├── review/              # pruebas de aceptación adicionales
 │   └── fixtures/            # generadores sintéticos (NUNCA datos reales)
 ├── scripts/                 # nivel_f.py (chequeos no funcionales), verify_gpu.py, demo_gif.sh
 ├── training/                # proyectos uv separados, con torch/CUDA propios
-│   ├── detector/            # detector_training: ultralytics, export y fine-tuning (spec 030)
-│   ├── ocr/                 # ocr_training: fast-plate-ocr[train], fine-tuning y sintéticos (specs 032–033)
-│   └── legibility/          # legibility_training: filtro de legibilidad (spec 062)
-├── docs/                    # requisitos, contratos, modelo de datos, evaluación, guía, adr/, historial/
-├── specs/                   # specs de implementación NNN-*.md + README.md
+│   ├── detector/            # detector_training: ultralytics, export y fine-tuning
+│   ├── ocr/                 # ocr_training: fast-plate-ocr[train], fine-tuning y sintéticos
+│   └── legibility/          # legibility_training: filtro de legibilidad
+├── docs/                    # requisitos, contratos, modelo de datos, evaluación, guías y adr/
 ├── data/    (gitignored)    # lector.db, crops/, exports/, eval/
 ├── models/  (gitignored)    # pesos ONNX descargados o exportados
 ├── logs/    (gitignored)
@@ -181,7 +179,7 @@ lectorPlacas/
 - Funciones y métodos: **≤ 20 sentencias** (ruff `PLR0915` max-statements = 20), ≤ 6 argumentos
   (`PLR0913`), complejidad ciclomática ≤ 8 (`C901`), ≤ 8 ramas (`PLR0912`).
 - Clases: ≤ 150 líneas y una sola responsabilidad. Módulos: ≤ 300 líneas, excepto los módulos de definición de
-  contratos o configuración cuyo contenido fija una spec (`domain/entities.py`, `application/ports.py`,
+  contratos o configuración cuyo contenido fija el contrato (`domain/entities.py`, `application/ports.py`,
   `infrastructure/config.py`).
 
 **Tipos**
@@ -206,7 +204,7 @@ lectorPlacas/
 
 **Logging**
 - `logging.getLogger(__name__)` por módulo; nunca `print` fuera de `cli/`.
-- Formato `clave=valor`. **Nunca** texto de placa en claro: usar `mask_plate()` (spec 022). Un filtro
+- Formato `clave=valor`. **Nunca** texto de placa en claro: usar `mask_plate()`. Un filtro
   de logging enmascara además cualquier patrón de placa como defensa en profundidad.
 - Niveles: `DEBUG` detalle por frame, `INFO` hitos de corrida, `WARNING` degradaciones,
   `ERROR` fallos de una corrida.
@@ -222,16 +220,16 @@ lectorPlacas/
 - Arranque (`web/app.py`, script `lector-web`): `os.umask(0o077)` primero, configuración, logging, clave maestra,
   `block_network()`, socket en `127.0.0.1` y solo después Uvicorn. Al abrir la sesión se purga por retención (SEG-03).
 - Seguridad (SEG-28): `Host` comprobado, token de arranque de un solo uso → cookie de sesión, cabeceras CSP/no-store,
-  sin log de acceso. El frontend (`frontend/`, React + Vite, spec 070) se compila a `frontend/dist/` y lo sirve la app.
+  sin log de acceso. El frontend (`frontend/`, React + Vite) se compila a `frontend/dist/` y lo sirve la app.
 - Hilos: los endpoints son `async def` y usan la conexión de la sesión en el hilo del bucle de eventos. `ProcessVideo`
-  corre en un hilo con **su propia** conexión a la BD, almacén de recortes y modelos (spec 067). Hash de videos y
-  decodificación de fotogramas se ejecutan con `run_in_threadpool` (spec 076).
-- La revisión usa `DecideSighting` (spec 046), con las mismas reglas y auditoría que `ReviewSightings`.
-- La GUI de escritorio PySide6 (ADR-015) se retiró en la spec 073.
+  corre en un hilo con **su propia** conexión a la BD, almacén de recortes y modelos. Hash de videos y
+  decodificación de fotogramas se ejecutan con `run_in_threadpool`.
+- La revisión usa `DecideSighting`, con las mismas reglas y auditoría que `ReviewSightings`.
+- La GUI de escritorio PySide6 (ADR-015) se retiró; la sustituye la interfaz web (ADR-016).
 
 ## 8. Configuración y perfiles
 
-Un único archivo `config/lector.yaml` validado con pydantic (spec 006). Perfiles de escenario
+Un único archivo `config/lector.yaml` validado con pydantic. Perfiles de escenario
 (`parqueadero`, `calle_lenta`, `calle_rapida`, de modo `estatico`, y `patrulla`, de modo `movil`; ADR-017) ajustan muestreo, filtros, finalización de tracks y
 umbrales de consolidación. Valores iniciales **provisionales**; se calibran con `docs/04-evaluacion.md`.
 
@@ -253,6 +251,6 @@ umbrales de consolidación. Valores iniciales **provisionales**; se calibran con
 | [012](docs/adr/ADR-012-modelos-sin-red.md) | Modelos y red | Sin red en runtime; `models fetch` explícito; SHA-256 fijado en `config/models.yaml`. |
 | [013](docs/adr/ADR-013-placa-en-vehiculo.md) | Placa dentro del vehículo | La placa se detecta en el recorte del vehículo, lo que asocia placa↔track sin heurísticas. |
 | [014](docs/adr/ADR-014-receta-entrenamiento-ocr.md) | Receta del fine-tuning del OCR | Partición real por componente en train/val/test, sintéticos ≤ 50 % solo en train con cuota de motos, aceptación en test real contra el modelo base. |
-| [015](docs/adr/ADR-015-interfaz-grafica.md) | Interfaz gráfica | **Sustituido por ADR-016** (2026-10-04, spec 073): GUI de escritorio PySide6, retirada. |
+| [015](docs/adr/ADR-015-interfaz-grafica.md) | Interfaz gráfica | **Sustituido por ADR-016** (2026-10-04): GUI de escritorio PySide6, retirada. |
 | [016](docs/adr/ADR-016-interfaz-web-local.md) | Interfaz web local | FastAPI 0.141.1 + Uvicorn en 127.0.0.1, capa `web` (segundo composition root), token de arranque → cookie de sesión, SSE; sustituye a la GUI PySide6. |
 | [017](docs/adr/ADR-017-modos-camara-cercania.md) | Modos de cámara y filtro de cercanía | Perfil con `mode` (`estatico`/`movil`), cercanía por ancho de placa, CMC por perfil, duplicados marcados, solo archivos de video, SEG-29. |
