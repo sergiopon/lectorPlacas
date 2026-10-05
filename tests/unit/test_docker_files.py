@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import yaml
@@ -74,3 +75,33 @@ def test_compose_port_is_configurable() -> None:
 def test_gitattributes_forces_lf() -> None:
     lines = (ROOT / ".gitattributes").read_text(encoding="utf-8").splitlines()
     assert lines == ["* text=auto eol=lf", "*.png binary"]
+
+
+def test_dockerfile_installs_libsm6() -> None:
+    lines = (ROOT / "Dockerfile").read_text(encoding="utf-8").splitlines()
+    install_line = next(line for line in lines if "apt-get install" in line)
+    assert "libsm6" in install_line
+
+
+def test_compose_review_service() -> None:
+    data = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
+    services = data["services"]
+    review = services["lector-review"]
+    assert "ports" not in review
+    assert "extends" not in review
+    assert review["profiles"] == ["review"]
+    assert review["network_mode"] == "none"
+    assert review["command"] == ["lector", "review"]
+    assert review["volumes"][:4] == services["lector"]["volumes"]
+    assert review["environment"]["XAUTHORITY"] == "/tmp/lector-review.xauth"
+
+
+def test_review_script_is_safe() -> None:
+    path = ROOT / "scripts" / "review-docker.sh"
+    assert path.exists()
+    assert os.access(path, os.X_OK)
+    text = path.read_text(encoding="utf-8")
+    assert "trap cleanup EXIT" in text
+    assert "setfacl -x" in text
+    assert "--profile review run --rm lector-review lector review" in text
+    assert "xhost" not in text
